@@ -577,6 +577,107 @@ function SafeImage({
   );
 }
 
+
+/*
+=========================================================
+PUBLIC ATTACHMENT UPLOAD
+=========================================================
+*/
+
+async function uploadAttachment(
+  file,
+  userId,
+  folder
+) {
+  if (!file) {
+    return {
+      url: null,
+      error: null,
+    };
+  }
+
+  if (!file.type.startsWith("image/")) {
+    return {
+      url: null,
+      error: new Error(
+        "Please choose an image file."
+      ),
+    };
+  }
+
+  if (
+    file.size >
+    8 * 1024 * 1024
+  ) {
+    return {
+      url: null,
+      error: new Error(
+        "Image must be smaller than 8 MB."
+      ),
+    };
+  }
+
+  const safeExtension =
+    (
+      file.name
+        .split(".")
+        .pop() ||
+      "jpg"
+    ).toLowerCase();
+
+  const filePath =
+    `${folder}/${userId}/${crypto.randomUUID()}.${safeExtension}`;
+
+  const {
+    error: uploadError,
+  } =
+    await supabase.storage
+      .from("attachments")
+      .upload(
+        filePath,
+        file,
+        {
+          upsert: false,
+          contentType:
+            file.type,
+          cacheControl:
+            "3600",
+        }
+      );
+
+  if (uploadError) {
+    return {
+      url: null,
+      error: uploadError,
+    };
+  }
+
+  const {
+    data: {
+      publicUrl,
+    },
+  } =
+    supabase.storage
+      .from("attachments")
+      .getPublicUrl(
+        filePath
+      );
+
+  if (!publicUrl) {
+    return {
+      url: null,
+      error: new Error(
+        "Image uploaded, but its public URL could not be created."
+      ),
+    };
+  }
+
+  return {
+    url: publicUrl,
+    error: null,
+  };
+}
+
 /*
 =========================================================
 HEADER
@@ -3945,8 +4046,43 @@ function News({
   const [content, setContent] =
     useState("");
 
+  const [imageFile, setImageFile] =
+    useState(null);
+
+  const [imagePreview, setImagePreview] =
+    useState("");
+
   const [deletingId, setDeletingId] =
     useState(null);
+
+  const [publishing, setPublishing] =
+    useState(false);
+
+  const handleImageChange =
+    (event) => {
+      const file =
+        event.target.files?.[0] ||
+        null;
+
+      setImageFile(
+        file
+      );
+
+      if (file) {
+        setImagePreview(
+          URL.createObjectURL(
+            file
+          )
+        );
+      } else {
+        setImagePreview("");
+      }
+    };
+
+  const clearImage = () => {
+    setImageFile(null);
+    setImagePreview("");
+  };
 
   const publish =
     async (e) => {
@@ -3963,41 +4099,82 @@ function News({
         return;
       }
 
-      const {
-        error,
-      } =
-        await supabase
-          .from(
-            "news"
-          )
-          .insert({
-            title:
-              title.trim(),
-            content:
-              content.trim(),
-            published_by:
+      setPublishing(true);
+
+      try {
+        let imageUrl =
+          null;
+
+        if (imageFile) {
+          const {
+            url,
+            error: uploadError,
+          } =
+            await uploadAttachment(
+              imageFile,
               profile.id,
-          });
+              "news"
+            );
 
-      if (error) {
-        alert(
-          error.message
+          if (uploadError) {
+            alert(
+              uploadError.message
+            );
+
+            return;
+          }
+
+          imageUrl =
+            url;
+        }
+
+        const {
+          error,
+        } =
+          await supabase
+            .from(
+              "news"
+            )
+            .insert({
+              title:
+                title.trim(),
+              content:
+                content.trim(),
+              published_by:
+                profile.id,
+              image_url:
+                imageUrl,
+            });
+
+        if (error) {
+          alert(
+            error.message
+          );
+
+          return;
+        }
+
+        await onLogAction({
+          action:
+            "NEWS_PUBLISHED",
+          details:
+            `Published news: ${title.trim()}${
+              imageUrl
+                ? " with an attached image."
+                : "."
+            }`,
+        });
+
+        setTitle("");
+        setContent("");
+        clearImage();
+
+        await reload();
+      } finally {
+        setPublishing(
+          false
         );
-
-        return;
       }
-
-      await onLogAction({
-        action:
-          "NEWS_PUBLISHED",
-        details:
-          `Published news: ${title.trim()}`,
-      });
-
-      setTitle("");
-      setContent("");
-
-      await reload();
     };
 
   const deleteNews =
@@ -4089,15 +4266,60 @@ function News({
               )
             }
             placeholder="Write announcement..."
-            rows="9"
+            rows="8"
             className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-white resize-none"
           />
 
+          <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4">
+            <label className="block text-sm text-gray-300 mb-2">
+              Attach Picture{" "}
+              <span className="text-gray-600">
+                (optional)
+              </span>
+            </label>
+
+            <input
+              type="file"
+              accept="image/*"
+              onChange={
+                handleImageChange
+              }
+              className="block w-full text-sm text-gray-300"
+            />
+
+            {imagePreview && (
+              <div className="mt-4">
+                <img
+                  src={
+                    imagePreview
+                  }
+                  alt="News preview"
+                  className="w-full max-h-64 object-cover rounded-xl border border-white/10"
+                />
+
+                <button
+                  type="button"
+                  onClick={
+                    clearImage
+                  }
+                  className="mt-2 text-sm text-red-400"
+                >
+                  Remove picture
+                </button>
+              </div>
+            )}
+          </div>
+
           <button
             type="submit"
-            className="w-full bg-yellow-400 text-black font-semibold py-4 rounded-xl hover:bg-yellow-300"
+            disabled={
+              publishing
+            }
+            className="w-full bg-yellow-400 text-black font-semibold py-4 rounded-xl hover:bg-yellow-300 disabled:opacity-50"
           >
-            Publish
+            {publishing
+              ? "Publishing..."
+              : "Publish"}
           </button>
         </form>
       </section>
@@ -4110,15 +4332,13 @@ function News({
 
           <span className="text-sm text-gray-500">
             {news.length}{" "}
-            {news.length ===
-            1
+            {news.length === 1
               ? "post"
               : "posts"}
           </span>
         </div>
 
-        {news.length ===
-        0 ? (
+        {news.length === 0 ? (
           <p className="text-gray-500">
             No news published yet.
           </p>
@@ -4133,7 +4353,7 @@ function News({
                   className="bg-white/[0.03] border border-white/5 rounded-2xl p-5"
                 >
                   <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <h3 className="font-semibold text-xl">
                         {
                           item.title
@@ -4145,6 +4365,16 @@ function News({
                           item.content
                         }
                       </p>
+
+                      {item.image_url && (
+                        <img
+                          src={
+                            item.image_url
+                          }
+                          alt=""
+                          className="mt-4 w-full max-h-72 object-cover rounded-xl border border-white/10"
+                        />
+                      )}
 
                       {item.created_at && (
                         <p className="text-gray-600 text-xs mt-4">
@@ -4219,23 +4449,48 @@ function Todo({
   const [deadline, setDeadline] =
     useState("");
 
+  const [imageFile, setImageFile] =
+    useState(null);
+
+  const [imagePreview, setImagePreview] =
+    useState("");
+
+  const [saving, setSaving] =
+    useState(false);
+
   const loadTodos = async () => {
     const {
       data,
       error,
-    } = await supabase
-      .from("todos")
-      .select("*")
-      .order("completed", {
-        ascending: true,
-      })
-      .order("deadline", {
-        ascending: true,
-        nullsFirst: false,
-      })
-      .order("created_at", {
-        ascending: false,
-      });
+    } =
+      await supabase
+        .from(
+          "todos"
+        )
+        .select("*")
+        .order(
+          "completed",
+          {
+            ascending:
+              true,
+          }
+        )
+        .order(
+          "deadline",
+          {
+            ascending:
+              true,
+            nullsFirst:
+              false,
+          }
+        )
+        .order(
+          "created_at",
+          {
+            ascending:
+              false,
+          }
+        );
 
     if (error) {
       console.error(
@@ -4246,7 +4501,8 @@ function Todo({
       setTodos([]);
     } else {
       setTodos(
-        data || []
+        data ||
+          []
       );
     }
 
@@ -4264,9 +4520,12 @@ function Todo({
         .on(
           "postgres_changes",
           {
-            event: "*",
-            schema: "public",
-            table: "todos",
+            event:
+              "*",
+            schema:
+              "public",
+            table:
+              "todos",
           },
           () => {
             loadTodos();
@@ -4285,183 +4544,303 @@ function Todo({
     setTitle("");
     setDescription("");
     setDeadline("");
-    setEditingTodo(null);
-    setShowForm(false);
-  };
-
-  const saveTodo = async (event) => {
-    event.preventDefault();
-
-    if (!title.trim()) {
-      alert(
-        "Please enter a task title."
-      );
-      return;
-    }
-
-    if (editingTodo) {
-      const {
-        error,
-      } = await supabase
-        .from("todos")
-        .update({
-          title:
-            title.trim(),
-          description:
-            description.trim(),
-          deadline:
-            deadline ||
-            null,
-          updated_at:
-            new Date().toISOString(),
-        })
-        .eq(
-          "id",
-          editingTodo.id
-        );
-
-      if (error) {
-        alert(
-          error.message
-        );
-        return;
-      }
-
-      if (onLogAction) {
-        await onLogAction({
-          action:
-            "TODO_EDITED",
-          details:
-            `Edited task: ${title.trim()}`,
-        });
-      }
-    } else {
-      const {
-        error,
-      } = await supabase
-        .from("todos")
-        .insert({
-          title:
-            title.trim(),
-          description:
-            description.trim(),
-          deadline:
-            deadline ||
-            null,
-          created_by:
-            profile.id,
-        });
-
-      if (error) {
-        alert(
-          error.message
-        );
-        return;
-      }
-
-      if (onLogAction) {
-        await onLogAction({
-          action:
-            "TODO_CREATED",
-          details:
-            `Created task: ${title.trim()}`,
-        });
-      }
-    }
-
-    resetForm();
-    await loadTodos();
-  };
-
-  const beginEdit = (todo) => {
+    setImageFile(null);
+    setImagePreview("");
     setEditingTodo(
+      null
+    );
+    setShowForm(
+      false
+    );
+  };
+
+  const handleImageChange =
+    (event) => {
+      const file =
+        event.target.files?.[0] ||
+        null;
+
+      setImageFile(
+        file
+      );
+
+      if (file) {
+        setImagePreview(
+          URL.createObjectURL(
+            file
+          )
+        );
+      } else {
+        setImagePreview("");
+      }
+    };
+
+  const saveTodo =
+    async (event) => {
+      event.preventDefault();
+
+      if (
+        !title.trim()
+      ) {
+        alert(
+          "Please enter a task title."
+        );
+
+        return;
+      }
+
+      setSaving(true);
+
+      try {
+        let imageUrl =
+          editingTodo?.image_url ||
+          null;
+
+        /*
+          If a new picture is selected,
+          upload the replacement.
+        */
+        if (imageFile) {
+          const {
+            url,
+            error:
+              uploadError,
+          } =
+            await uploadAttachment(
+              imageFile,
+              profile.id,
+              "todos"
+            );
+
+          if (uploadError) {
+            alert(
+              uploadError.message
+            );
+
+            return;
+          }
+
+          imageUrl =
+            url;
+        }
+
+        if (
+          editingTodo
+        ) {
+          const {
+            error,
+          } =
+            await supabase
+              .from(
+                "todos"
+              )
+              .update({
+                title:
+                  title.trim(),
+                description:
+                  description.trim(),
+                deadline:
+                  deadline ||
+                  null,
+                image_url:
+                  imageUrl,
+                updated_at:
+                  new Date().toISOString(),
+              })
+              .eq(
+                "id",
+                editingTodo.id
+              );
+
+          if (error) {
+            alert(
+              error.message
+            );
+
+            return;
+          }
+
+          if (onLogAction) {
+            await onLogAction({
+              action:
+                "TODO_EDITED",
+              details:
+                `Edited task: ${title.trim()}${
+                  imageFile
+                    ? " and attached a new image."
+                    : "."
+                }`,
+            });
+          }
+        } else {
+          const {
+            error,
+          } =
+            await supabase
+              .from(
+                "todos"
+              )
+              .insert({
+                title:
+                  title.trim(),
+                description:
+                  description.trim(),
+                deadline:
+                  deadline ||
+                  null,
+                image_url:
+                  imageUrl,
+                created_by:
+                  profile.id,
+              });
+
+          if (error) {
+            alert(
+              error.message
+            );
+
+            return;
+          }
+
+          if (onLogAction) {
+            await onLogAction({
+              action:
+                "TODO_CREATED",
+              details:
+                `Created task: ${title.trim()}${
+                  imageFile
+                    ? " with an attached image."
+                    : "."
+                }`,
+            });
+          }
+        }
+
+        resetForm();
+        await loadTodos();
+      } finally {
+        setSaving(
+          false
+        );
+      }
+    };
+
+  const beginEdit =
+    (todo) => {
+      setEditingTodo(
+        todo
+      );
+
+      setTitle(
+        todo.title ||
+          ""
+      );
+
+      setDescription(
+        todo.description ||
+          ""
+      );
+
+      setDeadline(
+        todo.deadline ||
+          ""
+      );
+
+      setImageFile(
+        null
+      );
+
+      setImagePreview(
+        todo.image_url ||
+          ""
+      );
+
+      setShowForm(
+        true
+      );
+    };
+
+  const deleteTodo =
+    async (todo) => {
+      if (
+        !window.confirm(
+          `Delete "${todo.title}"?`
+        )
+      ) {
+        return;
+      }
+
+      const {
+        error,
+      } =
+        await supabase
+          .from(
+            "todos"
+          )
+          .delete()
+          .eq(
+            "id",
+            todo.id
+          );
+
+      if (error) {
+        alert(
+          error.message
+        );
+
+        return;
+      }
+
+      if (onLogAction) {
+        await onLogAction({
+          action:
+            "TODO_DELETED",
+          details:
+            `Deleted task: ${todo.title}`,
+        });
+      }
+
+      await loadTodos();
+    };
+
+  const toggleComplete =
+    async (
       todo
-    );
+    ) => {
+      const completed =
+        !todo.completed;
 
-    setTitle(
-      todo.title || ""
-    );
+      const {
+        error,
+      } =
+        await supabase
+          .from(
+            "todos"
+          )
+          .update({
+            completed,
+            completed_at:
+              completed
+                ? new Date().toISOString()
+                : null,
+            updated_at:
+              new Date().toISOString(),
+          })
+          .eq(
+            "id",
+            todo.id
+          );
 
-    setDescription(
-      todo.description || ""
-    );
+      if (error) {
+        alert(
+          error.message
+        );
 
-    setDeadline(
-      todo.deadline || ""
-    );
+        return;
+      }
 
-    setShowForm(true);
-  };
-
-  const deleteTodo = async (todo) => {
-    if (
-      !window.confirm(
-        `Delete "${todo.title}"?`
-      )
-    ) {
-      return;
-    }
-
-    const {
-      error,
-    } = await supabase
-      .from("todos")
-      .delete()
-      .eq(
-        "id",
-        todo.id
-      );
-
-    if (error) {
-      alert(
-        error.message
-      );
-      return;
-    }
-
-    if (onLogAction) {
-      await onLogAction({
-        action:
-          "TODO_DELETED",
-        details:
-          `Deleted task: ${todo.title}`,
-      });
-    }
-
-    await loadTodos();
-  };
-
-  const toggleComplete = async (todo) => {
-    const completed =
-      !todo.completed;
-
-    const {
-      error,
-    } = await supabase
-      .from("todos")
-      .update({
-        completed,
-        completed_at:
-          completed
-            ? new Date().toISOString()
-            : null,
-        updated_at:
-          new Date().toISOString(),
-      })
-      .eq(
-        "id",
-        todo.id
-      );
-
-    if (error) {
-      alert(
-        error.message
-      );
-      return;
-    }
-
-    await loadTodos();
-  };
+      await loadTodos();
+    };
 
   const activeTodos =
     todos.filter(
@@ -4475,173 +4854,187 @@ function Todo({
         todo.completed
     );
 
-  const formatDeadline = (
-    value
-  ) => {
-    if (!value) {
-      return null;
-    }
-
-    return new Date(
-      `${value}T00:00:00`
-    ).toLocaleDateString(
-      undefined,
-      {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
+  const formatDeadline =
+    (value) => {
+      if (!value) {
+        return null;
       }
-    );
-  };
 
-  const isOverdue = (
-    value
-  ) => {
-    if (!value) {
-      return false;
-    }
-
-    const today =
-      new Date();
-
-    today.setHours(
-      0,
-      0,
-      0,
-      0
-    );
-
-    const due =
-      new Date(
+      return new Date(
         `${value}T00:00:00`
+      ).toLocaleDateString(
+        undefined,
+        {
+          day:
+            "numeric",
+          month:
+            "short",
+          year:
+            "numeric",
+        }
+      );
+    };
+
+  const isOverdue =
+    (value) => {
+      if (!value) {
+        return false;
+      }
+
+      const today =
+        new Date();
+
+      today.setHours(
+        0,
+        0,
+        0,
+        0
       );
 
-    return due < today;
-  };
+      const due =
+        new Date(
+          `${value}T00:00:00`
+        );
 
-  const TodoCard = ({
-    todo,
-  }) => (
-    <div
-      className={`group bg-white/[0.04] border rounded-2xl p-4 transition ${
-        todo.completed
-          ? "border-white/5 opacity-70"
-          : "border-white/10 hover:border-yellow-400/30"
-      }`}
-    >
-      <div className="flex items-start gap-4">
-        <button
-          type="button"
-          onClick={() =>
-            toggleComplete(
-              todo
-            )
-          }
-          aria-label={
-            todo.completed
-              ? "Mark task incomplete"
-              : "Mark task complete"
-          }
-          className={`mt-1 w-7 h-7 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition ${
-            todo.completed
-              ? "bg-yellow-400 border-yellow-400 text-black"
-              : "border-gray-600 hover:border-yellow-400"
-          }`}
-        >
-          {todo.completed
-            ? "✓"
-            : ""}
-        </button>
+      return (
+        due < today
+      );
+    };
 
-        <div className="flex-1 min-w-0">
-          <h4
-            className={`font-semibold text-lg ${
+  const TodoCard =
+    ({ todo }) => (
+      <div
+        className={`group bg-white/[0.04] border rounded-2xl p-4 transition ${
+          todo.completed
+            ? "border-white/5 opacity-70"
+            : "border-white/10 hover:border-yellow-400/30"
+        }`}
+      >
+        <div className="flex items-start gap-4">
+          <button
+            type="button"
+            onClick={() =>
+              toggleComplete(
+                todo
+              )
+            }
+            aria-label={
               todo.completed
-                ? "line-through text-gray-500"
-                : "text-white"
+                ? "Mark task incomplete"
+                : "Mark task complete"
+            }
+            className={`mt-1 w-7 h-7 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition ${
+              todo.completed
+                ? "bg-yellow-400 border-yellow-400 text-black"
+                : "border-gray-600 hover:border-yellow-400"
             }`}
           >
-            {todo.title}
-          </h4>
+            {todo.completed
+              ? "✓"
+              : ""}
+          </button>
 
-          {todo.description && (
-            <p
-              className={`text-sm mt-2 ${
+          <div className="flex-1 min-w-0">
+            <h4
+              className={`font-semibold text-lg ${
                 todo.completed
-                  ? "text-gray-600"
-                  : "text-gray-400"
+                  ? "line-through text-gray-500"
+                  : "text-white"
               }`}
             >
               {
-                todo.description
+                todo.title
               }
-            </p>
-          )}
+            </h4>
 
-          <div className="flex flex-wrap gap-2 mt-3">
-            {todo.deadline && (
-              <span
-                className={`text-xs px-3 py-1 rounded-full ${
-                  !todo.completed &&
+            {todo.description && (
+              <p
+                className={`text-sm mt-2 ${
+                  todo.completed
+                    ? "text-gray-600"
+                    : "text-gray-400"
+                }`}
+              >
+                {
+                  todo.description
+                }
+              </p>
+            )}
+
+            {todo.image_url && (
+              <img
+                src={
+                  todo.image_url
+                }
+                alt=""
+                className="mt-4 w-full max-h-72 object-cover rounded-xl border border-white/10"
+              />
+            )}
+
+            <div className="flex flex-wrap gap-2 mt-3">
+              {todo.deadline && (
+                <span
+                  className={`text-xs px-3 py-1 rounded-full ${
+                    !todo.completed &&
+                    isOverdue(
+                      todo.deadline
+                    )
+                      ? "bg-red-500/10 text-red-400"
+                      : "bg-white/5 text-gray-400"
+                  }`}
+                >
+                  {!todo.completed &&
                   isOverdue(
                     todo.deadline
                   )
-                    ? "bg-red-500/10 text-red-400"
-                    : "bg-white/5 text-gray-400"
-                }`}
-              >
-                {!todo.completed &&
-                isOverdue(
-                  todo.deadline
-                )
-                  ? "Overdue · "
-                  : "Due · "}
-                {
-                  formatDeadline(
-                    todo.deadline
+                    ? "Overdue · "
+                    : "Due · "}
+                  {
+                    formatDeadline(
+                      todo.deadline
+                    )
+                  }
+                </span>
+              )}
+
+              {todo.completed && (
+                <span className="text-xs px-3 py-1 rounded-full bg-yellow-400/10 text-yellow-400">
+                  Completed
+                </span>
+              )}
+            </div>
+          </div>
+
+          {isAdmin && (
+            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition">
+              <button
+                type="button"
+                onClick={() =>
+                  beginEdit(
+                    todo
                   )
                 }
-              </span>
-            )}
+                className="px-3 py-2 bg-white/5 rounded-lg text-gray-300 hover:bg-white/10"
+              >
+                Edit
+              </button>
 
-            {todo.completed && (
-              <span className="text-xs px-3 py-1 rounded-full bg-yellow-400/10 text-yellow-400">
-                Completed
-              </span>
-            )}
-          </div>
+              <button
+                type="button"
+                onClick={() =>
+                  deleteTodo(
+                    todo
+                  )
+                }
+                className="px-3 py-2 bg-red-500/10 rounded-lg text-red-400 hover:bg-red-500/20"
+              >
+                Delete
+              </button>
+            </div>
+          )}
         </div>
-
-        {isAdmin && (
-          <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition">
-            <button
-              type="button"
-              onClick={() =>
-                beginEdit(
-                  todo
-                )
-              }
-              className="px-3 py-2 bg-white/5 rounded-lg text-gray-300 hover:bg-white/10"
-            >
-              Edit
-            </button>
-
-            <button
-              type="button"
-              onClick={() =>
-                deleteTodo(
-                  todo
-                )
-              }
-              className="px-3 py-2 bg-red-500/10 rounded-lg text-red-400 hover:bg-red-500/20"
-            >
-              Delete
-            </button>
-          </div>
-        )}
       </div>
-    </div>
-  );
+    );
 
   if (loading) {
     return (
@@ -4666,11 +5059,16 @@ function Todo({
           </h2>
 
           <p className="text-gray-500 mt-1">
-            {activeTodos.length} active{" "}
-            {activeTodos.length ===
-            1
-              ? "task"
-              : "tasks"}
+            {
+              activeTodos.length
+            }{" "}
+            active{" "}
+            {
+              activeTodos.length ===
+              1
+                ? "task"
+                : "tasks"
+            }
           </p>
         </div>
 
@@ -4773,12 +5171,63 @@ function Todo({
                 />
               </div>
 
+              <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4">
+                <label className="block text-sm text-gray-300 mb-2">
+                  Attach Picture{" "}
+                  <span className="text-gray-600">
+                    (optional)
+                  </span>
+                </label>
+
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={
+                    handleImageChange
+                  }
+                  className="block w-full text-sm text-gray-300"
+                />
+
+                {imagePreview && (
+                  <div className="mt-4">
+                    <img
+                      src={
+                        imagePreview
+                      }
+                      alt="Task preview"
+                      className="w-full max-h-64 object-cover rounded-xl border border-white/10"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setImageFile(
+                          null
+                        );
+                        setImagePreview(
+                          editingTodo?.image_url ||
+                            ""
+                        );
+                      }}
+                      className="mt-2 text-sm text-red-400"
+                    >
+                      Remove new picture
+                    </button>
+                  </div>
+                )}
+              </div>
+
               <div className="flex gap-3">
                 <button
                   type="submit"
-                  className="px-6 py-3 bg-yellow-400 text-black font-semibold rounded-xl hover:bg-yellow-300"
+                  disabled={
+                    saving
+                  }
+                  className="px-6 py-3 bg-yellow-400 text-black font-semibold rounded-xl hover:bg-yellow-300 disabled:opacity-50"
                 >
-                  {editingTodo
+                  {saving
+                    ? "Saving..."
+                    : editingTodo
                     ? "Save Changes"
                     : "Create Task"}
                 </button>
@@ -4804,7 +5253,9 @@ function Todo({
           </h3>
 
           <span className="text-sm text-gray-600">
-            {activeTodos.length}
+            {
+              activeTodos.length
+            }
           </span>
         </div>
 
