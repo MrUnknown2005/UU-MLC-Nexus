@@ -17,8 +17,10 @@ APP
 */
 
 export default function App() {
+  const [showLanding, setShowLanding] =
+    useState(true);
+
   const [session, setSession] = useState(null);
-  const [showLanding, setShowLanding] = useState(true);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
