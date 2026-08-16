@@ -3573,6 +3573,12 @@ function Members({
   onRoleChange,
   onToggleActive,
 }) {
+  const [search, setSearch] =
+    useState("");
+
+  const [statusFilter, setStatusFilter] =
+    useState("all");
+
   const availableRoles =
     currentUserRole ===
     "head_admin"
@@ -3613,14 +3619,238 @@ function Members({
       );
     };
 
-  return (
-    <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
-      <h2 className="text-2xl font-bold">
-        Member Management
-      </h2>
+  const pendingMembers =
+    members.filter(
+      (member) =>
+        member.role ===
+          "guest" &&
+        member.is_active !==
+          false
+    );
 
-      <div className="space-y-3 mt-6">
-        {members.map(
+  const filteredMembers =
+    members.filter(
+      (member) => {
+        const searchable = [
+          member.full_name,
+          member.nickname,
+          member.email,
+          ROLE_NAMES[
+            member.role
+          ],
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+
+        const matchesSearch =
+          !search.trim() ||
+          searchable.includes(
+            search
+              .trim()
+              .toLowerCase()
+          );
+
+        const matchesStatus =
+          statusFilter ===
+            "all" ||
+          (statusFilter ===
+            "pending" &&
+            member.role ===
+              "guest" &&
+            member.is_active !==
+              false) ||
+          (statusFilter ===
+            "active" &&
+            member.is_active !==
+              false &&
+            member.role !==
+              "guest") ||
+          (statusFilter ===
+            "inactive" &&
+            member.is_active ===
+              false);
+
+        return (
+          matchesSearch &&
+          matchesStatus
+        );
+      }
+    );
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-5">
+          <div>
+            <p className="text-yellow-400 text-sm font-semibold">
+              Administration
+            </p>
+
+            <h2 className="text-3xl font-black mt-1">
+              Member Management
+            </h2>
+
+            <p className="text-gray-500 mt-2">
+              Review join requests and manage
+              member roles and account status.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-2xl bg-yellow-400/10 border border-yellow-400/20 px-4 py-3 min-w-28">
+              <p className="text-yellow-400 text-xs">
+                Pending
+              </p>
+              <p className="text-2xl font-black mt-1">
+                {pendingMembers.length}
+              </p>
+            </div>
+
+            <div className="rounded-2xl bg-white/[0.03] border border-white/10 px-4 py-3 min-w-28">
+              <p className="text-gray-500 text-xs">
+                Total
+              </p>
+              <p className="text-2xl font-black mt-1">
+                {members.length}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Pending requests */}
+      {pendingMembers.length > 0 && (
+        <section className="bg-yellow-400/[0.045] border border-yellow-400/20 rounded-3xl p-6">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-yellow-400 text-sm font-semibold">
+                Needs Review
+              </p>
+
+              <h3 className="text-2xl font-black mt-1">
+                Pending Join Requests
+              </h3>
+
+              <p className="text-gray-500 text-sm mt-1">
+                Approve a request to turn the
+                account into a regular member.
+              </p>
+            </div>
+
+            <span className="px-3 py-1.5 rounded-full bg-yellow-400 text-black text-xs font-black">
+              {pendingMembers.length}
+            </span>
+          </div>
+
+          <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-3 mt-5">
+            {pendingMembers.map(
+              (member) => {
+                const canModify =
+                  canEdit &&
+                  member.id !==
+                    currentUserId &&
+                  canModifyTarget(
+                    member
+                  );
+
+                return (
+                  <div
+                    key={member.id}
+                    className="rounded-2xl bg-black/10 border border-yellow-400/10 p-4"
+                  >
+                    <div className="flex items-center gap-3">
+                      <SafeImage
+                        src={
+                          member.avatar_url ||
+                          logo
+                        }
+                        alt=""
+                        className="w-12 h-12 rounded-full object-cover"
+                      />
+
+                      <div className="min-w-0">
+                        <p className="font-semibold truncate">
+                          {member.nickname ||
+                            member.full_name}
+                        </p>
+
+                        {member.email && (
+                          <p className="text-gray-500 text-xs truncate">
+                            {member.email}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <button
+                      disabled={!canModify}
+                      onClick={() =>
+                        onRoleChange(
+                          member.id,
+                          "member"
+                        )
+                      }
+                      className="w-full mt-4 px-4 py-2.5 rounded-xl bg-yellow-400 text-black font-bold hover:bg-yellow-300 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                    >
+                      Approve & Make Member
+                    </button>
+                  </div>
+                );
+              }
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* Search and filters */}
+      <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-5">
+        <div className="grid md:grid-cols-[1fr_auto] gap-3">
+          <input
+            value={search}
+            onChange={(event) =>
+              setSearch(
+                event.target.value
+              )
+            }
+            placeholder="Search name, email, or role..."
+            className="w-full rounded-xl bg-black/20 border border-white/10 px-4 py-3 outline-none focus:border-yellow-400/40"
+          />
+
+          <select
+            value={statusFilter}
+            onChange={(event) =>
+              setStatusFilter(
+                event.target.value
+              )
+            }
+            className="rounded-xl bg-black/20 border border-white/10 px-4 py-3 outline-none"
+          >
+            <option value="all">
+              All accounts
+            </option>
+            <option value="pending">
+              Pending requests
+            </option>
+            <option value="active">
+              Active members
+            </option>
+            <option value="inactive">
+              Inactive accounts
+            </option>
+          </select>
+        </div>
+
+        <p className="text-xs text-gray-600 mt-3">
+          Showing {filteredMembers.length} of{" "}
+          {members.length} accounts
+        </p>
+      </section>
+
+      {/* Members */}
+      <section className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {filteredMembers.map(
           (member) => {
             const isCurrentUser =
               member.id ===
@@ -3634,160 +3864,210 @@ function Members({
               );
 
             return (
-              <div
-                key={
-                  member.id
-                }
-                className="bg-white/[0.03] rounded-2xl p-4"
+              <article
+                key={member.id}
+                className={`bg-white/[0.04] border rounded-3xl p-5 ${
+                  member.role ===
+                    "guest" &&
+                  member.is_active !==
+                    false
+                    ? "border-yellow-400/20"
+                    : "border-white/10"
+                }`}
               >
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                  <div className="flex items-center gap-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
                     <SafeImage
                       src={
                         member.avatar_url ||
                         logo
                       }
                       alt=""
-                      className="w-12 h-12 rounded-full object-cover"
+                      className="w-12 h-12 rounded-full object-cover shrink-0"
                     />
 
-                    <div>
-                      <p className="font-semibold">
-                        {
-                          member.nickname ||
-                            member.full_name
-                        }
-                      </p>
+                    <div className="min-w-0">
+                      <h3 className="font-bold truncate">
+                        {member.nickname ||
+                          member.full_name}
+                      </h3>
 
-                      <p className="text-gray-500 text-sm">
-                        {
-                          member.points
-                        }{" "}
-                        points
+                      <p className="text-yellow-400 text-xs mt-1">
+                        {ROLE_NAMES[
+                          member.role
+                        ] || member.role}
                       </p>
-
-                      <p className="text-yellow-400 text-xs">
-                        {
-                          ROLE_NAMES[
-                            member.role
-                          ]
-                        }
-                      </p>
-
-                      {!member.is_active && (
-                        <p className="text-red-400 text-xs">
-                          Inactive
-                        </p>
-                      )}
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap gap-2">
-                    {canModify &&
-                      member.role ===
-                        "guest" &&
-                      member.is_active && (
-                        <button
-                          onClick={() =>
-                            onRoleChange(
-                              member.id,
-                              "member"
-                            )
-                          }
-                          className="px-4 py-2 bg-yellow-400 text-black rounded-xl"
-                        >
-                          Promote
-                        </button>
-                      )}
+                  {member.role ===
+                    "guest" &&
+                    member.is_active !==
+                      false && (
+                      <span className="px-2 py-1 rounded-lg bg-yellow-400/10 border border-yellow-400/20 text-yellow-300 text-[10px] font-bold">
+                        PENDING
+                      </span>
+                    )}
+                </div>
 
-                    {canModify &&
-                      member.role !==
-                        "guest" &&
-                      member.is_active && (
-                        <select
-                          value={
-                            member.role
-                          }
-                          onChange={(
-                            e
-                          ) =>
-                            onRoleChange(
-                              member.id,
-                              e.target
-                                .value
-                            )
-                          }
-                          className="bg-[#18181b] border border-white/10 rounded-xl px-4 py-2"
-                        >
-                          {availableRoles.map(
-                            (
-                              role
-                            ) => (
-                              <option
-                                key={
-                                  role
-                                }
-                                value={
-                                  role
-                                }
-                              >
-                                {
-                                  ROLE_NAMES[
-                                    role
-                                  ]
-                                }
-                              </option>
-                            )
-                          )}
-                        </select>
-                      )}
+                <div className="mt-5 grid grid-cols-2 gap-2">
+                  <div className="rounded-xl bg-white/[0.03] p-3">
+                    <p className="text-gray-600 text-[10px] uppercase">
+                      Points
+                    </p>
+                    <p className="font-bold mt-1">
+                      {member.points ??
+                        0}
+                    </p>
+                  </div>
 
-                    {canModify && (
+                  <div className="rounded-xl bg-white/[0.03] p-3">
+                    <p className="text-gray-600 text-[10px] uppercase">
+                      Status
+                    </p>
+                    <p
+                      className={`font-bold mt-1 ${
+                        member.is_active ===
+                        false
+                          ? "text-red-400"
+                          : "text-green-400"
+                      }`}
+                    >
+                      {member.is_active ===
+                      false
+                        ? "Inactive"
+                        : "Active"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2 mt-4">
+                  {canModify &&
+                    member.role ===
+                      "guest" &&
+                    member.is_active && (
                       <button
                         onClick={() =>
-                          onToggleActive(
+                          onRoleChange(
                             member.id,
-                            !member.is_active
+                            "member"
                           )
                         }
-                        className={`px-4 py-2 rounded-xl ${
-                          member.is_active
-                            ? "bg-red-500/10 text-red-400"
-                            : "bg-green-500/10 text-green-400"
-                        }`}
+                        className="flex-1 min-w-40 px-3 py-2.5 bg-yellow-400 text-black rounded-xl font-bold hover:bg-yellow-300 transition"
                       >
-                        {member.is_active
-                          ? "Deactivate"
-                          : "Reactivate"}
+                        Approve
                       </button>
                     )}
 
-                    {isCurrentUser && (
-                      <span className="text-yellow-400 text-sm">
-                        Your account
-                      </span>
+                  {canModify &&
+                    member.role !==
+                      "guest" &&
+                    member.is_active && (
+                      <select
+                        value={
+                          member.role
+                        }
+                        onChange={(
+                          event
+                        ) =>
+                          onRoleChange(
+                            member.id,
+                            event.target
+                              .value
+                          )
+                        }
+                        className="flex-1 min-w-40 bg-[#18181b] border border-white/10 rounded-xl px-3 py-2.5"
+                      >
+                        {availableRoles.map(
+                          (
+                            role
+                          ) => (
+                            <option
+                              key={
+                                role
+                              }
+                              value={
+                                role
+                              }
+                            >
+                              {
+                                ROLE_NAMES[
+                                  role
+                                ]
+                              }
+                            </option>
+                          )
+                        )}
+                      </select>
                     )}
 
-                    {!canModify &&
-                      !isCurrentUser &&
-                      member.role ===
-                        "head_admin" &&
-                      currentUserRole ===
-                        "administrator" && (
-                        <span className="text-gray-600 text-sm">
-                          Protected
-                        </span>
-                      )}
-                  </div>
+                  {canModify && (
+                    <button
+                      onClick={() =>
+                        onToggleActive(
+                          member.id,
+                          !member.is_active
+                        )
+                      }
+                      className={`px-3 py-2.5 rounded-xl ${
+                        member.is_active
+                          ? "bg-red-500/10 text-red-400 border border-red-400/10"
+                          : "bg-green-500/10 text-green-400 border border-green-400/10"
+                      }`}
+                    >
+                      {member.is_active
+                        ? "Deactivate"
+                        : "Reactivate"}
+                    </button>
+                  )}
+
+                  {isCurrentUser && (
+                    <span className="w-full text-center text-yellow-400 text-xs py-2">
+                      This is your account
+                    </span>
+                  )}
+
+                  {!canModify &&
+                    !isCurrentUser &&
+                    member.role ===
+                      "head_admin" &&
+                    currentUserRole ===
+                      "administrator" && (
+                      <span className="w-full text-center text-gray-600 text-xs py-2">
+                        Protected Head Admin account
+                      </span>
+                    )}
                 </div>
-              </div>
+              </article>
             );
           }
         )}
-      </div>
-    </section>
+      </section>
+
+      {filteredMembers.length ===
+        0 && (
+        <div className="text-center py-14 bg-white/[0.03] border border-white/10 rounded-3xl">
+          <p className="text-gray-500">
+            No accounts match your filters.
+          </p>
+
+          <button
+            onClick={() => {
+              setSearch("");
+              setStatusFilter(
+                "all"
+              );
+            }}
+            className="mt-4 px-4 py-2 bg-yellow-400 text-black rounded-xl font-semibold"
+          >
+            Clear Filters
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
+
 
 /*
 =========================================================
@@ -5057,6 +5337,15 @@ function Todo({
   const [imagePreview, setImagePreview] =
     useState("");
 
+  const [search, setSearch] =
+    useState("");
+
+  const [deadlineFilter, setDeadlineFilter] =
+    useState("all");
+
+  const [sortBy, setSortBy] =
+    useState("deadline");
+
   const [saving, setSaving] =
     useState(false);
 
@@ -5066,33 +5355,18 @@ function Todo({
       error,
     } =
       await supabase
-        .from(
-          "todos"
-        )
+        .from("todos")
         .select("*")
-        .order(
-          "completed",
-          {
-            ascending:
-              true,
-          }
-        )
-        .order(
-          "deadline",
-          {
-            ascending:
-              true,
-            nullsFirst:
-              false,
-          }
-        )
-        .order(
-          "created_at",
-          {
-            ascending:
-              false,
-          }
-        );
+        .order("completed", {
+          ascending: true,
+        })
+        .order("deadline", {
+          ascending: true,
+          nullsFirst: false,
+        })
+        .order("created_at", {
+          ascending: false,
+        });
 
     if (error) {
       console.error(
@@ -5102,10 +5376,7 @@ function Todo({
 
       setTodos([]);
     } else {
-      setTodos(
-        data ||
-          []
-      );
+      setTodos(data || []);
     }
 
     setLoading(false);
@@ -5116,18 +5387,13 @@ function Todo({
 
     const channel =
       supabase
-        .channel(
-          "todos-live"
-        )
+        .channel("todos-live")
         .on(
           "postgres_changes",
           {
-            event:
-              "*",
-            schema:
-              "public",
-            table:
-              "todos",
+            event: "*",
+            schema: "public",
+            table: "todos",
           },
           () => {
             loadTodos();
@@ -5148,12 +5414,8 @@ function Todo({
     setDeadline("");
     setImageFile(null);
     setImagePreview("");
-    setEditingTodo(
-      null
-    );
-    setShowForm(
-      false
-    );
+    setEditingTodo(null);
+    setShowForm(false);
   };
 
   const handleImageChange =
@@ -5162,15 +5424,11 @@ function Todo({
         event.target.files?.[0] ||
         null;
 
-      setImageFile(
-        file
-      );
+      setImageFile(file);
 
       if (file) {
         setImagePreview(
-          URL.createObjectURL(
-            file
-          )
+          URL.createObjectURL(file)
         );
       } else {
         setImagePreview("");
@@ -5181,13 +5439,10 @@ function Todo({
     async (event) => {
       event.preventDefault();
 
-      if (
-        !title.trim()
-      ) {
+      if (!title.trim()) {
         alert(
           "Please enter a task title."
         );
-
         return;
       }
 
@@ -5198,10 +5453,6 @@ function Todo({
           editingTodo?.image_url ||
           null;
 
-        /*
-          If a new picture is selected,
-          upload the replacement.
-        */
         if (imageFile) {
           const {
             url,
@@ -5218,24 +5469,18 @@ function Todo({
             alert(
               uploadError.message
             );
-
             return;
           }
 
-          imageUrl =
-            url;
+          imageUrl = url;
         }
 
-        if (
-          editingTodo
-        ) {
+        if (editingTodo) {
           const {
             error,
           } =
             await supabase
-              .from(
-                "todos"
-              )
+              .from("todos")
               .update({
                 title:
                   title.trim(),
@@ -5255,10 +5500,7 @@ function Todo({
               );
 
           if (error) {
-            alert(
-              error.message
-            );
-
+            alert(error.message);
             return;
           }
 
@@ -5279,9 +5521,7 @@ function Todo({
             error,
           } =
             await supabase
-              .from(
-                "todos"
-              )
+              .from("todos")
               .insert({
                 title:
                   title.trim(),
@@ -5297,10 +5537,7 @@ function Todo({
               });
 
           if (error) {
-            alert(
-              error.message
-            );
-
+            alert(error.message);
             return;
           }
 
@@ -5321,45 +5558,30 @@ function Todo({
         resetForm();
         await loadTodos();
       } finally {
-        setSaving(
-          false
-        );
+        setSaving(false);
       }
     };
 
   const beginEdit =
     (todo) => {
-      setEditingTodo(
-        todo
-      );
-
-      setTitle(
-        todo.title ||
-          ""
-      );
-
+      setEditingTodo(todo);
+      setTitle(todo.title || "");
       setDescription(
-        todo.description ||
-          ""
+        todo.description || ""
       );
-
       setDeadline(
-        todo.deadline ||
-          ""
+        todo.deadline || ""
       );
-
-      setImageFile(
-        null
-      );
-
+      setImageFile(null);
       setImagePreview(
-        todo.image_url ||
-          ""
+        todo.image_url || ""
       );
+      setShowForm(true);
 
-      setShowForm(
-        true
-      );
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
     };
 
   const deleteTodo =
@@ -5376,9 +5598,7 @@ function Todo({
         error,
       } =
         await supabase
-          .from(
-            "todos"
-          )
+          .from("todos")
           .delete()
           .eq(
             "id",
@@ -5386,10 +5606,7 @@ function Todo({
           );
 
       if (error) {
-        alert(
-          error.message
-        );
-
+        alert(error.message);
         return;
       }
 
@@ -5406,9 +5623,7 @@ function Todo({
     };
 
   const toggleComplete =
-    async (
-      todo
-    ) => {
+    async (todo) => {
       const completed =
         !todo.completed;
 
@@ -5416,9 +5631,7 @@ function Todo({
         error,
       } =
         await supabase
-          .from(
-            "todos"
-          )
+          .from("todos")
           .update({
             completed,
             completed_at:
@@ -5434,10 +5647,7 @@ function Todo({
           );
 
       if (error) {
-        alert(
-          error.message
-        );
-
+        alert(error.message);
         return;
       }
 
@@ -5446,7 +5656,8 @@ function Todo({
           action: completed
             ? "TODO_COMPLETED"
             : "TODO_REOPENED",
-          targetUserId: profile.id,
+          targetUserId:
+            profile.id,
           details: completed
             ? `Completed task: ${todo.title}`
             : `Reopened task: ${todo.title}`,
@@ -5467,27 +5678,6 @@ function Todo({
       (todo) =>
         todo.completed
     );
-
-  const formatDeadline =
-    (value) => {
-      if (!value) {
-        return null;
-      }
-
-      return new Date(
-        `${value}T00:00:00`
-      ).toLocaleDateString(
-        undefined,
-        {
-          day:
-            "numeric",
-          month:
-            "short",
-          year:
-            "numeric",
-        }
-      );
-    };
 
   const isOverdue =
     (value) => {
@@ -5510,8 +5700,158 @@ function Todo({
           `${value}T00:00:00`
         );
 
-      return (
-        due < today
+      return due < today;
+    };
+
+  const todayString =
+    new Date()
+      .toISOString()
+      .slice(0, 10);
+
+  const dueTodayCount =
+    activeTodos.filter(
+      (todo) =>
+        todo.deadline ===
+        todayString
+    ).length;
+
+  const overdueCount =
+    activeTodos.filter(
+      (todo) =>
+        isOverdue(
+          todo.deadline
+        )
+    ).length;
+
+  const completionPercent =
+    todos.length === 0
+      ? 0
+      : Math.round(
+          (completedTodos.length /
+            todos.length) *
+            100
+        );
+
+  const filteredActiveTodos =
+    activeTodos
+      .filter((todo) => {
+        const searchable =
+          [
+            todo.title,
+            todo.description,
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase();
+
+        const matchesSearch =
+          !search.trim() ||
+          searchable.includes(
+            search
+              .trim()
+              .toLowerCase()
+          );
+
+        const matchesDeadline =
+          deadlineFilter ===
+            "all" ||
+          (deadlineFilter ===
+            "overdue" &&
+            isOverdue(
+              todo.deadline
+            )) ||
+          (deadlineFilter ===
+            "today" &&
+            todo.deadline ===
+              todayString) ||
+          (deadlineFilter ===
+            "upcoming" &&
+            todo.deadline &&
+            !isOverdue(
+              todo.deadline
+            ) &&
+            todo.deadline !==
+              todayString) ||
+          (deadlineFilter ===
+            "no-date" &&
+            !todo.deadline);
+
+        return (
+          matchesSearch &&
+          matchesDeadline
+        );
+      })
+      .sort((a, b) => {
+        if (sortBy === "newest") {
+          return (
+            new Date(
+              b.created_at || 0
+            ) -
+            new Date(
+              a.created_at || 0
+            )
+          );
+        }
+
+        if (sortBy === "oldest") {
+          return (
+            new Date(
+              a.created_at || 0
+            ) -
+            new Date(
+              b.created_at || 0
+            )
+          );
+        }
+
+        if (sortBy === "overdue") {
+          return (
+            Number(
+              isOverdue(
+                b.deadline
+              )
+            ) -
+            Number(
+              isOverdue(
+                a.deadline
+              )
+            )
+          );
+        }
+
+        if (!a.deadline) {
+          return 1;
+        }
+
+        if (!b.deadline) {
+          return -1;
+        }
+
+        return (
+          new Date(
+            `${a.deadline}T00:00:00`
+          ) -
+          new Date(
+            `${b.deadline}T00:00:00`
+          )
+        );
+      });
+
+  const formatDeadline =
+    (value) => {
+      if (!value) {
+        return null;
+      }
+
+      return new Date(
+        `${value}T00:00:00`
+      ).toLocaleDateString(
+        undefined,
+        {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        }
       );
     };
 
@@ -5521,7 +5861,11 @@ function Todo({
         className={`group bg-white/[0.04] border rounded-2xl p-4 transition ${
           todo.completed
             ? "border-white/5 opacity-70"
-            : "border-white/10 hover:border-yellow-400/30"
+            : isOverdue(
+                todo.deadline
+              )
+              ? "border-red-400/20 bg-red-500/[0.03]"
+              : "border-white/10 hover:border-yellow-400/30"
         }`}
       >
         <div className="flex items-start gap-4">
@@ -5549,39 +5893,60 @@ function Todo({
           </button>
 
           <div className="flex-1 min-w-0">
-            <h4
-              className={`font-semibold text-lg ${
-                todo.completed
-                  ? "line-through text-gray-500"
-                  : "text-white"
-              }`}
-            >
-              {
-                todo.title
-              }
-            </h4>
+            <div className="flex flex-wrap items-center gap-2">
+              <h4
+                className={`font-semibold text-lg ${
+                  todo.completed
+                    ? "line-through text-gray-500"
+                    : "text-white"
+                }`}
+              >
+                {todo.title}
+              </h4>
+
+              {todo.deadline &&
+                !todo.completed &&
+                isOverdue(
+                  todo.deadline
+                ) && (
+                  <span className="px-2 py-1 rounded-full bg-red-500/10 text-red-400 text-[10px] font-bold uppercase">
+                    Overdue
+                  </span>
+                )}
+
+              {todo.deadline ===
+                todayString &&
+                !todo.completed && (
+                  <span className="px-2 py-1 rounded-full bg-yellow-400/10 text-yellow-300 text-[10px] font-bold uppercase">
+                    Due today
+                  </span>
+                )}
+            </div>
 
             {todo.description && (
               <p
-                className={`text-sm mt-2 ${
+                className={`text-sm mt-2 whitespace-pre-wrap ${
                   todo.completed
                     ? "text-gray-600"
                     : "text-gray-400"
                 }`}
               >
-                {
-                  todo.description
-                }
+                {todo.description}
               </p>
             )}
 
             {todo.image_url && (
               <img
-                src={
-                  todo.image_url
-                }
+                src={todo.image_url}
                 alt=""
                 className="mt-4 w-full max-h-72 object-cover rounded-xl border border-white/10"
+                loading="lazy"
+                onError={(
+                  event
+                ) => {
+                  event.currentTarget.style.display =
+                    "none";
+                }}
               />
             )}
 
@@ -5597,17 +5962,15 @@ function Todo({
                       : "bg-white/5 text-gray-400"
                   }`}
                 >
-                  {!todo.completed &&
-                  isOverdue(
+                  {isOverdue(
                     todo.deadline
-                  )
+                  ) &&
+                  !todo.completed
                     ? "Overdue · "
                     : "Due · "}
-                  {
-                    formatDeadline(
-                      todo.deadline
-                    )
-                  }
+                  {formatDeadline(
+                    todo.deadline
+                  )}
                 </span>
               )}
 
@@ -5620,7 +5983,7 @@ function Todo({
           </div>
 
           {isAdmin && (
-            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition">
+            <div className="flex gap-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition">
               <button
                 type="button"
                 onClick={() =>
@@ -5662,46 +6025,92 @@ function Todo({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <p className="text-yellow-400 text-sm">
-            Club Tasks
-          </p>
+      {/* Header and progress */}
+      <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
+        <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+          <div>
+            <p className="text-yellow-400 text-sm">
+              Club Tasks
+            </p>
 
-          <h2 className="text-3xl font-bold mt-1">
-            To-Do List
-          </h2>
+            <h2 className="text-3xl font-bold mt-1">
+              To-Do List
+            </h2>
 
-          <p className="text-gray-500 mt-1">
-            {
-              activeTodos.length
-            }{" "}
-            active{" "}
-            {
-              activeTodos.length ===
-              1
-                ? "task"
-                : "tasks"
-            }
-          </p>
+            <p className="text-gray-500 mt-1">
+              {activeTodos.length} active ·{" "}
+              {completedTodos.length} completed
+            </p>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            <div className="rounded-xl bg-white/[0.03] border border-white/10 px-4 py-3">
+              <p className="text-gray-600 text-[10px] uppercase">
+                Progress
+              </p>
+              <p className="font-black text-lg mt-1">
+                {completionPercent}%
+              </p>
+            </div>
+
+            <div className="rounded-xl bg-yellow-400/10 border border-yellow-400/20 px-4 py-3">
+              <p className="text-yellow-300 text-[10px] uppercase">
+                Today
+              </p>
+              <p className="font-black text-lg mt-1">
+                {dueTodayCount}
+              </p>
+            </div>
+
+            <div className="rounded-xl bg-red-500/10 border border-red-400/20 px-4 py-3">
+              <p className="text-red-300 text-[10px] uppercase">
+                Overdue
+              </p>
+              <p className="font-black text-lg mt-1">
+                {overdueCount}
+              </p>
+            </div>
+          </div>
         </div>
 
-        {isAdmin && (
+        <div className="mt-5">
+          <div className="flex justify-between text-xs text-gray-500 mb-2">
+            <span>
+              Overall completion
+            </span>
+            <span>
+              {completedTodos.length}/
+              {todos.length}
+            </span>
+          </div>
+
+          <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+            <div
+              className="h-full bg-yellow-400 rounded-full transition-all"
+              style={{
+                width: `${completionPercent}%`,
+              }}
+            />
+          </div>
+        </div>
+      </section>
+
+      {isAdmin && (
+        <div className="flex justify-end">
           <button
             type="button"
             onClick={() => {
               resetForm();
-              setShowForm(
-                true
-              );
+              setShowForm(true);
             }}
             className="px-5 py-3 bg-yellow-400 text-black font-semibold rounded-xl hover:bg-yellow-300"
           >
             + Add Task
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
+      {/* Admin editor */}
       {isAdmin &&
         showForm && (
           <section className="bg-white/[0.04] border border-yellow-400/20 rounded-3xl p-6">
@@ -5714,9 +6123,7 @@ function Todo({
 
               <button
                 type="button"
-                onClick={
-                  resetForm
-                }
+                onClick={resetForm}
                 className="text-gray-500 hover:text-white"
               >
                 ✕
@@ -5724,22 +6131,15 @@ function Todo({
             </div>
 
             <form
-              onSubmit={
-                saveTodo
-              }
+              onSubmit={saveTodo}
               className="space-y-4"
             >
               <input
                 type="text"
-                value={
-                  title
-                }
-                onChange={(
-                  event
-                ) =>
+                value={title}
+                onChange={(event) =>
                   setTitle(
-                    event.target
-                      .value
+                    event.target.value
                   )
                 }
                 placeholder="Task title"
@@ -5747,15 +6147,10 @@ function Todo({
               />
 
               <textarea
-                value={
-                  description
-                }
-                onChange={(
-                  event
-                ) =>
+                value={description}
+                onChange={(event) =>
                   setDescription(
-                    event.target
-                      .value
+                    event.target.value
                   )
                 }
                 placeholder="Task description"
@@ -5770,15 +6165,10 @@ function Todo({
 
                 <input
                   type="date"
-                  value={
-                    deadline
-                  }
-                  onChange={(
-                    event
-                  ) =>
+                  value={deadline}
+                  onChange={(event) =>
                     setDeadline(
-                      event.target
-                        .value
+                      event.target.value
                     )
                   }
                   className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white"
@@ -5805,9 +6195,7 @@ function Todo({
                 {imagePreview && (
                   <div className="mt-4">
                     <img
-                      src={
-                        imagePreview
-                      }
+                      src={imagePreview}
                       alt="Task preview"
                       className="w-full max-h-64 object-cover rounded-xl border border-white/10"
                     />
@@ -5815,9 +6203,7 @@ function Todo({
                     <button
                       type="button"
                       onClick={() => {
-                        setImageFile(
-                          null
-                        );
+                        setImageFile(null);
                         setImagePreview(
                           editingTodo?.image_url ||
                             ""
@@ -5834,23 +6220,19 @@ function Todo({
               <div className="flex gap-3">
                 <button
                   type="submit"
-                  disabled={
-                    saving
-                  }
+                  disabled={saving}
                   className="px-6 py-3 bg-yellow-400 text-black font-semibold rounded-xl hover:bg-yellow-300 disabled:opacity-50"
                 >
                   {saving
                     ? "Saving..."
                     : editingTodo
-                    ? "Save Changes"
-                    : "Create Task"}
+                      ? "Save Changes"
+                      : "Create Task"}
                 </button>
 
                 <button
                   type="button"
-                  onClick={
-                    resetForm
-                  }
+                  onClick={resetForm}
                   className="px-6 py-3 bg-white/5 text-gray-300 rounded-xl hover:bg-white/10"
                 >
                   Cancel
@@ -5860,20 +6242,89 @@ function Todo({
           </section>
         )}
 
+      {/* Filters */}
+      <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-5">
+        <div className="grid lg:grid-cols-[1fr_auto_auto] gap-3">
+          <input
+            value={search}
+            onChange={(event) =>
+              setSearch(
+                event.target.value
+              )
+            }
+            placeholder="Search tasks..."
+            className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-yellow-400"
+          />
+
+          <select
+            value={deadlineFilter}
+            onChange={(event) =>
+              setDeadlineFilter(
+                event.target.value
+              )
+            }
+            className="bg-[#17171b] border border-white/10 rounded-xl px-4 py-3 text-white outline-none"
+          >
+            <option value="all">
+              All deadlines
+            </option>
+            <option value="overdue">
+              Overdue
+            </option>
+            <option value="today">
+              Due today
+            </option>
+            <option value="upcoming">
+              Upcoming
+            </option>
+            <option value="no-date">
+              No deadline
+            </option>
+          </select>
+
+          <select
+            value={sortBy}
+            onChange={(event) =>
+              setSortBy(
+                event.target.value
+              )
+            }
+            className="bg-[#17171b] border border-white/10 rounded-xl px-4 py-3 text-white outline-none"
+          >
+            <option value="deadline">
+              Sort: Deadline
+            </option>
+            <option value="overdue">
+              Sort: Overdue first
+            </option>
+            <option value="newest">
+              Sort: Newest
+            </option>
+            <option value="oldest">
+              Sort: Oldest
+            </option>
+          </select>
+        </div>
+      </section>
+
+      {/* Active */}
       <section>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-semibold">
-            Active
-          </h3>
+          <div>
+            <p className="text-yellow-400 text-sm">
+              In progress
+            </p>
+            <h3 className="text-xl font-semibold mt-1">
+              Active
+            </h3>
+          </div>
 
           <span className="text-sm text-gray-600">
-            {
-              activeTodos.length
-            }
+            {filteredActiveTodos.length} shown
           </span>
         </div>
 
-        {activeTodos.length ===
+        {filteredActiveTodos.length ===
         0 ? (
           <div className="bg-white/[0.03] border border-dashed border-white/10 rounded-2xl p-8 text-center">
             <div className="text-3xl">
@@ -5881,20 +6332,16 @@ function Todo({
             </div>
 
             <p className="text-gray-500 mt-2">
-              No active tasks.
+              No active tasks match your filters.
             </p>
           </div>
         ) : (
           <div className="space-y-3">
-            {activeTodos.map(
+            {filteredActiveTodos.map(
               (todo) => (
                 <TodoCard
-                  key={
-                    todo.id
-                  }
-                  todo={
-                    todo
-                  }
+                  key={todo.id}
+                  todo={todo}
                 />
               )
             )}
@@ -5902,14 +6349,13 @@ function Todo({
         )}
       </section>
 
+      {/* Completed */}
       <section className="border-t border-white/10 pt-6">
         <button
           type="button"
           onClick={() =>
             setShowCompleted(
-              (
-                current
-              ) =>
+              (current) =>
                 !current
             )
           }
@@ -5931,9 +6377,7 @@ function Todo({
             </span>
 
             <span className="text-xs px-2 py-1 rounded-full bg-white/5 text-gray-500">
-              {
-                completedTodos.length
-              }
+              {completedTodos.length}
             </span>
           </div>
 
@@ -5951,12 +6395,8 @@ function Todo({
               {completedTodos.map(
                 (todo) => (
                   <TodoCard
-                    key={
-                      todo.id
-                    }
-                    todo={
-                      todo
-                    }
+                    key={todo.id}
+                    todo={todo}
                   />
                 )
               )}
