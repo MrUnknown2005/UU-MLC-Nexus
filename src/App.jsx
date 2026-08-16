@@ -896,6 +896,8 @@ function Dashboard({
           error
         );
       }
+
+      return !error;
     };
 
   /*
@@ -1972,6 +1974,9 @@ function Dashboard({
             reloadProfile={
               reloadProfile
             }
+            onLogAction={
+              logAdminAction
+            }
           />
         )}
 
@@ -2330,18 +2335,6 @@ function Overview({
                     {item.content}
                   </p>
 
-                  {item.image_url && (
-                    <img
-                      src={item.image_url}
-                      alt={item.title || "News attachment"}
-                      className="mt-4 w-full max-h-80 object-cover rounded-xl border border-white/10"
-                      loading="lazy"
-                      onError={(event) => {
-                        event.currentTarget.style.display = "none";
-                      }}
-                    />
-                  )}
-
                   {item.created_at && (
                     <p className="text-gray-600 text-xs mt-3">
                       {new Date(
@@ -2545,6 +2538,7 @@ PROFILE
 function Profile({
   profile,
   reloadProfile,
+  onLogAction,
 }) {
   const [fullName, setFullName] =
     useState(
@@ -2820,6 +2814,14 @@ function Profile({
           "Profile picture updated successfully."
         );
 
+        if (onLogAction) {
+          await onLogAction({
+            action: "PROFILE_PICTURE_UPDATED",
+            targetUserId: profile.id,
+            details: "Updated profile picture.",
+          });
+        }
+
         await reloadProfile();
       } catch (error) {
         console.error(
@@ -2887,6 +2889,14 @@ function Profile({
       setMessage(
         "Profile saved successfully."
       );
+
+      if (onLogAction) {
+        await onLogAction({
+          action: "PROFILE_UPDATED",
+          targetUserId: profile.id,
+          details: "Updated profile name, nickname, bio, or avatar settings.",
+        });
+      }
 
       await reloadProfile();
 
@@ -4849,6 +4859,18 @@ function Todo({
         );
 
         return;
+      }
+
+      if (onLogAction) {
+        await onLogAction({
+          action: completed
+            ? "TODO_COMPLETED"
+            : "TODO_REOPENED",
+          targetUserId: profile.id,
+          details: completed
+            ? `Completed task: ${todo.title}`
+            : `Reopened task: ${todo.title}`,
+        });
       }
 
       await loadTodos();
