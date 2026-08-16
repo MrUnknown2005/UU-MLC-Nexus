@@ -591,12 +591,9 @@ function Header({
     <header className="border-b border-white/10 bg-white/[0.03]">
       <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <SafeImage
-            src={
-              profile?.avatar_url ||
-              logo
-            }
-            alt="Profile"
+          <img
+            src={logo}
+            alt="UU MLC Logo"
             className="w-12 h-12 rounded-full object-cover border border-yellow-400/20"
           />
 
@@ -2081,13 +2078,13 @@ function Overview({
       : null;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <p className="text-gray-500 text-sm">
+    <div className="space-y-7">
+      <div className="bg-white/[0.04] border border-white/10 rounded-3xl p-7">
+        <p className="text-gray-500 text-base">
           Welcome back
         </p>
 
-        <h2 className="text-4xl font-bold mt-1">
+        <h2 className="text-5xl font-bold mt-1">
           {profile.nickname ||
             profile.full_name}
         </h2>
@@ -2137,150 +2134,153 @@ function Overview({
         />
       </div>
 
-      {/* Leaderboard */}
-      <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
-        <p className="text-yellow-400 text-sm">
-          Current Month
-        </p>
-
-        <h3 className="text-2xl font-bold mt-1 mb-5">
-          Top 5 Leaderboard
-        </h3>
-
-        {topFive.length ===
-        0 ? (
-          <p className="text-gray-500">
-            No members yet.
+      {/* Leaderboard + Previous Month */}
+      <div className="grid xl:grid-cols-2 gap-7 items-start">
+        {/* Current leaderboard */}
+        <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-7">
+          <p className="text-yellow-400 text-sm">
+            Current Month
           </p>
-        ) : (
-          <div className="space-y-3">
-            {topFive.map(
-              (
-                member,
-                index
-              ) => (
-                <div
-                  key={
-                    member.id
-                  }
-                  className={`flex items-center justify-between rounded-2xl px-5 py-4 ${
-                    member.id ===
-                    profile.id
-                      ? "bg-yellow-400/10 border border-yellow-400/20"
-                      : "bg-white/[0.03]"
-                  }`}
-                >
-                  <div className="flex items-center gap-4">
-                    <span className="text-yellow-400 font-bold">
-                      #
-                      {index +
-                        1}
-                    </span>
 
-                    <SafeImage
-                      src={
-                        member.avatar_url ||
-                        logo
-                      }
-                      alt=""
-                      className="w-10 h-10 rounded-full object-cover"
-                    />
+          <h3 className="text-3xl font-bold mt-1 mb-6">
+            Top 5 Leaderboard
+          </h3>
 
-                    <div>
-                      <p className="font-semibold">
-                        {
-                          member.nickname ||
-                            member.full_name
-                        }
-                      </p>
-
-                      <p className="text-gray-500 text-xs">
-                        {
-                          ROLE_NAMES[
-                            member.role
-                          ]
-                        }
-                      </p>
-                    </div>
-                  </div>
-
-                  <span className="font-bold">
-                    {
-                      member.points
+          {topFive.length ===
+          0 ? (
+            <p className="text-gray-500">
+              No members yet.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {topFive.map(
+                (
+                  member,
+                  index
+                ) => (
+                  <div
+                    key={
+                      member.id
                     }
-                  </span>
-                </div>
-              )
-            )}
-          </div>
-        )}
-      </section>
+                    className={`flex items-center justify-between rounded-2xl px-6 py-5 ${
+                      member.id ===
+                      profile.id
+                        ? "bg-yellow-400/10 border border-yellow-400/20"
+                        : "bg-white/[0.03]"
+                    }`}
+                  >
+                    <div className="flex items-center gap-4">
+                      <span className="text-yellow-400 text-lg font-bold">
+                        #
+                        {index +
+                          1}
+                      </span>
 
-      {/* Previous month */}
-      <section className="bg-white/[0.04] border border-yellow-400/20 rounded-3xl p-6">
-        <p className="text-yellow-400 text-sm">
-          {monthLabel ||
-            "Previous Month"}
-        </p>
+                      <SafeImage
+                        src={
+                          member.avatar_url ||
+                          logo
+                        }
+                        alt=""
+                        className="w-12 h-12 rounded-full object-cover"
+                      />
 
-        <h3 className="text-2xl font-bold mt-1 mb-6">
-          Previous Month Top Performers
-        </h3>
+                      <div>
+                        <p className="font-semibold text-base">
+                          {
+                            member.nickname ||
+                              member.full_name
+                          }
+                        </p>
 
-        {!previousMonth ? (
-          <p className="text-gray-500">
-            No previous month has been completed yet.
+                        <p className="text-gray-500 text-sm">
+                          {
+                            ROLE_NAMES[
+                              member.role
+                            ]
+                          }
+                        </p>
+                      </div>
+                    </div>
+
+                    <span className="text-xl font-bold">
+                      {
+                        member.points
+                      }
+                    </span>
+                  </div>
+                )
+              )}
+            </div>
+          )}
+        </section>
+
+        {/* Previous month */}
+        <section className="bg-white/[0.04] border border-yellow-400/20 rounded-3xl p-7">
+          <p className="text-yellow-400 text-sm">
+            {monthLabel ||
+              "Previous Month"}
           </p>
-        ) : (
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="bg-yellow-400/10 rounded-2xl p-6">
-              <div className="text-4xl">
-                🏆
+
+          <h3 className="text-3xl font-bold mt-1 mb-6">
+            Previous Month
+          </h3>
+
+          {!previousMonth ? (
+            <p className="text-gray-500">
+              No previous month has been completed yet.
+            </p>
+          ) : (
+            <div className="grid sm:grid-cols-2 gap-5">
+              <div className="bg-yellow-400/10 rounded-2xl p-7">
+                <div className="text-5xl">
+                  🏆
+                </div>
+
+                <p className="text-yellow-400 mt-5 text-sm font-medium">
+                  Top Performer
+                </p>
+
+                <h4 className="text-3xl font-bold mt-1">
+                  {
+                    previousMonth.first_place_name
+                  }
+                </h4>
+
+                <p className="text-gray-400 mt-2 text-lg">
+                  {
+                    previousMonth.first_place_points
+                  }{" "}
+                  points
+                </p>
               </div>
 
-              <p className="text-yellow-400 mt-4">
-                Top Performer
-              </p>
+              <div className="bg-white/[0.03] rounded-2xl p-7">
+                <div className="text-5xl">
+                  🥈
+                </div>
 
-              <h4 className="text-2xl font-bold">
-                {
-                  previousMonth.first_place_name
-                }
-              </h4>
+                <p className="text-gray-400 mt-5 text-sm font-medium">
+                  Runner Up
+                </p>
 
-              <p className="text-gray-400">
-                {
-                  previousMonth.first_place_points
-                }{" "}
-                points
-              </p>
-            </div>
+                <h4 className="text-3xl font-bold mt-1">
+                  {
+                    previousMonth.second_place_name
+                  }
+                </h4>
 
-            <div className="bg-white/[0.03] rounded-2xl p-6">
-              <div className="text-4xl">
-                🥈
+                <p className="text-gray-400 mt-2 text-lg">
+                  {
+                    previousMonth.second_place_points
+                  }{" "}
+                  points
+                </p>
               </div>
-
-              <p className="text-gray-400 mt-4">
-                Runner Up
-              </p>
-
-              <h4 className="text-2xl font-bold">
-                {
-                  previousMonth.second_place_name
-                }
-              </h4>
-
-              <p className="text-gray-400">
-                {
-                  previousMonth.second_place_points
-                }{" "}
-                points
-              </p>
             </div>
-          </div>
-        )}
-      </section>
+          )}
+        </section>
+      </div>
 
       {/* Personal history */}
       <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
@@ -4009,6 +4009,9 @@ function News({
   const [content, setContent] =
     useState("");
 
+  const [deletingId, setDeletingId] =
+    useState(null);
+
   const publish =
     async (e) => {
       e.preventDefault();
@@ -4032,8 +4035,10 @@ function News({
             "news"
           )
           .insert({
-            title,
-            content,
+            title:
+              title.trim(),
+            content:
+              content.trim(),
             published_by:
               profile.id,
           });
@@ -4050,7 +4055,7 @@ function News({
         action:
           "NEWS_PUBLISHED",
         details:
-          `Published news: ${title}`,
+          `Published news: ${title.trim()}`,
       });
 
       setTitle("");
@@ -4059,10 +4064,61 @@ function News({
       await reload();
     };
 
+  const deleteNews =
+    async (item) => {
+      if (
+        !window.confirm(
+          `Delete "${item.title}"?`
+        )
+      ) {
+        return;
+      }
+
+      setDeletingId(
+        item.id
+      );
+
+      const {
+        error,
+      } =
+        await supabase
+          .from("news")
+          .delete()
+          .eq(
+            "id",
+            item.id
+          );
+
+      if (error) {
+        alert(
+          error.message
+        );
+
+        setDeletingId(
+          null
+        );
+
+        return;
+      }
+
+      await onLogAction({
+        action:
+          "NEWS_DELETED",
+        details:
+          `Deleted news: ${item.title}`,
+      });
+
+      await reload();
+
+      setDeletingId(
+        null
+      );
+    };
+
   return (
-    <div className="grid lg:grid-cols-2 gap-6">
-      <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
-        <h2 className="text-2xl font-bold mb-6">
+    <div className="grid lg:grid-cols-2 gap-7 items-start">
+      <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-7">
+        <h2 className="text-3xl font-bold mb-7">
           Publish News
         </h2>
 
@@ -4070,7 +4126,7 @@ function News({
           onSubmit={
             publish
           }
-          className="space-y-4"
+          className="space-y-5"
         >
           <input
             value={
@@ -4083,7 +4139,7 @@ function News({
               )
             }
             placeholder="News title"
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white"
+            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-white"
           />
 
           <textarea
@@ -4097,45 +4153,95 @@ function News({
               )
             }
             placeholder="Write announcement..."
-            rows="7"
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white"
+            rows="9"
+            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-white resize-none"
           />
 
           <button
             type="submit"
-            className="w-full bg-yellow-400 text-black font-semibold py-3 rounded-xl"
+            className="w-full bg-yellow-400 text-black font-semibold py-4 rounded-xl hover:bg-yellow-300"
           >
             Publish
           </button>
         </form>
       </section>
 
-      <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
-        <h2 className="text-2xl font-bold mb-6">
-          Published News
-        </h2>
+      <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-7">
+        <div className="flex items-center justify-between gap-4 mb-7">
+          <h2 className="text-3xl font-bold">
+            Published News
+          </h2>
 
-        {news.map(
-          (item) => (
-            <div
-              key={
-                item.id
-              }
-              className="bg-white/[0.03] rounded-2xl p-4 mb-3"
-            >
-              <h3 className="font-semibold">
-                {
-                  item.title
-                }
-              </h3>
+          <span className="text-sm text-gray-500">
+            {news.length}{" "}
+            {news.length ===
+            1
+              ? "post"
+              : "posts"}
+          </span>
+        </div>
 
-              <p className="text-gray-400 text-sm mt-2">
-                {
-                  item.content
-                }
-              </p>
-            </div>
-          )
+        {news.length ===
+        0 ? (
+          <p className="text-gray-500">
+            No news published yet.
+          </p>
+        ) : (
+          <div className="space-y-4">
+            {news.map(
+              (item) => (
+                <article
+                  key={
+                    item.id
+                  }
+                  className="bg-white/[0.03] border border-white/5 rounded-2xl p-5"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-xl">
+                        {
+                          item.title
+                        }
+                      </h3>
+
+                      <p className="text-gray-400 text-sm mt-3 whitespace-pre-wrap">
+                        {
+                          item.content
+                        }
+                      </p>
+
+                      {item.created_at && (
+                        <p className="text-gray-600 text-xs mt-4">
+                          {new Date(
+                            item.created_at
+                          ).toLocaleString()}
+                        </p>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        deleteNews(
+                          item
+                        )
+                      }
+                      disabled={
+                        deletingId ===
+                        item.id
+                      }
+                      className="flex-shrink-0 px-3 py-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 disabled:opacity-50"
+                    >
+                      {deletingId ===
+                      item.id
+                        ? "Deleting..."
+                        : "Delete"}
+                    </button>
+                  </div>
+                </article>
+              )
+            )}
+          </div>
         )}
       </section>
     </div>
