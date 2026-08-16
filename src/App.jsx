@@ -2134,7 +2134,7 @@ function Overview({
         />
       </div>
 
-      {/* Leaderboard + My Points + Previous Month */}
+      {/* Leaderboard + Latest News */}
       <div className="grid xl:grid-cols-2 gap-7 items-start">
         {/* Current leaderboard */}
         <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-7">
@@ -2146,185 +2146,107 @@ function Overview({
             Top 5 Leaderboard
           </h3>
 
-          {topFive.length ===
-          0 ? (
+          {topFive.length === 0 ? (
             <p className="text-gray-500">
               No members yet.
             </p>
           ) : (
             <div className="space-y-4">
-              {topFive.map(
-                (
-                  member,
-                  index
-                ) => (
-                  <div
-                    key={
-                      member.id
-                    }
-                    className={`flex items-center justify-between rounded-2xl px-6 py-5 ${
-                      member.id ===
-                      profile.id
-                        ? "bg-yellow-400/10 border border-yellow-400/20"
-                        : "bg-white/[0.03]"
-                    }`}
-                  >
-                    <div className="flex items-center gap-4">
-                      <span className="text-yellow-400 text-lg font-bold">
-                        #
-                        {index +
-                          1}
-                      </span>
-
-                      <SafeImage
-                        src={
-                          member.avatar_url ||
-                          logo
-                        }
-                        alt=""
-                        className="w-12 h-12 rounded-full object-cover"
-                      />
-
-                      <div>
-                        <p className="font-semibold text-base">
-                          {
-                            member.nickname ||
-                              member.full_name
-                          }
-                        </p>
-
-                        <p className="text-gray-500 text-sm">
-                          {
-                            ROLE_NAMES[
-                              member.role
-                            ]
-                          }
-                        </p>
-                      </div>
-                    </div>
-
-                    <span className="text-xl font-bold">
-                      {
-                        member.points
-                      }
+              {topFive.map((member, index) => (
+                <div
+                  key={member.id}
+                  className={`flex items-center justify-between rounded-2xl px-6 py-5 ${
+                    member.id === profile.id
+                      ? "bg-yellow-400/10 border border-yellow-400/20"
+                      : "bg-white/[0.03]"
+                  }`}
+                >
+                  <div className="flex items-center gap-4">
+                    <span className="text-yellow-400 text-lg font-bold">
+                      #{index + 1}
                     </span>
+
+                    <SafeImage
+                      src={member.avatar_url || logo}
+                      alt=""
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
+
+                    <div>
+                      <p className="font-semibold text-base">
+                        {member.nickname || member.full_name}
+                      </p>
+
+                      <p className="text-gray-500 text-sm">
+                        {ROLE_NAMES[member.role]}
+                      </p>
+                    </div>
                   </div>
-                )
-              )}
+
+                  <span className="text-xl font-bold">
+                    {member.points}
+                  </span>
+                </div>
+              ))}
             </div>
           )}
         </section>
 
-        {/* My Points + Previous Month */}
-        <div className="space-y-7">
-          {/* My points */}
-          <section className="bg-yellow-400/10 border border-yellow-400/30 rounded-3xl p-7">
-            <p className="text-yellow-400 text-sm font-medium">
-              My Points
-            </p>
-
-            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5 mt-3">
-              <div>
-                <p className="text-6xl font-bold text-white">
-                  {
-                    profile.points ??
-                    0
-                  }
-                </p>
-
-                <p className="text-gray-300 mt-2">
-                  Current points
-                </p>
-              </div>
-
-              <div className="sm:text-right">
-                <p className="text-gray-400 text-sm">
-                  Current Rank
-                </p>
-
-                <p className="text-2xl font-bold text-yellow-400">
-                  {currentRank > 0
-                    ? `#${currentRank}`
-                    : "—"}
-                </p>
-
-                <p className="text-gray-500 text-sm mt-2">
-                  {
-                    ROLE_NAMES[
-                      profile.role
-                    ]
-                  }
-                </p>
-              </div>
-            </div>
-          </section>
-
-          {/* Previous month */}
-          <section className="bg-white/[0.04] border border-yellow-400/20 rounded-3xl p-7">
-            <p className="text-yellow-400 text-sm">
-              {monthLabel ||
-                "Previous Month"}
-            </p>
-
-            <h3 className="text-3xl font-bold mt-1 mb-6">
-              Previous Month
-            </h3>
-
-            {!previousMonth ? (
-              <p className="text-gray-500">
-                No previous month has been completed yet.
+        {/* Latest News */}
+        <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-7">
+          <div className="flex items-center justify-between gap-4 mb-6">
+            <div>
+              <p className="text-yellow-400 text-sm">
+                Club Updates
               </p>
-            ) : (
-              <div className="grid sm:grid-cols-2 gap-5">
-                <div className="bg-yellow-400/10 rounded-2xl p-6">
-                  <div className="text-5xl">
-                    🏆
-                  </div>
 
-                  <p className="text-yellow-400 mt-4 text-sm font-medium">
-                    Top Performer
-                  </p>
+              <h3 className="text-3xl font-bold mt-1">
+                Latest News
+              </h3>
+            </div>
 
-                  <h4 className="text-2xl font-bold mt-1">
-                    {
-                      previousMonth.first_place_name
-                    }
+            <span className="text-sm text-gray-500">
+              {Math.min(news.length, 5)} of {news.length}
+            </span>
+          </div>
+
+          {news.length === 0 ? (
+            <p className="text-gray-500">
+              No news published yet.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {news.slice(0, 5).map((item) => (
+                <article
+                  key={item.id}
+                  className="bg-white/[0.03] border border-white/5 rounded-2xl p-5"
+                >
+                  <h4 className="font-semibold text-lg">
+                    {item.title}
                   </h4>
 
-                  <p className="text-gray-400 mt-2">
-                    {
-                      previousMonth.first_place_points
-                    }{" "}
-                    points
-                  </p>
-                </div>
-
-                <div className="bg-white/[0.03] rounded-2xl p-6">
-                  <div className="text-5xl">
-                    🥈
-                  </div>
-
-                  <p className="text-gray-400 mt-4 text-sm font-medium">
-                    Runner Up
+                  <p className="text-gray-400 text-sm mt-2 whitespace-pre-wrap">
+                    {item.content}
                   </p>
 
-                  <h4 className="text-2xl font-bold mt-1">
-                    {
-                      previousMonth.second_place_name
-                    }
-                  </h4>
+                  {item.created_at && (
+                    <p className="text-gray-600 text-xs mt-3">
+                      {new Date(
+                        item.created_at
+                      ).toLocaleDateString()}
+                    </p>
+                  )}
+                </article>
+              ))}
+            </div>
+          )}
 
-                  <p className="text-gray-400 mt-2">
-                    {
-                      previousMonth.second_place_points
-                    }{" "}
-                    points
-                  </p>
-                </div>
-              </div>
-            )}
-          </section>
-        </div>
+          {news.length > 5 && (
+            <p className="text-gray-600 text-xs mt-4 text-center">
+              Showing the 5 most recent posts. Visit News to see all posts.
+            </p>
+          )}
+        </section>
       </div>
 
       {/* Personal history */}
@@ -2347,37 +2269,6 @@ function Overview({
         )}
       </section>
 
-      {/* News */}
-      <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
-        <h3 className="text-xl font-semibold mb-4">
-          Latest News
-        </h3>
-
-        {news
-          .slice(0, 3)
-          .map(
-            (item) => (
-              <div
-                key={
-                  item.id
-                }
-                className="mb-4"
-              >
-                <h4 className="font-semibold">
-                  {
-                    item.title
-                  }
-                </h4>
-
-                <p className="text-gray-400 text-sm mt-1">
-                  {
-                    item.content
-                  }
-                </p>
-              </div>
-            )
-          )}
-      </section>
     </div>
   );
 }
