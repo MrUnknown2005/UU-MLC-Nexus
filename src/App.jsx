@@ -18,6 +18,7 @@ APP
 
 export default function App() {
   const [session, setSession] = useState(null);
+  const [showLanding, setShowLanding] = useState(true);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -103,7 +104,21 @@ export default function App() {
   }
 
   if (!session) {
-    return <AuthScreen onAuth={loadSession} />;
+    if (showLanding) {
+      return (
+        <LandingPage
+          onLogin={() => setShowLanding(false)}
+          onJoin={() => setShowLanding(false)}
+        />
+      );
+    }
+
+    return (
+      <AuthScreen
+        onAuth={loadSession}
+        onBack={() => setShowLanding(true)}
+      />
+    );
   }
 
   if (!profile) {
@@ -149,11 +164,73 @@ export default function App() {
 
 /*
 =========================================================
+LANDING PAGE
+=========================================================
+*/
+
+function LandingPage({ onLogin, onJoin }) {
+  return (
+    <div className="min-h-screen bg-[#08090b] text-white overflow-hidden relative">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(250,204,21,0.16),transparent_35%),radial-gradient(circle_at_bottom_left,rgba(234,179,8,0.08),transparent_35%)]" />
+      <div className="relative max-w-6xl mx-auto px-6 py-10 md:py-16">
+        <header className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <img src={logo} alt="UU MLC" className="w-12 h-12 object-contain" />
+            <div>
+              <p className="font-bold">UU MLC</p>
+              <p className="text-xs text-gray-500">Nexus</p>
+            </div>
+          </div>
+          <button onClick={onLogin} className="px-4 py-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition">
+            Member Login
+          </button>
+        </header>
+
+        <main className="grid lg:grid-cols-[1.15fr_0.85fr] gap-10 items-center py-16 md:py-24">
+          <section>
+            <span className="inline-flex px-3 py-1 rounded-full bg-yellow-400/10 border border-yellow-400/20 text-yellow-300 text-sm">
+              Interweek • UU MLC
+            </span>
+            <h1 className="text-5xl md:text-7xl font-black tracking-tight mt-6 leading-[0.95]">
+              Learn. Build. <span className="text-yellow-400">Lead.</span>
+            </h1>
+            <p className="text-gray-400 text-lg md:text-xl mt-6 max-w-2xl leading-relaxed">
+              UU MLC Nexus is the club workspace for members, projects, points, tasks, news, and collaboration — all in one place.
+            </p>
+            <div className="flex flex-wrap gap-3 mt-8">
+              <button onClick={onJoin} className="px-6 py-3 rounded-2xl bg-yellow-400 text-black font-bold hover:bg-yellow-300 transition">
+                Join the Club
+              </button>
+              <button onClick={onLogin} className="px-6 py-3 rounded-2xl bg-white/5 border border-white/10 font-semibold hover:bg-white/10 transition">
+                Member Login
+              </button>
+            </div>
+          </section>
+
+          <section className="bg-white/[0.05] border border-white/10 rounded-[2rem] p-7 shadow-2xl backdrop-blur-xl">
+            <img src={logo} alt="UU MLC logo" className="w-32 h-32 object-contain mx-auto" />
+            <div className="grid grid-cols-2 gap-3 mt-7">
+              {[["🏆","Points"],["👥","Community"],["✓","Tasks"],["📰","News"]].map(([icon,label]) => (
+                <div key={label} className="rounded-2xl bg-black/20 border border-white/5 p-5">
+                  <div className="text-2xl">{icon}</div>
+                  <p className="font-semibold mt-2">{label}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+/*
+=========================================================
 AUTH SCREEN
 =========================================================
 */
 
-function AuthScreen({ onAuth }) {
+function AuthScreen({ onAuth, onBack }) {
   const [mode, setMode] = useState("login");
 
   const toggleMode = () => {
@@ -164,11 +241,13 @@ function AuthScreen({ onAuth }) {
 
   return mode === "login" ? (
     <Login
+      onBack={onBack}
       onLogin={onAuth}
       onSwitch={toggleMode}
     />
   ) : (
     <SignUp
+      onBack={onBack}
       onSignup={onAuth}
       onSwitch={toggleMode}
     />
@@ -179,6 +258,7 @@ function AuthLayout({
   title,
   subtitle,
   children,
+  onBack,
 }) {
   return (
     <div className="min-h-screen bg-[#0b0b0d] flex items-center justify-center px-4">
@@ -206,6 +286,10 @@ function AuthLayout({
             </p>
           </div>
 
+          {onBack && (
+            <button onClick={onBack} className="mb-4 text-sm text-gray-500 hover:text-white transition">← Back to home</button>
+          )}
+
           {children}
         </div>
       </div>
@@ -220,6 +304,7 @@ LOGIN
 */
 
 function Login({
+  onBack,
   onLogin,
   onSwitch,
 }) {
@@ -261,6 +346,7 @@ function Login({
 
   return (
     <AuthLayout
+      onBack={onBack}
       title="Welcome Back"
       subtitle="Sign in to UU MLC Nexus"
     >
@@ -357,6 +443,7 @@ SIGN UP
 */
 
 function SignUp({
+  onBack,
   onSignup,
   onSwitch,
 }) {
@@ -441,6 +528,7 @@ function SignUp({
 
   return (
     <AuthLayout
+      onBack={onBack}
       title="Create Account"
       subtitle="Join Uttara University Machine Learning Club"
     >
@@ -824,8 +912,9 @@ function Dashboard({
   onLogout,
   reloadProfile,
 }) {
-  const [tab, setTab] =
-    useState("overview");
+  const [tab, setTab] = useState(() => localStorage.getItem("uu-mlc-active-tab") || "overview");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [todosForBadge, setTodosForBadge] = useState([]);
 
   const [members, setMembers] =
     useState([]);
@@ -1157,6 +1246,27 @@ function Dashboard({
   useEffect(() => {
     loadData();
   }, [profile.role]);
+
+  useEffect(() => {
+    localStorage.setItem("uu-mlc-active-tab", tab);
+    setSidebarOpen(false);
+  }, [tab]);
+
+  useEffect(() => {
+    const loadTodoBadges = async () => {
+      const { data, error } = await supabase
+        .from("todos")
+        .select("id, completed, deadline")
+        .eq("completed", false);
+      if (!error) setTodosForBadge(data || []);
+    };
+    loadTodoBadges();
+    const channel = supabase
+      .channel(`todo-badges-${profile.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "todos" }, loadTodoBadges)
+      .subscribe();
+    return () => supabase.removeChannel(channel);
+  }, [profile.id]);
 
   /*
   =========================================================
@@ -1816,129 +1926,35 @@ function Dashboard({
       />
 
       <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Navigation */}
-        <div className="flex flex-wrap gap-2 mb-8">
-          <Tab
-            active={
-              tab ===
-              "overview"
-            }
-            onClick={() =>
-              setTab(
-                "overview"
-              )
-            }
+        <div className="mb-8 flex items-center justify-between gap-4">
+          <div>
+            <p className="text-gray-500 text-sm">Workspace</p>
+            <h1 className="text-2xl md:text-3xl font-black mt-1">UU MLC Nexus</h1>
+          </div>
+          <button
+            onClick={() => setSidebarOpen((value) => !value)}
+            className="lg:hidden px-4 py-3 rounded-xl bg-white/5 border border-white/10"
           >
-            Overview
-          </Tab>
-
-          <Tab
-            active={
-              tab ===
-              "profile"
-            }
-            onClick={() =>
-              setTab(
-                "profile"
-              )
-            }
-          >
-            Profile
-          </Tab>
-
-          <Tab
-            active={
-              tab ===
-              "directory"
-            }
-            onClick={() =>
-              setTab(
-                "directory"
-              )
-            }
-          >
-            Directory
-          </Tab>
-
-          <Tab
-            active={
-              tab ===
-              "todo"
-            }
-            onClick={() =>
-              setTab(
-                "todo"
-              )
-            }
-          >
-            To-Do
-          </Tab>
-
-          {isAdmin && (
-            <Tab
-              active={
-                tab ===
-                "members"
-              }
-              onClick={() =>
-                setTab(
-                  "members"
-                )
-              }
-            >
-              Members
-            </Tab>
-          )}
-
-          {canAwardPoints && (
-            <Tab
-              active={
-                tab ===
-                "points"
-              }
-              onClick={() =>
-                setTab(
-                  "points"
-                )
-              }
-            >
-              Points
-            </Tab>
-          )}
-
-          {isAdmin && (
-            <Tab
-              active={
-                tab ===
-                "activity"
-              }
-              onClick={() =>
-                setTab(
-                  "activity"
-                )
-              }
-            >
-              Admin Activity
-            </Tab>
-          )}
-
-          {isAdmin && (
-            <Tab
-              active={
-                tab ===
-                "news"
-              }
-              onClick={() =>
-                setTab(
-                  "news"
-                )
-              }
-            >
-              News
-            </Tab>
-          )}
+            ☰ Menu
+          </button>
         </div>
 
+        <div className="flex gap-6 items-start">
+          <aside className={`${sidebarOpen ? "block" : "hidden"} lg:block w-full lg:w-64 flex-shrink-0`}>
+            <div className="sticky top-6 bg-white/[0.04] border border-white/10 rounded-3xl p-3 backdrop-blur-xl">
+              <NavItem active={tab === "overview"} onClick={() => setTab("overview")} icon="⌂">Overview</NavItem>
+              <NavItem active={tab === "profile"} onClick={() => setTab("profile")} icon="◉">Profile</NavItem>
+              <NavItem active={tab === "directory"} onClick={() => setTab("directory")} icon="👥">Directory</NavItem>
+              <NavItem active={tab === "todo"} onClick={() => setTab("todo")} icon="✓" badge={todosForBadge.filter((todo) => todo.deadline && new Date(`${todo.deadline}T00:00:00`) < new Date(new Date().setHours(0,0,0,0))).length}>To-Do</NavItem>
+              {isAdmin && <NavItem active={tab === "members"} onClick={() => setTab("members")} icon="♟" badge={members.filter((member) => member.role === "guest").length}>Members</NavItem>}
+              {canAwardPoints && <NavItem active={tab === "points"} onClick={() => setTab("points")} icon="🏆">Points</NavItem>}
+              {isAdmin && <NavItem active={tab === "activity"} onClick={() => setTab("activity")} icon="▤">History</NavItem>}
+              {isAdmin && <NavItem active={tab === "news"} onClick={() => setTab("news")} icon="📰" badge={news.filter((item) => Date.now() - new Date(item.created_at).getTime() < 7 * 24 * 60 * 60 * 1000).length}>News</NavItem>}
+              <button onClick={onLogout} className="w-full mt-3 px-4 py-3 rounded-2xl text-left text-red-300 hover:bg-red-500/10 transition">↪ Sign out</button>
+            </div>
+          </aside>
+
+          <main className="min-w-0 flex-1">
         {/* Overview */}
         {tab ===
           "overview" && (
@@ -2090,6 +2106,7 @@ function Dashboard({
               activityLog={
                 activityLog
               }
+              members={members}
               isHeadAdmin={
                 isHeadAdmin
               }
@@ -2118,8 +2135,22 @@ function Dashboard({
               }
             />
           )}
+          </main>
+        </div>
       </div>
     </div>
+  );
+}
+
+function NavItem({ active, onClick, icon, children, badge = 0 }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-2xl text-left transition ${active ? "bg-yellow-400 text-black" : "text-gray-300 hover:bg-white/10"}`}
+    >
+      <span className="flex items-center gap-3"><span className="w-6 text-center">{icon}</span>{children}</span>
+      {badge > 0 && <span className={`min-w-6 h-6 px-2 rounded-full text-xs flex items-center justify-center font-bold ${active ? "bg-black text-yellow-300" : "bg-red-500 text-white"}`}>{badge > 99 ? "99+" : badge}</span>}
+    </button>
   );
 }
 
@@ -3977,6 +4008,7 @@ ADMIN ACTIVITY
 
 function AdminActivity({
   activityLog,
+  members = [],
   isHeadAdmin,
   onWipe,
 }) {
@@ -4094,10 +4126,19 @@ function AdminActivity({
                     </p>
 
                     <p className="text-gray-300 text-sm mt-2">
-                      {
-                        item.details
-                      }
+                      {item.details}
                     </p>
+
+                    <div className="flex flex-wrap gap-2 mt-3 text-xs">
+                      <span className="px-2 py-1 rounded-lg bg-yellow-400/10 text-yellow-300">
+                        By: {members.find((member) => member.id === item.admin_id)?.nickname || members.find((member) => member.id === item.admin_id)?.full_name || "Unknown admin"}
+                      </span>
+                      {item.target_user_id && (
+                        <span className="px-2 py-1 rounded-lg bg-white/5 text-gray-400">
+                          Target: {members.find((member) => member.id === item.target_user_id)?.nickname || members.find((member) => member.id === item.target_user_id)?.full_name || "Unknown member"}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   <span className="text-gray-500 text-xs">
