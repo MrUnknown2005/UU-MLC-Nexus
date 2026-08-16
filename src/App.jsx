@@ -2335,6 +2335,18 @@ function Overview({
                     {item.content}
                   </p>
 
+                  {item.image_url && (
+                    <img
+                      src={item.image_url}
+                      alt={item.title || "News attachment"}
+                      className="mt-4 w-full max-h-80 object-cover rounded-xl border border-white/10"
+                      loading="lazy"
+                      onError={(event) => {
+                        event.currentTarget.style.display = "none";
+                      }}
+                    />
+                  )}
+
                   {item.created_at && (
                     <p className="text-gray-600 text-xs mt-3">
                       {new Date(
@@ -2354,6 +2366,59 @@ function Overview({
           )}
         </section>
       </div>
+
+      {/* Previous month top performer + runner up */}
+      <section className="bg-white/[0.04] border border-yellow-400/20 rounded-3xl p-7">
+        <div className="mb-6">
+          <p className="text-yellow-400 text-sm">
+            {monthLabel || "Previous Month"}
+          </p>
+
+          <h3 className="text-3xl font-bold mt-1">
+            Previous Month Top Performers
+          </h3>
+        </div>
+
+        {!previousMonth ? (
+          <p className="text-gray-500">
+            No previous month has been completed yet.
+          </p>
+        ) : (
+          <div className="grid md:grid-cols-2 gap-5">
+            <div className="bg-yellow-400/10 border border-yellow-400/20 rounded-2xl p-6">
+              <div className="text-4xl">🏆</div>
+
+              <p className="text-yellow-400 mt-4 text-sm font-semibold uppercase tracking-wide">
+                Top Performer
+              </p>
+
+              <h4 className="text-2xl font-bold mt-1">
+                {previousMonth.first_place_name || "Unknown"}
+              </h4>
+
+              <p className="text-gray-400 mt-1">
+                {previousMonth.first_place_points ?? 0} points
+              </p>
+            </div>
+
+            <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-6">
+              <div className="text-4xl">🥈</div>
+
+              <p className="text-gray-400 mt-4 text-sm font-semibold uppercase tracking-wide">
+                Runner Up
+              </p>
+
+              <h4 className="text-2xl font-bold mt-1">
+                {previousMonth.second_place_name || "Unknown"}
+              </h4>
+
+              <p className="text-gray-400 mt-1">
+                {previousMonth.second_place_points ?? 0} points
+              </p>
+            </div>
+          </div>
+        )}
+      </section>
 
       {/* Personal history */}
       <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
