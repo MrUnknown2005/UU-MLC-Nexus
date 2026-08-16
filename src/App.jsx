@@ -2330,6 +2330,18 @@ function Overview({
                     {item.content}
                   </p>
 
+                  {item.image_url && (
+                    <img
+                      src={item.image_url}
+                      alt={item.title || "News attachment"}
+                      className="mt-4 w-full max-h-80 object-cover rounded-xl border border-white/10"
+                      loading="lazy"
+                      onError={(event) => {
+                        event.currentTarget.style.display = "none";
+                      }}
+                    />
+                  )}
+
                   {item.created_at && (
                     <p className="text-gray-600 text-xs mt-3">
                       {new Date(
