@@ -2134,7 +2134,7 @@ function Overview({
         />
       </div>
 
-      {/* Leaderboard + Previous Month */}
+      {/* Leaderboard + My Points + Previous Month */}
       <div className="grid xl:grid-cols-2 gap-7 items-start">
         {/* Current leaderboard */}
         <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-7">
@@ -2215,71 +2215,116 @@ function Overview({
           )}
         </section>
 
-        {/* Previous month */}
-        <section className="bg-white/[0.04] border border-yellow-400/20 rounded-3xl p-7">
-          <p className="text-yellow-400 text-sm">
-            {monthLabel ||
-              "Previous Month"}
-          </p>
-
-          <h3 className="text-3xl font-bold mt-1 mb-6">
-            Previous Month
-          </h3>
-
-          {!previousMonth ? (
-            <p className="text-gray-500">
-              No previous month has been completed yet.
+        {/* My Points + Previous Month */}
+        <div className="space-y-7">
+          {/* My points */}
+          <section className="bg-yellow-400/10 border border-yellow-400/30 rounded-3xl p-7">
+            <p className="text-yellow-400 text-sm font-medium">
+              My Points
             </p>
-          ) : (
-            <div className="grid sm:grid-cols-2 gap-5">
-              <div className="bg-yellow-400/10 rounded-2xl p-7">
-                <div className="text-5xl">
-                  🏆
-                </div>
 
-                <p className="text-yellow-400 mt-5 text-sm font-medium">
-                  Top Performer
+            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5 mt-3">
+              <div>
+                <p className="text-6xl font-bold text-white">
+                  {
+                    profile.points ??
+                    0
+                  }
                 </p>
 
-                <h4 className="text-3xl font-bold mt-1">
-                  {
-                    previousMonth.first_place_name
-                  }
-                </h4>
-
-                <p className="text-gray-400 mt-2 text-lg">
-                  {
-                    previousMonth.first_place_points
-                  }{" "}
-                  points
+                <p className="text-gray-300 mt-2">
+                  Current points
                 </p>
               </div>
 
-              <div className="bg-white/[0.03] rounded-2xl p-7">
-                <div className="text-5xl">
-                  🥈
-                </div>
-
-                <p className="text-gray-400 mt-5 text-sm font-medium">
-                  Runner Up
+              <div className="sm:text-right">
+                <p className="text-gray-400 text-sm">
+                  Current Rank
                 </p>
 
-                <h4 className="text-3xl font-bold mt-1">
-                  {
-                    previousMonth.second_place_name
-                  }
-                </h4>
+                <p className="text-2xl font-bold text-yellow-400">
+                  {currentRank > 0
+                    ? `#${currentRank}`
+                    : "—"}
+                </p>
 
-                <p className="text-gray-400 mt-2 text-lg">
+                <p className="text-gray-500 text-sm mt-2">
                   {
-                    previousMonth.second_place_points
-                  }{" "}
-                  points
+                    ROLE_NAMES[
+                      profile.role
+                    ]
+                  }
                 </p>
               </div>
             </div>
-          )}
-        </section>
+          </section>
+
+          {/* Previous month */}
+          <section className="bg-white/[0.04] border border-yellow-400/20 rounded-3xl p-7">
+            <p className="text-yellow-400 text-sm">
+              {monthLabel ||
+                "Previous Month"}
+            </p>
+
+            <h3 className="text-3xl font-bold mt-1 mb-6">
+              Previous Month
+            </h3>
+
+            {!previousMonth ? (
+              <p className="text-gray-500">
+                No previous month has been completed yet.
+              </p>
+            ) : (
+              <div className="grid sm:grid-cols-2 gap-5">
+                <div className="bg-yellow-400/10 rounded-2xl p-6">
+                  <div className="text-5xl">
+                    🏆
+                  </div>
+
+                  <p className="text-yellow-400 mt-4 text-sm font-medium">
+                    Top Performer
+                  </p>
+
+                  <h4 className="text-2xl font-bold mt-1">
+                    {
+                      previousMonth.first_place_name
+                    }
+                  </h4>
+
+                  <p className="text-gray-400 mt-2">
+                    {
+                      previousMonth.first_place_points
+                    }{" "}
+                    points
+                  </p>
+                </div>
+
+                <div className="bg-white/[0.03] rounded-2xl p-6">
+                  <div className="text-5xl">
+                    🥈
+                  </div>
+
+                  <p className="text-gray-400 mt-4 text-sm font-medium">
+                    Runner Up
+                  </p>
+
+                  <h4 className="text-2xl font-bold mt-1">
+                    {
+                      previousMonth.second_place_name
+                    }
+                  </h4>
+
+                  <p className="text-gray-400 mt-2">
+                    {
+                      previousMonth.second_place_points
+                    }{" "}
+                    points
+                  </p>
+                </div>
+              </div>
+            )}
+          </section>
+        </div>
       </div>
 
       {/* Personal history */}
