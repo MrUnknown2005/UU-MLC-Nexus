@@ -1918,6 +1918,50 @@ function Dashboard({
         profile.id
     ) + 1;
 
+  const pendingMemberCount =
+    members.filter(
+      (member) =>
+        member.role === "guest" &&
+        member.is_active !== false
+    ).length;
+
+  const overdueTodoCount =
+    todosForBadge.filter(
+      (todo) =>
+        todo.deadline &&
+        new Date(
+          `${todo.deadline}T00:00:00`
+        ) <
+          new Date(
+            new Date().setHours(
+              0,
+              0,
+              0,
+              0
+            )
+          )
+    ).length;
+
+  const recentNewsCount =
+    news.filter(
+      (item) =>
+        item.created_at &&
+        Date.now() -
+          new Date(
+            item.created_at
+          ).getTime() <
+          7 *
+            24 *
+            60 *
+            60 *
+            1000
+    ).length;
+
+  const notificationCount =
+    pendingMemberCount +
+    overdueTodoCount +
+    recentNewsCount;
+
   return (
     <div className="min-h-screen bg-[#0b0b0d] text-white">
       <Header
@@ -1929,15 +1973,166 @@ function Dashboard({
         <div className="mb-8 flex items-center justify-between gap-4">
           <div>
             <p className="text-gray-500 text-sm">Workspace</p>
-            <h1 className="text-2xl md:text-3xl font-black mt-1">UU MLC Nexus</h1>
+            <h1 className="text-2xl md:text-3xl font-black mt-1">
+              UU MLC Nexus
+            </h1>
           </div>
-          <button
-            onClick={() => setSidebarOpen((value) => !value)}
-            className="lg:hidden px-4 py-3 rounded-xl bg-white/5 border border-white/10"
-          >
-            ☰ Menu
-          </button>
+
+          <div className="flex items-center gap-3">
+            <div className="relative group">
+              <button
+                type="button"
+                className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition flex items-center justify-center"
+                aria-label="Notifications"
+              >
+                <span className="text-lg">
+                  🔔
+                </span>
+
+                {notificationCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                    {notificationCount > 99
+                      ? "99+"
+                      : notificationCount}
+                  </span>
+                )}
+              </button>
+
+              {notificationCount > 0 && (
+                <div className="absolute right-0 top-12 z-50 w-80 rounded-2xl bg-[#151519] border border-white/10 shadow-2xl p-4 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition">
+                  <p className="font-semibold">
+                    Notifications
+                  </p>
+
+                  <div className="space-y-2 mt-3">
+                    {pendingMemberCount > 0 && (
+                      <button
+                        onClick={() =>
+                          setTab("members")
+                        }
+                        className="w-full text-left rounded-xl bg-yellow-400/10 border border-yellow-400/20 p-3 hover:bg-yellow-400/15 transition"
+                      >
+                        <p className="text-yellow-300 text-sm font-semibold">
+                          Pending members
+                        </p>
+                        <p className="text-gray-400 text-xs mt-1">
+                          {pendingMemberCount}{" "}
+                          {pendingMemberCount === 1
+                            ? "join request"
+                            : "join requests"}{" "}
+                          need review.
+                        </p>
+                      </button>
+                    )}
+
+                    {overdueTodoCount > 0 && (
+                      <button
+                        onClick={() =>
+                          setTab("todo")
+                        }
+                        className="w-full text-left rounded-xl bg-red-500/10 border border-red-400/20 p-3 hover:bg-red-500/15 transition"
+                      >
+                        <p className="text-red-300 text-sm font-semibold">
+                          Overdue tasks
+                        </p>
+                        <p className="text-gray-400 text-xs mt-1">
+                          {overdueTodoCount}{" "}
+                          {overdueTodoCount === 1
+                            ? "task is"
+                            : "tasks are"}{" "}
+                          overdue.
+                        </p>
+                      </button>
+                    )}
+
+                    {recentNewsCount > 0 && (
+                      <button
+                        onClick={() =>
+                          setTab("news")
+                        }
+                        className="w-full text-left rounded-xl bg-blue-500/10 border border-blue-400/20 p-3 hover:bg-blue-500/15 transition"
+                      >
+                        <p className="text-blue-300 text-sm font-semibold">
+                          Recent news
+                        </p>
+                        <p className="text-gray-400 text-xs mt-1">
+                          {recentNewsCount}{" "}
+                          recent{" "}
+                          {recentNewsCount === 1
+                            ? "announcement"
+                            : "announcements"}{" "}
+                          this week.
+                        </p>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={() =>
+                setSidebarOpen(
+                  (value) => !value
+                )
+              }
+              className="lg:hidden px-4 py-3 rounded-xl bg-white/5 border border-white/10"
+            >
+              ☰ Menu
+            </button>
+          </div>
         </div>
+
+        {notificationCount > 0 && (
+          <section className="mb-6 rounded-3xl border border-yellow-400/20 bg-yellow-400/[0.04] p-5">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <p className="text-yellow-400 text-sm font-semibold">
+                  {notificationCount}{" "}
+                  {notificationCount === 1
+                    ? "item needs"
+                    : "items need"}{" "}
+                  your attention
+                </p>
+
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {pendingMemberCount > 0 && (
+                    <button
+                      onClick={() =>
+                        setTab("members")
+                      }
+                      className="px-3 py-2 rounded-xl bg-white/[0.04] border border-white/10 text-xs text-gray-300 hover:bg-white/10 transition"
+                    >
+                      👥 {pendingMemberCount} pending
+                    </button>
+                  )}
+
+                  {overdueTodoCount > 0 && (
+                    <button
+                      onClick={() =>
+                        setTab("todo")
+                      }
+                      className="px-3 py-2 rounded-xl bg-red-500/10 border border-red-400/20 text-xs text-red-300 hover:bg-red-500/20 transition"
+                    >
+                      ✓ {overdueTodoCount} overdue
+                    </button>
+                  )}
+
+                  {recentNewsCount > 0 && (
+                    <button
+                      onClick={() =>
+                        setTab("news")
+                      }
+                      className="px-3 py-2 rounded-xl bg-blue-500/10 border border-blue-400/20 text-xs text-blue-300 hover:bg-blue-500/20 transition"
+                    >
+                      📰 {recentNewsCount} recent
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
 
         <div className="flex gap-6 items-start">
           <aside className={`${sidebarOpen ? "block" : "hidden"} lg:block w-full lg:w-64 flex-shrink-0`}>
@@ -1945,11 +2140,11 @@ function Dashboard({
               <NavItem active={tab === "overview"} onClick={() => setTab("overview")} icon="⌂">Overview</NavItem>
               <NavItem active={tab === "profile"} onClick={() => setTab("profile")} icon="◉">Profile</NavItem>
               <NavItem active={tab === "directory"} onClick={() => setTab("directory")} icon="👥">Directory</NavItem>
-              <NavItem active={tab === "todo"} onClick={() => setTab("todo")} icon="✓" badge={todosForBadge.filter((todo) => todo.deadline && new Date(`${todo.deadline}T00:00:00`) < new Date(new Date().setHours(0,0,0,0))).length}>To-Do</NavItem>
-              {isAdmin && <NavItem active={tab === "members"} onClick={() => setTab("members")} icon="♟" badge={members.filter((member) => member.role === "guest").length}>Members</NavItem>}
+              <NavItem active={tab === "todo"} onClick={() => setTab("todo")} icon="✓" badge={overdueTodoCount}>To-Do</NavItem>
+              {isAdmin && <NavItem active={tab === "members"} onClick={() => setTab("members")} icon="♟" badge={pendingMemberCount}>Members</NavItem>}
               {canAwardPoints && <NavItem active={tab === "points"} onClick={() => setTab("points")} icon="🏆">Points</NavItem>}
               {isAdmin && <NavItem active={tab === "activity"} onClick={() => setTab("activity")} icon="▤">History</NavItem>}
-              {isAdmin && <NavItem active={tab === "news"} onClick={() => setTab("news")} icon="📰" badge={news.filter((item) => Date.now() - new Date(item.created_at).getTime() < 7 * 24 * 60 * 60 * 1000).length}>News</NavItem>}
+              {isAdmin && <NavItem active={tab === "news"} onClick={() => setTab("news")} icon="📰" badge={recentNewsCount}>News</NavItem>}
               <button onClick={onLogout} className="w-full mt-3 px-4 py-3 rounded-2xl text-left text-red-300 hover:bg-red-500/10 transition">↪ Sign out</button>
             </div>
           </aside>
@@ -4012,149 +4207,381 @@ function AdminActivity({
   isHeadAdmin,
   onWipe,
 }) {
-  const [filter, setFilter] =
+  const [search, setSearch] =
+    useState("");
+
+  const [actionFilter, setActionFilter] =
     useState("all");
+
+  const [actorFilter, setActorFilter] =
+    useState("all");
+
+  const getMember = (id) =>
+    members.find(
+      (member) => member.id === id
+    );
 
   const actionTypes = [
     ...new Set(
-      activityLog.map(
-        (item) =>
-          item.action
-      )
+      activityLog
+        .map(
+          (item) => item.action
+        )
+        .filter(Boolean)
     ),
   ];
 
+  const actorIds = [
+    ...new Set(
+      activityLog
+        .map(
+          (item) => item.admin_id
+        )
+        .filter(Boolean)
+    ),
+  ];
+
+  const actionLabel = (action) =>
+    String(action || "UNKNOWN")
+      .replaceAll("_", " ")
+      .toLowerCase()
+      .replace(/\b\w/g, (letter) =>
+        letter.toUpperCase()
+      );
+
+  const actionTone = (action) => {
+    const value =
+      String(action || "");
+
+    if (
+      value.includes("WIPE") ||
+      value.includes("DELETE") ||
+      value.includes("DEACTIVATED")
+    ) {
+      return "bg-red-500/10 text-red-300 border-red-400/20";
+    }
+
+    if (
+      value.includes("POINT") ||
+      value.includes("PROMOT") ||
+      value.includes("ROLE")
+    ) {
+      return "bg-yellow-400/10 text-yellow-300 border-yellow-400/20";
+    }
+
+    if (
+      value.includes("TODO") ||
+      value.includes("NEWS")
+    ) {
+      return "bg-blue-500/10 text-blue-300 border-blue-400/20";
+    }
+
+    return "bg-white/[0.04] text-gray-300 border-white/10";
+  };
+
   const filtered =
-    filter ===
-    "all"
-      ? activityLog
-      : activityLog.filter(
-          (item) =>
-            item.action ===
-            filter
+    activityLog.filter(
+      (item) => {
+        const actor =
+          getMember(item.admin_id);
+
+        const target =
+          getMember(
+            item.target_user_id
+          );
+
+        const actorName =
+          actor?.nickname ||
+          actor?.full_name ||
+          "Unknown admin";
+
+        const targetName =
+          target?.nickname ||
+          target?.full_name ||
+          "Unknown member";
+
+        const searchable = [
+          actorName,
+          targetName,
+          item.action,
+          item.details,
+          item.created_at,
+        ]
+          .join(" ")
+          .toLowerCase();
+
+        const matchesSearch =
+          !search.trim() ||
+          searchable.includes(
+            search
+              .trim()
+              .toLowerCase()
+          );
+
+        const matchesAction =
+          actionFilter ===
+            "all" ||
+          item.action ===
+            actionFilter;
+
+        const matchesActor =
+          actorFilter ===
+            "all" ||
+          item.admin_id ===
+            actorFilter;
+
+        return (
+          matchesSearch &&
+          matchesAction &&
+          matchesActor
         );
+      }
+    );
 
   return (
     <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold">
+          <p className="text-yellow-400 text-sm">
+            Accountability
+          </p>
+
+          <h2 className="text-2xl font-bold mt-1">
             Admin Activity History
           </h2>
 
           <p className="text-gray-500 text-sm mt-1">
-            Administrative changes made in the system.
+            See who did what, who it affected,
+            and exactly when it happened.
           </p>
         </div>
 
         {isHeadAdmin && (
           <button
-            onClick={
-              onWipe
-            }
-            className="px-5 py-3 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-500"
+            onClick={onWipe}
+            className="px-5 py-3 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-500 transition"
           >
             Wipe Activity History
           </button>
         )}
       </div>
 
-      <div className="flex flex-wrap gap-2 mt-6 mb-6">
-        <button
-          onClick={() =>
-            setFilter("all")
+      <div className="grid lg:grid-cols-[2fr_1fr_1fr] gap-3 mt-6">
+        <input
+          value={search}
+          onChange={(event) =>
+            setSearch(
+              event.target.value
+            )
           }
-          className={`px-4 py-2 rounded-xl text-sm ${
-            filter ===
-            "all"
-              ? "bg-yellow-400 text-black"
-              : "bg-white/5 text-gray-300"
-          }`}
-        >
-          All
-        </button>
+          placeholder="Search actor, target, action, or details..."
+          className="w-full rounded-xl bg-black/20 border border-white/10 px-4 py-3 text-sm text-white placeholder:text-gray-600 outline-none focus:border-yellow-400/40"
+        />
 
-        {actionTypes.map(
-          (action) => (
-            <button
-              key={
-                action
-              }
-              onClick={() =>
-                setFilter(
-                  action
-                )
-              }
-              className={`px-4 py-2 rounded-xl text-sm ${
-                filter ===
-                action
-                  ? "bg-yellow-400 text-black"
-                  : "bg-white/5 text-gray-300"
-              }`}
-            >
-              {action.replaceAll(
-                "_",
-                " "
-              )}
-            </button>
-          )
+        <select
+          value={actionFilter}
+          onChange={(event) =>
+            setActionFilter(
+              event.target.value
+            )
+          }
+          className="rounded-xl bg-black/20 border border-white/10 px-4 py-3 text-sm text-white outline-none"
+        >
+          <option value="all">
+            All actions
+          </option>
+
+          {actionTypes.map(
+            (action) => (
+              <option
+                key={action}
+                value={action}
+              >
+                {actionLabel(action)}
+              </option>
+            )
+          )}
+        </select>
+
+        <select
+          value={actorFilter}
+          onChange={(event) =>
+            setActorFilter(
+              event.target.value
+            )
+          }
+          className="rounded-xl bg-black/20 border border-white/10 px-4 py-3 text-sm text-white outline-none"
+        >
+          <option value="all">
+            All actors
+          </option>
+
+          {actorIds.map(
+            (id) => {
+              const actor =
+                getMember(id);
+
+              return (
+                <option
+                  key={id}
+                  value={id}
+                >
+                  {actor?.nickname ||
+                    actor?.full_name ||
+                    "Unknown admin"}
+                </option>
+              );
+            }
+          )}
+        </select>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 mt-4 text-xs text-gray-500">
+        <span>
+          Showing{" "}
+          {filtered.length} of{" "}
+          {activityLog.length} activities
+        </span>
+
+        {(search ||
+          actionFilter !==
+            "all" ||
+          actorFilter !==
+            "all") && (
+          <button
+            onClick={() => {
+              setSearch("");
+              setActionFilter(
+                "all"
+              );
+              setActorFilter(
+                "all"
+              );
+            }}
+            className="text-yellow-400 hover:text-yellow-300"
+          >
+            Clear filters
+          </button>
         )}
       </div>
 
       {filtered.length ===
       0 ? (
-        <p className="text-gray-500 text-center py-12">
-          No administrative activity recorded.
-        </p>
+        <div className="text-gray-500 text-center py-12">
+          No matching administrative
+          activity found.
+        </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-3 mt-5">
           {filtered.map(
-            (item) => (
-              <div
-                key={
-                  item.id
-                }
-                className="bg-white/[0.03] border border-white/5 rounded-2xl p-5"
-              >
-                <div className="flex flex-wrap justify-between gap-3">
-                  <div>
-                    <p className="text-yellow-400 font-semibold uppercase text-sm">
-                      {item.action.replaceAll(
-                        "_",
-                        " "
-                      )}
-                    </p>
+            (item) => {
+              const actor =
+                getMember(
+                  item.admin_id
+                );
 
-                    <p className="text-gray-300 text-sm mt-2">
-                      {item.details}
-                    </p>
+              const target =
+                getMember(
+                  item.target_user_id
+                );
 
-                    <div className="flex flex-wrap gap-2 mt-3 text-xs">
-                      <span className="px-2 py-1 rounded-lg bg-yellow-400/10 text-yellow-300">
-                        By: {members.find((member) => member.id === item.admin_id)?.nickname || members.find((member) => member.id === item.admin_id)?.full_name || "Unknown admin"}
-                      </span>
-                      {item.target_user_id && (
-                        <span className="px-2 py-1 rounded-lg bg-white/5 text-gray-400">
-                          Target: {members.find((member) => member.id === item.target_user_id)?.nickname || members.find((member) => member.id === item.target_user_id)?.full_name || "Unknown member"}
+              const actorName =
+                actor?.nickname ||
+                actor?.full_name ||
+                "Unknown admin";
+
+              const targetName =
+                target?.nickname ||
+                target?.full_name ||
+                null;
+
+              return (
+                <div
+                  key={item.id}
+                  className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 hover:bg-white/[0.045] transition"
+                >
+                  <div className="flex items-start gap-3">
+                    <SafeImage
+                      src={
+                        actor?.avatar_url ||
+                        logo
+                      }
+                      alt=""
+                      className="w-11 h-11 rounded-full object-cover shrink-0"
+                    />
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-semibold text-white">
+                          {actorName}
                         </span>
+
+                        <span className="text-gray-600">
+                          →
+                        </span>
+
+                        <span
+                          className={`px-2.5 py-1 rounded-lg border text-xs font-semibold ${actionTone(
+                            item.action
+                          )}`}
+                        >
+                          {actionLabel(
+                            item.action
+                          )}
+                        </span>
+
+                        {actor?.role && (
+                          <span className="px-2 py-1 rounded-lg bg-white/[0.04] border border-white/10 text-gray-500 text-xs">
+                            {ROLE_NAMES[
+                              actor.role
+                            ] ||
+                              actor.role}
+                          </span>
+                        )}
+                      </div>
+
+                      {targetName && (
+                        <p className="text-sm text-gray-300 mt-2">
+                          Target:{" "}
+                          <span className="font-semibold text-white">
+                            {targetName}
+                          </span>
+                        </p>
                       )}
+
+                      {item.details && (
+                        <p className="text-sm text-gray-400 mt-1 whitespace-pre-wrap">
+                          {item.details}
+                        </p>
+                      )}
+
+                      <p className="text-xs text-gray-600 mt-3">
+                        {item.created_at
+                          ? new Date(
+                              item.created_at
+                            ).toLocaleString(
+                              undefined,
+                              {
+                                dateStyle:
+                                  "medium",
+                                timeStyle:
+                                  "short",
+                              }
+                            )
+                          : "Unknown time"}
+                      </p>
                     </div>
                   </div>
-
-                  <span className="text-gray-500 text-xs">
-                    {new Date(
-                      item.created_at
-                    ).toLocaleString()}
-                  </span>
                 </div>
-              </div>
-            )
+              );
+            }
           )}
         </div>
       )}
     </section>
   );
 }
+
 
 /*
 =========================================================
