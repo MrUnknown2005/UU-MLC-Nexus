@@ -2879,24 +2879,16 @@ function Profile({
   onLogAction,
 }) {
   const [fullName, setFullName] =
-    useState(
-      profile.full_name || ""
-    );
+    useState(profile.full_name || "");
 
   const [nickname, setNickname] =
-    useState(
-      profile.nickname || ""
-    );
+    useState(profile.nickname || "");
 
   const [bio, setBio] =
-    useState(
-      profile.bio || ""
-    );
+    useState(profile.bio || "");
 
   const [avatarUrl, setAvatarUrl] =
-    useState(
-      profile.avatar_url || ""
-    );
+    useState(profile.avatar_url || "");
 
   const [saving, setSaving] =
     useState(false);
@@ -2904,43 +2896,32 @@ function Profile({
   const [message, setMessage] =
     useState("");
 
-  /*
-  =========================================================
-  AVATAR UPLOAD + OLD AVATAR CLEANUP
-  =========================================================
-  */
+  const [editMode, setEditMode] =
+    useState(false);
 
   const uploadAvatar =
-    async (e) => {
+    async (event) => {
       const file =
-        e.target.files?.[0];
+        event.target.files?.[0];
 
       if (!file) {
         return;
       }
 
-      if (
-        !file.type.startsWith(
-          "image/"
-        )
-      ) {
+      if (!file.type.startsWith("image/")) {
         setMessage(
           "Please choose an image file."
         );
-
         return;
       }
 
       if (
         file.size >
-        5 *
-          1024 *
-          1024
+        5 * 1024 * 1024
       ) {
         setMessage(
           "Image must be smaller than 5 MB."
         );
-
         return;
       }
 
@@ -2948,33 +2929,19 @@ function Profile({
       setMessage("");
 
       try {
-        /*
-          Use ONE fixed filename for the user.
-
-          Example:
-          USER_ID/avatar
-        */
         const filePath =
           `${profile.id}/avatar`;
 
-        /*
-          Upload the new image first.
-          If upload fails, old image remains.
-        */
         const {
-          error:
-            uploadError,
+          error: uploadError,
         } =
           await supabase.storage
-            .from(
-              "avatars"
-            )
+            .from("avatars")
             .upload(
               filePath,
               file,
               {
-                upsert:
-                  true,
+                upsert: true,
                 contentType:
                   file.type,
                 cacheControl:
@@ -2991,22 +2958,16 @@ function Profile({
           setMessage(
             `Upload failed: ${uploadError.message}`
           );
-
           return;
         }
 
-        /*
-          Get public URL.
-        */
         const {
           data: {
             publicUrl,
           },
         } =
           supabase.storage
-            .from(
-              "avatars"
-            )
+            .from("avatars")
             .getPublicUrl(
               filePath
             );
@@ -3015,27 +2976,18 @@ function Profile({
           setMessage(
             "The image uploaded, but no public URL was returned."
           );
-
           return;
         }
 
-        /*
-          Cache-busting.
-        */
         const finalUrl =
           `${publicUrl}?v=${Date.now()}`;
 
-        /*
-          Save the URL.
-        */
         const {
           error:
             profileError,
         } =
           await supabase
-            .from(
-              "profiles"
-            )
+            .from("profiles")
             .update({
               avatar_url:
                 finalUrl,
@@ -3054,58 +3006,31 @@ function Profile({
           setMessage(
             `Image uploaded, but profile update failed: ${profileError.message}`
           );
-
           return;
         }
 
-        /*
-          Update UI immediately.
-        */
         setAvatarUrl(
           finalUrl
         );
 
-        /*
-          ---------------------------------------------------
-          CLEAN UP OLD AVATAR FILES
-          ---------------------------------------------------
-
-          Keep ONLY:
-            USER_ID/avatar
-
-          Delete:
-            avatar.jpg
-            avatar.png
-            old timestamp files
-            old filenames
-            etc.
-        */
         const {
           data: oldFiles,
-          error:
-            listError,
+          error: listError,
         } =
           await supabase.storage
-            .from(
-              "avatars"
-            )
+            .from("avatars")
             .list(
               profile.id
             );
 
         if (listError) {
-          /*
-            Do not fail the successful upload
-            because cleanup failed.
-          */
           console.error(
             "Avatar cleanup list error:",
             listError
           );
         } else if (
           oldFiles &&
-          oldFiles.length >
-            0
+          oldFiles.length > 0
         ) {
           const filesToDelete =
             oldFiles
@@ -3128,18 +3053,12 @@ function Profile({
                 deleteError,
             } =
               await supabase.storage
-                .from(
-                  "avatars"
-                )
+                .from("avatars")
                 .remove(
                   filesToDelete
                 );
 
             if (deleteError) {
-              /*
-                Upload/profile update already succeeded.
-                Cleanup failure is only logged.
-              */
               console.error(
                 "Old avatar cleanup error:",
                 deleteError
@@ -3154,9 +3073,12 @@ function Profile({
 
         if (onLogAction) {
           await onLogAction({
-            action: "PROFILE_PICTURE_UPDATED",
-            targetUserId: profile.id,
-            details: "Updated profile picture.",
+            action:
+              "PROFILE_PICTURE_UPDATED",
+            targetUserId:
+              profile.id,
+            details:
+              "Updated profile picture.",
           });
         }
 
@@ -3172,23 +3094,30 @@ function Profile({
         );
       } finally {
         setSaving(false);
-
-        /*
-          Allows selecting the same file again.
-        */
-        e.target.value = "";
+        event.target.value = "";
       }
     };
 
-  /*
-  =========================================================
-  SAVE PROFILE
-  =========================================================
-  */
+  const resetEdits = () => {
+    setFullName(
+      profile.full_name || ""
+    );
+    setNickname(
+      profile.nickname || ""
+    );
+    setBio(
+      profile.bio || ""
+    );
+    setAvatarUrl(
+      profile.avatar_url || ""
+    );
+    setMessage("");
+    setEditMode(false);
+  };
 
   const saveProfile =
-    async (e) => {
-      e.preventDefault();
+    async (event) => {
+      event.preventDefault();
 
       setSaving(true);
       setMessage("");
@@ -3197,14 +3126,14 @@ function Profile({
         error,
       } =
         await supabase
-          .from(
-            "profiles"
-          )
+          .from("profiles")
           .update({
             full_name:
-              fullName,
-            nickname,
-            bio,
+              fullName.trim(),
+            nickname:
+              nickname.trim(),
+            bio:
+              bio.trim(),
             avatar_url:
               avatarUrl ||
               null,
@@ -3218,9 +3147,7 @@ function Profile({
         setMessage(
           error.message
         );
-
         setSaving(false);
-
         return;
       }
 
@@ -3230,137 +3157,321 @@ function Profile({
 
       if (onLogAction) {
         await onLogAction({
-          action: "PROFILE_UPDATED",
-          targetUserId: profile.id,
-          details: "Updated profile name, nickname, bio, or avatar settings.",
+          action:
+            "PROFILE_UPDATED",
+          targetUserId:
+            profile.id,
+          details:
+            "Updated profile name, nickname, bio, or avatar settings.",
         });
       }
 
       await reloadProfile();
 
+      setEditMode(false);
       setSaving(false);
     };
 
+  const displayName =
+    profile.nickname ||
+    profile.full_name ||
+    "UU MLC Member";
+
+  const initials =
+    displayName
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map(
+        (word) =>
+          word[0]?.toUpperCase()
+      )
+      .join("") ||
+    "M";
+
   return (
-    <section className="max-w-3xl bg-white/[0.04] border border-white/10 rounded-3xl p-6">
-      <div className="flex items-center gap-5 mb-8">
-        <SafeImage
-          src={
-            avatarUrl ||
-            logo
-          }
-          alt="Profile"
-          className="w-24 h-24 rounded-full object-cover border-2 border-yellow-400/40"
-        />
+    <div className="space-y-6">
+      {/* Profile hero */}
+      <section className="relative overflow-hidden bg-white/[0.04] border border-white/10 rounded-3xl p-6 md:p-8">
+        <div className="absolute -right-24 -top-32 w-96 h-96 rounded-full bg-yellow-400/10 blur-3xl pointer-events-none" />
 
-        <div>
-          <h2 className="text-3xl font-bold">
-            Your Profile
-          </h2>
+        <div className="relative flex flex-col md:flex-row md:items-center gap-6">
+          <div className="relative shrink-0">
+            <div className="w-32 h-32 rounded-3xl overflow-hidden border-2 border-yellow-400/30 bg-white/[0.03]">
+              {avatarUrl ? (
+                <SafeImage
+                  src={avatarUrl}
+                  alt={displayName}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-4xl font-black text-yellow-400">
+                  {initials}
+                </div>
+              )}
+            </div>
 
-          <p className="text-yellow-400">
-            {
-              ROLE_NAMES[
-                profile.role
-              ]
-            }
+            {editMode && (
+              <label className="absolute -bottom-2 -right-2 w-10 h-10 rounded-xl bg-yellow-400 text-black flex items-center justify-center cursor-pointer shadow-lg hover:bg-yellow-300 transition">
+                ✎
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={uploadAvatar}
+                  disabled={saving}
+                  className="hidden"
+                />
+              </label>
+            )}
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <p className="text-yellow-400 text-sm font-semibold">
+              Member Profile
+            </p>
+
+            <h2 className="text-3xl md:text-4xl font-black mt-1 truncate">
+              {displayName}
+            </h2>
+
+            {profile.nickname &&
+              profile.full_name &&
+              profile.nickname !==
+                profile.full_name && (
+                <p className="text-gray-500 mt-1">
+                  {profile.full_name}
+                </p>
+              )}
+
+            <div className="flex flex-wrap gap-2 mt-4">
+              <span className="px-3 py-1.5 rounded-full bg-yellow-400/10 border border-yellow-400/20 text-yellow-300 text-xs font-semibold">
+                {ROLE_NAMES[
+                  profile.role
+                ]}
+              </span>
+
+              <span className="px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/10 text-gray-300 text-xs font-semibold">
+                {profile.points ?? 0} points
+              </span>
+            </div>
+          </div>
+
+          {!editMode && (
+            <button
+              type="button"
+              onClick={() => {
+                setMessage("");
+                setEditMode(true);
+              }}
+              className="px-5 py-3 rounded-xl bg-yellow-400 text-black font-bold hover:bg-yellow-300 transition shrink-0"
+            >
+              Edit Profile
+            </button>
+          )}
+        </div>
+      </section>
+
+      {/* Member summary */}
+      <section className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="bg-white/[0.04] border border-white/10 rounded-2xl p-5">
+          <p className="text-gray-600 text-xs uppercase tracking-wider">
+            Points
+          </p>
+
+          <p className="text-3xl font-black mt-2">
+            {profile.points ?? 0}
+          </p>
+
+          <p className="text-gray-500 text-xs mt-1">
+            Current club points
           </p>
         </div>
-      </div>
 
-      <form
-        onSubmit={
-          saveProfile
-        }
-        className="space-y-4"
-      >
-        <input
-          value={
-            fullName
-          }
-          onChange={(e) =>
-            setFullName(
-              e.target
-                .value
-            )
-          }
-          placeholder="Full name"
-          className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white"
-        />
+        <div className="bg-white/[0.04] border border-white/10 rounded-2xl p-5">
+          <p className="text-gray-600 text-xs uppercase tracking-wider">
+            Role
+          </p>
 
-        <input
-          value={
-            nickname
-          }
-          onChange={(e) =>
-            setNickname(
-              e.target
-                .value
-            )
-          }
-          placeholder="Nickname"
-          className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white"
-        />
+          <p className="text-xl font-black mt-2">
+            {ROLE_NAMES[
+              profile.role
+            ]}
+          </p>
 
-        <textarea
-          value={
-            bio
-          }
-          onChange={(e) =>
-            setBio(
-              e.target
-                .value
-            )
-          }
-          placeholder="Bio"
-          rows="5"
-          className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white resize-none"
-        />
-
-        <div>
-          <label className="block text-sm text-gray-300 mb-2">
-            Profile Picture
-          </label>
-
-          <input
-            type="file"
-            accept="image/*"
-            onChange={
-              uploadAvatar
-            }
-            disabled={
-              saving
-            }
-            className="block w-full text-sm text-gray-300"
-          />
-
-          <p className="text-gray-600 text-xs mt-2">
-            Maximum 5 MB.
+          <p className="text-gray-500 text-xs mt-1">
+            Account access level
           </p>
         </div>
 
-        {message && (
-          <p className="text-yellow-400 text-sm">
-            {message}
+        <div className="bg-white/[0.04] border border-white/10 rounded-2xl p-5 sm:col-span-2 lg:col-span-1">
+          <p className="text-gray-600 text-xs uppercase tracking-wider">
+            Status
           </p>
+
+          <p className="text-xl font-black text-green-400 mt-2">
+            Active
+          </p>
+
+          <p className="text-gray-500 text-xs mt-1">
+            UU MLC Nexus account
+          </p>
+        </div>
+      </section>
+
+      {/* Profile editor / bio */}
+      <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-6 md:p-7">
+        {!editMode ? (
+          <div className="grid md:grid-cols-[1fr_auto] gap-6">
+            <div>
+              <p className="text-yellow-400 text-sm font-semibold">
+                About
+              </p>
+
+              <h3 className="text-xl font-bold mt-1">
+                Bio
+              </h3>
+
+              <p className="text-gray-400 leading-relaxed mt-4 whitespace-pre-wrap">
+                {profile.bio ||
+                  "Add a short introduction about yourself, your interests, or what you work on in the club."}
+              </p>
+            </div>
+
+            <div className="rounded-2xl bg-black/10 border border-white/5 p-5 md:w-64">
+              <p className="text-gray-600 text-xs uppercase tracking-wider">
+                Profile picture
+              </p>
+
+              <p className="text-gray-400 text-sm mt-2">
+                Click Edit Profile to upload a new picture.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <form
+            onSubmit={saveProfile}
+            className="space-y-5"
+          >
+            <div>
+              <p className="text-yellow-400 text-sm font-semibold">
+                Edit Profile
+              </p>
+
+              <h3 className="text-2xl font-black mt-1">
+                Your Information
+              </h3>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">
+                  Full Name
+                </label>
+
+                <input
+                  value={fullName}
+                  onChange={(event) =>
+                    setFullName(
+                      event.target.value
+                    )
+                  }
+                  placeholder="Full name"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3.5 text-white outline-none focus:border-yellow-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">
+                  Nickname
+                </label>
+
+                <input
+                  value={nickname}
+                  onChange={(event) =>
+                    setNickname(
+                      event.target.value
+                    )
+                  }
+                  placeholder="Nickname"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3.5 text-white outline-none focus:border-yellow-400"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">
+                Bio
+              </label>
+
+              <textarea
+                value={bio}
+                onChange={(event) =>
+                  setBio(
+                    event.target.value
+                  )
+                }
+                placeholder="Tell the club a little about yourself..."
+                rows={5}
+                className="w-full bg-white/5 border border-white/10 rounded-xl p-3.5 text-white resize-none outline-none focus:border-yellow-400"
+              />
+            </div>
+
+            <div className="rounded-2xl bg-white/[0.03] border border-white/10 p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl overflow-hidden bg-black/20">
+                  <SafeImage
+                    src={
+                      avatarUrl || logo
+                    }
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold">
+                    Profile Picture
+                  </p>
+
+                  <p className="text-gray-600 text-xs mt-1">
+                    Maximum 5 MB. Use the edit button on the profile photo to replace it.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {message && (
+              <p className="text-yellow-400 text-sm">
+                {message}
+              </p>
+            )}
+
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="submit"
+                disabled={saving}
+                className="px-6 py-3 bg-yellow-400 text-black rounded-xl font-semibold disabled:opacity-50 hover:bg-yellow-300 transition"
+              >
+                {saving
+                  ? "Saving..."
+                  : "Save Profile"}
+              </button>
+
+              <button
+                type="button"
+                onClick={resetEdits}
+                disabled={saving}
+                className="px-6 py-3 bg-white/5 text-gray-300 rounded-xl hover:bg-white/10 transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
         )}
-
-        <button
-          type="submit"
-          disabled={
-            saving
-          }
-          className="px-6 py-3 bg-yellow-400 text-black rounded-xl font-semibold disabled:opacity-50"
-        >
-          {saving
-            ? "Saving..."
-            : "Save Profile"}
-        </button>
-      </form>
-    </section>
+      </section>
+    </div>
   );
 }
-
 /*
 =========================================================
 DIRECTORY
@@ -4934,11 +5045,20 @@ function News({
   const [imagePreview, setImagePreview] =
     useState("");
 
+  const [editingNews, setEditingNews] =
+    useState(null);
+
   const [deletingId, setDeletingId] =
     useState(null);
 
   const [publishing, setPublishing] =
     useState(false);
+
+  const [search, setSearch] =
+    useState("");
+
+  const [sortOrder, setSortOrder] =
+    useState("newest");
 
   const handleImageChange =
     (event) => {
@@ -4946,15 +5066,11 @@ function News({
         event.target.files?.[0] ||
         null;
 
-      setImageFile(
-        file
-      );
+      setImageFile(file);
 
       if (file) {
         setImagePreview(
-          URL.createObjectURL(
-            file
-          )
+          URL.createObjectURL(file)
         );
       } else {
         setImagePreview("");
@@ -4964,7 +5080,42 @@ function News({
   const clearImage = () => {
     setImageFile(null);
     setImagePreview("");
+
+    const fileInputs =
+      document.querySelectorAll(
+        'input[type="file"]'
+      );
+
+    fileInputs.forEach(
+      (input) => {
+        input.value = "";
+      }
+    );
   };
+
+  const resetForm = () => {
+    setTitle("");
+    setContent("");
+    setImageFile(null);
+    setImagePreview("");
+    setEditingNews(null);
+  };
+
+  const beginEdit =
+    (item) => {
+      setEditingNews(item);
+      setTitle(item.title || "");
+      setContent(item.content || "");
+      setImageFile(null);
+      setImagePreview(
+        item.image_url || ""
+      );
+
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
+    };
 
   const publish =
     async (e) => {
@@ -4985,6 +5136,7 @@ function News({
 
       try {
         let imageUrl =
+          editingNews?.image_url ||
           null;
 
         if (imageFile) {
@@ -5006,27 +5158,46 @@ function News({
             return;
           }
 
-          imageUrl =
-            url;
+          imageUrl = url;
         }
 
-        const {
-          error,
-        } =
-          await supabase
-            .from(
-              "news"
-            )
-            .insert({
-              title:
-                title.trim(),
-              content:
-                content.trim(),
-              published_by:
-                profile.id,
-              image_url:
-                imageUrl,
-            });
+        let error = null;
+
+        if (editingNews) {
+          const result =
+            await supabase
+              .from("news")
+              .update({
+                title:
+                  title.trim(),
+                content:
+                  content.trim(),
+                image_url:
+                  imageUrl,
+              })
+              .eq(
+                "id",
+                editingNews.id
+              );
+
+          error = result.error;
+        } else {
+          const result =
+            await supabase
+              .from("news")
+              .insert({
+                title:
+                  title.trim(),
+                content:
+                  content.trim(),
+                published_by:
+                  profile.id,
+                image_url:
+                  imageUrl,
+              });
+
+          error = result.error;
+        }
 
         if (error) {
           alert(
@@ -5036,26 +5207,30 @@ function News({
           return;
         }
 
-        await onLogAction({
-          action:
-            "NEWS_PUBLISHED",
-          details:
-            `Published news: ${title.trim()}${
-              imageUrl
-                ? " with an attached image."
-                : "."
-            }`,
-        });
+        if (onLogAction) {
+          await onLogAction({
+            action: editingNews
+              ? "NEWS_EDITED"
+              : "NEWS_PUBLISHED",
+            details:
+              editingNews
+                ? `Edited news: ${title.trim()}${
+                    imageFile
+                      ? " and replaced the image."
+                      : "."
+                  }`
+                : `Published news: ${title.trim()}${
+                    imageUrl
+                      ? " with an attached image."
+                      : "."
+                  }`,
+          });
+        }
 
-        setTitle("");
-        setContent("");
-        clearImage();
-
+        resetForm();
         await reload();
       } finally {
-        setPublishing(
-          false
-        );
+        setPublishing(false);
       }
     };
 
@@ -5069,9 +5244,7 @@ function News({
         return;
       }
 
-      setDeletingId(
-        item.id
-      );
+      setDeletingId(item.id);
 
       const {
         error,
@@ -5089,212 +5262,383 @@ function News({
           error.message
         );
 
-        setDeletingId(
-          null
-        );
-
+        setDeletingId(null);
         return;
       }
 
-      await onLogAction({
-        action:
-          "NEWS_DELETED",
-        details:
-          `Deleted news: ${item.title}`,
-      });
+      if (onLogAction) {
+        await onLogAction({
+          action:
+            "NEWS_DELETED",
+          details:
+            `Deleted news: ${item.title}`,
+        });
+      }
+
+      if (
+        editingNews?.id ===
+        item.id
+      ) {
+        resetForm();
+      }
 
       await reload();
 
-      setDeletingId(
-        null
-      );
+      setDeletingId(null);
     };
 
+  const filteredNews =
+    [...news]
+      .filter((item) => {
+        const searchable = [
+          item.title,
+          item.content,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+
+        return (
+          !search.trim() ||
+          searchable.includes(
+            search
+              .trim()
+              .toLowerCase()
+          )
+        );
+      })
+      .sort((a, b) => {
+        const aDate =
+          new Date(
+            a.created_at || 0
+          ).getTime();
+
+        const bDate =
+          new Date(
+            b.created_at || 0
+          ).getTime();
+
+        return sortOrder === "newest"
+          ? bDate - aDate
+          : aDate - bDate;
+      });
+
   return (
-    <div className="grid lg:grid-cols-2 gap-7 items-start">
-      <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-7">
-        <h2 className="text-3xl font-bold mb-7">
-          Publish News
-        </h2>
+    <div className="space-y-6">
+      {/* Header */}
+      <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-5">
+          <div>
+            <p className="text-yellow-400 text-sm font-semibold">
+              Club Updates
+            </p>
 
-        <form
-          onSubmit={
-            publish
-          }
-          className="space-y-5"
-        >
-          <input
-            value={
-              title
-            }
-            onChange={(e) =>
-              setTitle(
-                e.target
-                  .value
-              )
-            }
-            placeholder="News title"
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-white"
-          />
+            <h2 className="text-3xl font-black mt-1">
+              News & Announcements
+            </h2>
 
-          <textarea
-            value={
-              content
-            }
-            onChange={(e) =>
-              setContent(
-                e.target
-                  .value
-              )
-            }
-            placeholder="Write announcement..."
-            rows="8"
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-white resize-none"
-          />
+            <p className="text-gray-500 mt-2">
+              Publish updates and keep members
+              informed.
+            </p>
+          </div>
 
-          <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4">
-            <label className="block text-sm text-gray-300 mb-2">
-              Attach Picture{" "}
-              <span className="text-gray-600">
-                (optional)
-              </span>
-            </label>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-2xl bg-white/[0.03] border border-white/10 px-4 py-3">
+              <p className="text-gray-600 text-xs">
+                Total
+              </p>
 
+              <p className="text-2xl font-black mt-1">
+                {news.length}
+              </p>
+            </div>
+
+            <div className="rounded-2xl bg-blue-500/10 border border-blue-400/20 px-4 py-3">
+              <p className="text-blue-300 text-xs">
+                Showing
+              </p>
+
+              <p className="text-2xl font-black mt-1">
+                {filteredNews.length}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="grid xl:grid-cols-[0.85fr_1.15fr] gap-7 items-start">
+        {/* Publish / Edit */}
+        <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
+          <div className="flex items-center justify-between gap-4 mb-6">
+            <div>
+              <p className="text-yellow-400 text-sm font-semibold">
+                {editingNews
+                  ? "Edit Announcement"
+                  : "New Announcement"}
+              </p>
+
+              <h3 className="text-2xl font-black mt-1">
+                {editingNews
+                  ? "Update News"
+                  : "Publish News"}
+              </h3>
+            </div>
+
+            {editingNews && (
+              <button
+                type="button"
+                onClick={resetForm}
+                className="text-sm text-gray-500 hover:text-white"
+              >
+                Cancel edit
+              </button>
+            )}
+          </div>
+
+          <form
+            onSubmit={publish}
+            className="space-y-4"
+          >
             <input
-              type="file"
-              accept="image/*"
-              onChange={
-                handleImageChange
+              value={title}
+              onChange={(e) =>
+                setTitle(
+                  e.target.value
+                )
               }
-              className="block w-full text-sm text-gray-300"
+              placeholder="News title"
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white outline-none focus:border-yellow-400"
             />
 
-            {imagePreview && (
-              <div className="mt-4">
-                <img
-                  src={
-                    imagePreview
-                  }
-                  alt="News preview"
-                  className="w-full max-h-64 object-cover rounded-xl border border-white/10"
-                />
+            <textarea
+              value={content}
+              onChange={(e) =>
+                setContent(
+                  e.target.value
+                )
+              }
+              placeholder="Write announcement..."
+              rows="8"
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white resize-none outline-none focus:border-yellow-400"
+            />
 
-                <button
-                  type="button"
-                  onClick={
-                    clearImage
-                  }
-                  className="mt-2 text-sm text-red-400"
-                >
-                  Remove picture
-                </button>
+            <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4">
+              <label className="block text-sm text-gray-300 mb-2">
+                Attach Picture{" "}
+                <span className="text-gray-600">
+                  (optional)
+                </span>
+              </label>
+
+              <input
+                type="file"
+                accept="image/*"
+                onChange={
+                  handleImageChange
+                }
+                className="block w-full text-sm text-gray-300"
+              />
+
+              {imagePreview && (
+                <div className="mt-4">
+                  <img
+                    src={imagePreview}
+                    alt="News preview"
+                    className="w-full max-h-64 object-cover rounded-xl border border-white/10"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={
+                      clearImage
+                    }
+                    className="mt-2 text-sm text-red-400"
+                  >
+                    Remove picture
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <button
+              type="submit"
+              disabled={publishing}
+              className="w-full bg-yellow-400 text-black font-semibold py-3.5 rounded-xl hover:bg-yellow-300 disabled:opacity-50 transition"
+            >
+              {publishing
+                ? editingNews
+                  ? "Saving..."
+                  : "Publishing..."
+                : editingNews
+                  ? "Save Changes"
+                  : "Publish"}
+            </button>
+          </form>
+        </section>
+
+        {/* Published news */}
+        <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-5">
+            <div>
+              <p className="text-gray-500 text-sm">
+                Published
+              </p>
+
+              <h3 className="text-2xl font-black mt-1">
+                News Archive
+              </h3>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input
+                value={search}
+                onChange={(e) =>
+                  setSearch(
+                    e.target.value
+                  )
+                }
+                placeholder="Search news..."
+                className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white outline-none"
+              />
+
+              <select
+                value={sortOrder}
+                onChange={(e) =>
+                  setSortOrder(
+                    e.target.value
+                  )
+                }
+                className="bg-[#17171b] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white outline-none"
+              >
+                <option value="newest">
+                  Newest first
+                </option>
+                <option value="oldest">
+                  Oldest first
+                </option>
+              </select>
+            </div>
+          </div>
+
+          {filteredNews.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-white/10 p-10 text-center">
+              <div className="text-3xl">
+                📰
               </div>
-            )}
-          </div>
 
-          <button
-            type="submit"
-            disabled={
-              publishing
-            }
-            className="w-full bg-yellow-400 text-black font-semibold py-4 rounded-xl hover:bg-yellow-300 disabled:opacity-50"
-          >
-            {publishing
-              ? "Publishing..."
-              : "Publish"}
-          </button>
-        </form>
-      </section>
+              <p className="text-gray-500 mt-3">
+                {news.length === 0
+                  ? "No news published yet."
+                  : "No news matches your search."}
+              </p>
 
-      <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-7">
-        <div className="flex items-center justify-between gap-4 mb-7">
-          <h2 className="text-3xl font-bold">
-            Published News
-          </h2>
-
-          <span className="text-sm text-gray-500">
-            {news.length}{" "}
-            {news.length === 1
-              ? "post"
-              : "posts"}
-          </span>
-        </div>
-
-        {news.length === 0 ? (
-          <p className="text-gray-500">
-            No news published yet.
-          </p>
-        ) : (
-          <div className="space-y-4">
-            {news.map(
-              (item) => (
-                <article
-                  key={
-                    item.id
+              {search && (
+                <button
+                  onClick={() =>
+                    setSearch("")
                   }
-                  className="bg-white/[0.03] border border-white/5 rounded-2xl p-5"
+                  className="mt-4 text-yellow-400 text-sm"
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0 flex-1">
-                      <h3 className="font-semibold text-xl">
-                        {
-                          item.title
+                  Clear search
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredNews.map(
+                (item) => (
+                  <article
+                    key={item.id}
+                    className={`overflow-hidden bg-white/[0.03] border rounded-2xl ${
+                      editingNews?.id === item.id
+                        ? "border-yellow-400/30"
+                        : "border-white/5"
+                    }`}
+                  >
+                    {item.image_url && (
+                      <img
+                        src={item.image_url}
+                        alt={
+                          item.title ||
+                          "News attachment"
                         }
-                      </h3>
+                        className="w-full max-h-80 object-cover"
+                        loading="lazy"
+                        onError={(
+                          event
+                        ) => {
+                          event.currentTarget.style.display =
+                            "none";
+                        }}
+                      />
+                    )}
 
-                      <p className="text-gray-400 text-sm mt-3 whitespace-pre-wrap">
-                        {
-                          item.content
-                        }
+                    <div className="p-5">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0">
+                          <h4 className="font-bold text-xl">
+                            {item.title}
+                          </h4>
+
+                          {item.created_at && (
+                            <p className="text-gray-600 text-xs mt-1.5">
+                              {new Date(
+                                item.created_at
+                              ).toLocaleString()}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="flex gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              beginEdit(
+                                item
+                              )
+                            }
+                            className="px-3 py-2 rounded-lg bg-white/5 text-gray-300 text-xs hover:bg-white/10 transition"
+                          >
+                            Edit
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              deleteNews(
+                                item
+                              )
+                            }
+                            disabled={
+                              deletingId ===
+                              item.id
+                            }
+                            className="px-3 py-2 rounded-lg bg-red-500/10 text-red-400 text-xs hover:bg-red-500/20 disabled:opacity-50 transition"
+                          >
+                            {deletingId ===
+                            item.id
+                              ? "Deleting..."
+                              : "Delete"}
+                          </button>
+                        </div>
+                      </div>
+
+                      <p className="text-gray-400 text-sm mt-4 whitespace-pre-wrap leading-relaxed">
+                        {item.content}
                       </p>
-
-                      {item.image_url && (
-                        <img
-                          src={
-                            item.image_url
-                          }
-                          alt=""
-                          className="mt-4 w-full max-h-72 object-cover rounded-xl border border-white/10"
-                        />
-                      )}
-
-                      {item.created_at && (
-                        <p className="text-gray-600 text-xs mt-4">
-                          {new Date(
-                            item.created_at
-                          ).toLocaleString()}
-                        </p>
-                      )}
                     </div>
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        deleteNews(
-                          item
-                        )
-                      }
-                      disabled={
-                        deletingId ===
-                        item.id
-                      }
-                      className="flex-shrink-0 px-3 py-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 disabled:opacity-50"
-                    >
-                      {deletingId ===
-                      item.id
-                        ? "Deleting..."
-                        : "Delete"}
-                    </button>
-                  </div>
-                </article>
-              )
-            )}
-          </div>
-        )}
-      </section>
+                  </article>
+                )
+              )}
+            </div>
+          )}
+        </section>
+      </div>
     </div>
   );
 }
+
 
 /*
 =========================================================
