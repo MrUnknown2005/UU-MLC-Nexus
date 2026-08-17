@@ -918,6 +918,7 @@ function Dashboard({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const [notificationError, setNotificationError] = useState("");
   const [todosForBadge, setTodosForBadge] = useState([]);
 
   const [members, setMembers] =
@@ -1282,18 +1283,24 @@ function Dashboard({
 
     if (error) {
       console.error("Notification load error:", error);
-      setNotifications([]);
+      setNotificationError(
+        error.message ||
+          "Could not load notifications."
+      );
       return;
     }
 
+    setNotificationError("");
     setNotifications(data || []);
   };
 
   useEffect(() => {
+    let mounted = true;
+
     loadNotifications();
 
     const channel = supabase
-      .channel(`notifications-${profile.id}`)
+      .channel(`notifications-${profile.id}-${Date.now()}`)
       .on(
         "postgres_changes",
         {
@@ -1302,11 +1309,26 @@ function Dashboard({
           table: "notifications",
           filter: `user_id=eq.${profile.id}`,
         },
-        () => loadNotifications()
+        () => {
+          if (mounted) {
+            loadNotifications();
+          }
+        }
       )
       .subscribe();
 
+    const interval = window.setInterval(
+      () => {
+        if (mounted) {
+          loadNotifications();
+        }
+      },
+      15000
+    );
+
     return () => {
+      mounted = false;
+      window.clearInterval(interval);
       supabase.removeChannel(channel);
     };
   }, [profile.id]);
@@ -2163,7 +2185,24 @@ function Dashboard({
                     )}
                   </div>
 
-                  {notifications.length === 0 ? (
+                  {notificationError ? (
+                    <div className="p-6 text-center">
+                      <div className="text-3xl">⚠️</div>
+                      <p className="text-red-300 text-sm mt-3">
+                        Notifications could not be loaded.
+                      </p>
+                      <p className="text-gray-500 text-xs mt-2 break-words">
+                        {notificationError}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={loadNotifications}
+                        className="mt-4 px-4 py-2 rounded-xl bg-yellow-400 text-black text-sm font-semibold"
+                      >
+                        Try again
+                      </button>
+                    </div>
+                  ) : notifications.length === 0 ? (
                     <div className="p-8 text-center">
                       <div className="text-3xl">🔔</div>
                       <p className="text-gray-400 mt-3">
@@ -2304,6 +2343,7 @@ function Dashboard({
               {isAdmin && <NavItem active={tab === "analytics"} onClick={() => setTab("analytics")} icon="◫">Analytics</NavItem>}
               {isAdmin && <NavItem active={tab === "activity"} onClick={() => setTab("activity")} icon="▤">History</NavItem>}
               {isAdmin && <NavItem active={tab === "news"} onClick={() => setTab("news")} icon="📰" badge={recentNewsCount}>News</NavItem>}
+              {isAdmin && <NavItem active={tab === "achievements"} onClick={() => setTab("achievements")} icon="🏅">Achievements</NavItem>}
               <button onClick={onLogout} className="w-full mt-2 sm:mt-3 px-3 sm:px-4 py-3.5 sm:py-3 rounded-xl sm:rounded-2xl text-left text-sm sm:text-base text-red-300 hover:bg-red-500/10 transition">↪ Sign out</button>
             </div>
           </aside>
@@ -2480,6 +2520,20 @@ function Dashboard({
               }
               onWipe={
                 deleteAdminActivityLog
+              }
+            />
+          )}
+
+        {/* Achievements */}
+        {tab ===
+          "achievements" &&
+          isAdmin && (
+            <Achievements
+              currentUser={
+                profile
+              }
+              onLogAction={
+                logAdminAction
               }
             />
           )}
@@ -4069,45 +4123,95 @@ function Profile({
         )
       : "Unknown";
 
-  const points =
-    Number(profile.points || 0);
+  const [achievements, setAchievements] =
+    useState([]);
 
-  const badge =
-    profile.role === "head_admin"
-      ? {
-          label: "Head Admin",
-          icon: "👑",
-          description: "Club leadership",
-        }
-      : profile.role === "administrator"
-      ? {
-          label: "Administrator",
-          icon: "🛡️",
-          description: "Club administration",
-        }
-      : profile.role === "executive"
-      ? {
-          label: "Executive",
-          icon: "⭐",
-          description: "Executive team",
-        }
-      : points >= 100
-      ? {
-          label: "High Achiever",
-          icon: "🏆",
-          description: "100+ points",
-        }
-      : points >= 50
-      ? {
-          label: "Contributor",
-          icon: "🔥",
-          description: "50+ points",
-        }
-      : {
-          label: "Rising Member",
-          icon: "🌱",
-          description: "Building momentum",
-        };
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadAchievements = async () => {
+      const { data, error } =
+        await supabase
+          .from("profile_achievements")
+          .select(`
+            id,
+            awarded_at,
+            achievements (
+              id,
+              name,
+              description,
+              icon
+            )
+          `)
+          .eq(
+            "user_id",
+            profile.id
+          )
+          .order(
+            "awarded_at",
+            {
+              ascending: false,
+            }
+          );
+
+      if (cancelled) {
+        return;
+      }
+
+      if (error) {
+        console.error(
+          "Profile achievements error:",
+          error
+        );
+        setAchievements([]);
+        return;
+      }
+
+      setAchievements(
+        (data || [])
+          .map((item) => ({
+            ...item,
+            achievement:
+              Array.isArray(
+                item.achievements
+              )
+                ? item.achievements[0]
+                : item.achievements,
+          }))
+          .filter(
+            (item) =>
+              item.achievement
+          )
+      );
+    };
+
+    loadAchievements();
+
+    const channel =
+      supabase
+        .channel(
+          `profile-achievements-${profile.id}`
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "profile_achievements",
+            filter:
+              `user_id=eq.${profile.id}`,
+          },
+          () => loadAchievements()
+        )
+        .subscribe();
+
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(
+        channel
+      );
+    };
+  }, [profile.id]);
 
   const displayName =
     profile.nickname ||
@@ -4279,28 +4383,69 @@ function Profile({
         </div>
       </section>
 
-      {/* Achievement + membership */}
+      {/* Achievements + membership */}
       <section className="grid lg:grid-cols-2 gap-6">
-        <div className="bg-yellow-400/10 border border-yellow-400/20 rounded-3xl p-6">
-          <p className="text-yellow-400 text-sm font-semibold">
-            Achievement
-          </p>
-
-          <div className="flex items-center gap-4 mt-4">
-            <div className="w-16 h-16 rounded-2xl bg-yellow-400/15 flex items-center justify-center text-3xl">
-              {badge.icon}
+        <div className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-yellow-400 text-sm font-semibold">
+                Achievements
+              </p>
+              <h3 className="text-2xl font-black mt-1">
+                My Achievements
+              </h3>
             </div>
 
-            <div>
-              <h3 className="text-2xl font-black">
-                {badge.label}
-              </h3>
+            <span className="text-xs text-gray-500">
+              {achievements.length}
+            </span>
+          </div>
 
-              <p className="text-gray-400 text-sm mt-1">
-                {badge.description}
+          {achievements.length === 0 ? (
+            <div className="mt-5 rounded-2xl bg-black/10 border border-white/5 p-5">
+              <p className="text-gray-500 text-sm">
+                No achievements have been assigned yet.
+              </p>
+              <p className="text-gray-600 text-xs mt-1">
+                Achievements are awarded by an Admin or Head Admin.
               </p>
             </div>
-          </div>
+          ) : (
+            <div className="grid sm:grid-cols-2 gap-3 mt-5">
+              {achievements.map((item) => (
+                <div
+                  key={item.id}
+                  className="rounded-2xl bg-yellow-400/[0.06] border border-yellow-400/10 p-4"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-11 h-11 rounded-xl bg-yellow-400/10 flex items-center justify-center text-xl shrink-0">
+                      {item.achievement.icon || "🏅"}
+                    </div>
+
+                    <div className="min-w-0">
+                      <h4 className="font-bold">
+                        {item.achievement.name}
+                      </h4>
+
+                      <p className="text-gray-500 text-xs mt-1">
+                        {item.achievement.description ||
+                          "Achievement awarded by club administration."}
+                      </p>
+
+                      {item.awarded_at && (
+                        <p className="text-gray-600 text-[11px] mt-2">
+                          Awarded{" "}
+                          {new Date(
+                            item.awarded_at
+                          ).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
@@ -4313,7 +4458,6 @@ function Profile({
               <p className="text-gray-600 text-xs uppercase">
                 Joined
               </p>
-
               <p className="font-bold mt-2">
                 {joinDate}
               </p>
@@ -4323,7 +4467,6 @@ function Profile({
               <p className="text-gray-600 text-xs uppercase">
                 Status
               </p>
-
               <p className="font-bold text-green-400 mt-2">
                 Active
               </p>
@@ -6098,6 +6241,683 @@ function AdminActivity({
 NEWS
 =========================================================
 */
+
+
+function Achievements({
+  currentUser,
+  onLogAction,
+}) {
+  const [achievements, setAchievements] =
+    useState([]);
+  const [members, setMembers] =
+    useState([]);
+  const [assignments, setAssignments] =
+    useState([]);
+  const [loading, setLoading] =
+    useState(true);
+  const [showCreate, setShowCreate] =
+    useState(false);
+  const [name, setName] =
+    useState("");
+  const [description, setDescription] =
+    useState("");
+  const [icon, setIcon] =
+    useState("🏅");
+  const [selectedMember, setSelectedMember] =
+    useState("");
+  const [selectedAchievement, setSelectedAchievement] =
+    useState("");
+  const [saving, setSaving] =
+    useState(false);
+  const [search, setSearch] =
+    useState("");
+
+  const loadAll = async () => {
+    const [
+      achievementResult,
+      memberResult,
+      assignmentResult,
+    ] = await Promise.all([
+      supabase
+        .from("achievements")
+        .select("*")
+        .order("created_at", {
+          ascending: false,
+        }),
+
+      supabase
+        .from("profiles")
+        .select(
+          "id, full_name, nickname, email, role, is_active"
+        )
+        .neq("role", "guest")
+        .eq("is_active", true)
+        .order("full_name", {
+          ascending: true,
+        }),
+
+      supabase
+        .from("profile_achievements")
+        .select(`
+          id,
+          user_id,
+          achievement_id,
+          awarded_at,
+          profiles (
+            id,
+            full_name,
+            nickname
+          ),
+          achievements (
+            id,
+            name,
+            description,
+            icon
+          )
+        `)
+        .order("awarded_at", {
+          ascending: false,
+        }),
+    ]);
+
+    if (!achievementResult.error) {
+      setAchievements(
+        achievementResult.data || []
+      );
+    }
+
+    if (!memberResult.error) {
+      setMembers(
+        memberResult.data || []
+      );
+    }
+
+    if (!assignmentResult.error) {
+      setAssignments(
+        assignmentResult.data || []
+      );
+    }
+
+    if (
+      achievementResult.error ||
+      memberResult.error ||
+      assignmentResult.error
+    ) {
+      console.error(
+        "Achievement management load error:",
+        achievementResult.error ||
+          memberResult.error ||
+          assignmentResult.error
+      );
+    }
+
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    loadAll();
+
+    const channel =
+      supabase
+        .channel(
+          `achievement-admin-${currentUser.id}`
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "achievements",
+          },
+          loadAll
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "profile_achievements",
+          },
+          loadAll
+        )
+        .subscribe();
+
+    return () =>
+      supabase.removeChannel(
+        channel
+      );
+  }, [currentUser.id]);
+
+  const createAchievement =
+    async (event) => {
+      event.preventDefault();
+
+      if (!name.trim()) {
+        alert(
+          "Enter an achievement name."
+        );
+        return;
+      }
+
+      setSaving(true);
+
+      const { error } =
+        await supabase
+          .from("achievements")
+          .insert({
+            name: name.trim(),
+            description:
+              description.trim(),
+            icon:
+              icon.trim() ||
+              "🏅",
+            created_by:
+              currentUser.id,
+          });
+
+      if (error) {
+        alert(
+          error.message
+        );
+        setSaving(false);
+        return;
+      }
+
+      await onLogAction({
+        action:
+          "ACHIEVEMENT_CREATED",
+        details:
+          `Created achievement: ${name.trim()}`,
+      });
+
+      setName("");
+      setDescription("");
+      setIcon("🏅");
+      setShowCreate(false);
+      setSaving(false);
+
+      await loadAll();
+    };
+
+  const assignAchievement =
+    async () => {
+      if (
+        !selectedMember ||
+        !selectedAchievement
+      ) {
+        alert(
+          "Select a member and achievement."
+        );
+        return;
+      }
+
+      setSaving(true);
+
+      const { error } =
+        await supabase
+          .from(
+            "profile_achievements"
+          )
+          .insert({
+            user_id:
+              selectedMember,
+            achievement_id:
+              selectedAchievement,
+            awarded_by:
+              currentUser.id,
+          });
+
+      if (error) {
+        alert(
+          error.code === "23505"
+            ? "That member already has this achievement."
+            : error.message
+        );
+        setSaving(false);
+        return;
+      }
+
+      const member =
+        members.find(
+          (item) =>
+            item.id ===
+            selectedMember
+        );
+
+      const achievement =
+        achievements.find(
+          (item) =>
+            item.id ===
+            selectedAchievement
+        );
+
+      await onLogAction({
+        action:
+          "ACHIEVEMENT_AWARDED",
+        targetUserId:
+          selectedMember,
+        details:
+          `Awarded "${achievement?.name || "achievement"}" to ${
+            member?.nickname ||
+            member?.full_name ||
+            "member"
+          }.`,
+      });
+
+      setSelectedMember("");
+      setSelectedAchievement("");
+      setSaving(false);
+
+      await loadAll();
+    };
+
+  const deleteAchievement =
+    async (achievement) => {
+      if (
+        !window.confirm(
+          `Delete "${achievement.name}"? This will also remove it from every member.`
+        )
+      ) {
+        return;
+      }
+
+      const { error } =
+        await supabase
+          .from("achievements")
+          .delete()
+          .eq(
+            "id",
+            achievement.id
+          );
+
+      if (error) {
+        alert(
+          error.message
+        );
+        return;
+      }
+
+      await onLogAction({
+        action:
+          "ACHIEVEMENT_DELETED",
+        details:
+          `Deleted achievement: ${achievement.name}`,
+      });
+
+      await loadAll();
+    };
+
+  const removeAchievement =
+    async (assignment) => {
+      if (
+        !window.confirm(
+          `Remove "${assignment.achievements?.name}" from this member?`
+        )
+      ) {
+        return;
+      }
+
+      const { error } =
+        await supabase
+          .from(
+            "profile_achievements"
+          )
+          .delete()
+          .eq(
+            "id",
+            assignment.id
+          );
+
+      if (error) {
+        alert(
+          error.message
+        );
+        return;
+      }
+
+      await onLogAction({
+        action:
+          "ACHIEVEMENT_REMOVED",
+        targetUserId:
+          assignment.user_id,
+        details:
+          `Removed "${assignment.achievements?.name || "achievement"}".`,
+      });
+
+      await loadAll();
+    };
+
+  const filteredAssignments =
+    assignments.filter(
+      (assignment) => {
+        const member =
+          assignment.profiles;
+        const achievement =
+          assignment.achievements;
+
+        const searchable =
+          [
+            member?.full_name,
+            member?.nickname,
+            achievement?.name,
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase();
+
+        return (
+          !search.trim() ||
+          searchable.includes(
+            search
+              .trim()
+              .toLowerCase()
+          )
+        );
+      }
+    );
+
+  if (loading) {
+    return (
+      <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-8">
+        <p className="text-gray-500">
+          Loading achievements...
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-5">
+          <div>
+            <p className="text-yellow-400 text-sm font-semibold">
+              Administration
+            </p>
+
+            <h2 className="text-3xl font-black mt-1">
+              Achievement Management
+            </h2>
+
+            <p className="text-gray-500 mt-2">
+              Create custom achievements and award them to members.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() =>
+              setShowCreate(
+                (value) => !value
+              )
+            }
+            className="px-5 py-3 rounded-xl bg-yellow-400 text-black font-bold hover:bg-yellow-300"
+          >
+            {showCreate
+              ? "Close"
+              : "+ New Achievement"}
+          </button>
+        </div>
+      </section>
+
+      {showCreate && (
+        <section className="bg-yellow-400/[0.04] border border-yellow-400/20 rounded-3xl p-6">
+          <h3 className="text-xl font-bold">
+            Create Achievement
+          </h3>
+
+          <form
+            onSubmit={
+              createAchievement
+            }
+            className="grid md:grid-cols-[100px_1fr] gap-4 mt-5"
+          >
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">
+                Icon
+              </label>
+
+              <input
+                value={icon}
+                onChange={(event) =>
+                  setIcon(
+                    event.target
+                      .value
+                  )
+                }
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-center text-2xl"
+                maxLength={4}
+              />
+            </div>
+
+            <div className="space-y-4">
+              <input
+                value={name}
+                onChange={(event) =>
+                  setName(
+                    event.target
+                      .value
+                  )
+                }
+                placeholder="Achievement name — e.g. Best Coder"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3"
+              />
+
+              <textarea
+                value={description}
+                onChange={(event) =>
+                  setDescription(
+                    event.target
+                      .value
+                  )
+                }
+                rows="3"
+                placeholder="What does this achievement represent?"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 resize-none"
+              />
+
+              <button
+                type="submit"
+                disabled={saving}
+                className="px-6 py-3 rounded-xl bg-yellow-400 text-black font-bold disabled:opacity-50"
+              >
+                {saving
+                  ? "Saving..."
+                  : "Create Achievement"}
+              </button>
+            </div>
+          </form>
+        </section>
+      )}
+
+      <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
+        <h3 className="text-2xl font-bold">
+          Available Achievements
+        </h3>
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-5">
+          {achievements.map(
+            (achievement) => (
+              <article
+                key={achievement.id}
+                className="rounded-2xl bg-white/[0.03] border border-white/5 p-5"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-yellow-400/10 flex items-center justify-center text-2xl">
+                      {achievement.icon ||
+                        "🏅"}
+                    </div>
+
+                    <div>
+                      <h4 className="font-bold">
+                        {achievement.name}
+                      </h4>
+
+                      <p className="text-gray-500 text-xs mt-1">
+                        {achievement.description ||
+                          "No description."}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      deleteAchievement(
+                        achievement
+                      )
+                    }
+                    className="text-red-400 text-sm hover:text-red-300"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </article>
+            )
+          )}
+        </div>
+      </section>
+
+      <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
+        <h3 className="text-2xl font-bold">
+          Award Achievement
+        </h3>
+
+        <div className="grid lg:grid-cols-[1fr_1fr_auto] gap-3 mt-5">
+          <select
+            value={selectedMember}
+            onChange={(event) =>
+              setSelectedMember(
+                event.target.value
+              )
+            }
+            className="bg-white/5 border border-white/10 rounded-xl px-4 py-3"
+          >
+            <option value="">
+              Select member
+            </option>
+
+            {members.map(
+              (member) => (
+                <option
+                  key={member.id}
+                  value={member.id}
+                >
+                  {member.nickname ||
+                    member.full_name}
+                </option>
+              )
+            )}
+          </select>
+
+          <select
+            value={selectedAchievement}
+            onChange={(event) =>
+              setSelectedAchievement(
+                event.target.value
+              )
+            }
+            className="bg-white/5 border border-white/10 rounded-xl px-4 py-3"
+          >
+            <option value="">
+              Select achievement
+            </option>
+
+            {achievements.map(
+              (achievement) => (
+                <option
+                  key={achievement.id}
+                  value={achievement.id}
+                >
+                  {achievement.icon}{" "}
+                  {achievement.name}
+                </option>
+              )
+            )}
+          </select>
+
+          <button
+            type="button"
+            onClick={
+              assignAchievement
+            }
+            disabled={saving}
+            className="px-6 py-3 rounded-xl bg-yellow-400 text-black font-bold disabled:opacity-50"
+          >
+            Award
+          </button>
+        </div>
+      </section>
+
+      <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-5">
+          <div>
+            <h3 className="text-2xl font-bold">
+              Awarded Achievements
+            </h3>
+
+            <p className="text-gray-500 text-sm mt-1">
+              Manage who has each achievement.
+            </p>
+          </div>
+
+          <input
+            value={search}
+            onChange={(event) =>
+              setSearch(
+                event.target.value
+              )
+            }
+            placeholder="Search member or achievement..."
+            className="w-full md:w-80 bg-white/5 border border-white/10 rounded-xl px-4 py-3"
+          />
+        </div>
+
+        <div className="space-y-3">
+          {filteredAssignments.map(
+            (assignment) => (
+              <div
+                key={assignment.id}
+                className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-2xl bg-white/[0.03] border border-white/5 p-4"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-xl bg-yellow-400/10 flex items-center justify-center text-xl">
+                    {assignment.achievements?.icon ||
+                      "🏅"}
+                  </div>
+
+                  <div>
+                    <p className="font-semibold">
+                      {assignment.profiles?.nickname ||
+                        assignment.profiles?.full_name}
+                    </p>
+
+                    <p className="text-yellow-400 text-sm">
+                      {assignment.achievements?.name}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    removeAchievement(
+                      assignment
+                    )
+                  }
+                  className="self-start sm:self-auto px-3 py-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 text-sm"
+                >
+                  Remove
+                </button>
+              </div>
+            )
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
 
 function News({
   news,
