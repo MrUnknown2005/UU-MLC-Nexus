@@ -2435,7 +2435,7 @@ function RoleManager({ currentUser, roleDefinitions, onRolesChanged }) {
     </div>
   );
 }
-
+/*
 function NavItem({ active, onClick, icon, children, badge = 0 }) {
   return (
     <button
@@ -2456,6 +2456,7 @@ function NavItem({ active, onClick, icon, children, badge = 0 }) {
     </button>
   );
 }
+*/
 
 /*
 =========================================================
