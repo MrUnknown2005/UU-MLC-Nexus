@@ -4492,7 +4492,7 @@ NEWS
 =========================================================
 */
 
-function Achievements({ currentUser, onLogAction, memberList }) {
+function Achievements({ currentUser, onLogAction, members }) {
   const [achievements, setAchievements] = useState([]);
   const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -4505,7 +4505,7 @@ function Achievements({ currentUser, onLogAction, memberList }) {
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
 
-  const activeMembers = memberList.filter(
+  const activeMembers = members.filter(
     (member) => member.role !== "guest" && member.is_active !== false,
   );
 
