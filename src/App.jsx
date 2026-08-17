@@ -1734,51 +1734,6 @@ function Dashboard({ profile, onLogout, reloadProfile }) {
             </div>
           </div>
 
-          {unreadNotificationCount > 0 && (
-            <section className="mb-6 rounded-3xl border border-yellow-400/20 bg-yellow-400/[0.04] p-5">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                  <p className="text-yellow-400 text-sm font-semibold">
-                    {unreadNotificationCount}{" "}
-                    {unreadNotificationCount === 1
-                      ? "item needs"
-                      : "items need"}{" "}
-                    your attention
-                  </p>
-
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {pendingMemberCount > 0 && (
-                      <button
-                        onClick={() => setTab("members")}
-                        className="px-3 py-2 rounded-xl bg-white/[0.04] border border-white/10 text-xs text-gray-300 hover:bg-white/10 transition"
-                      >
-                        👥 {pendingMemberCount} pending
-                      </button>
-                    )}
-
-                    {overdueTodoCount > 0 && (
-                      <button
-                        onClick={() => setTab("todo")}
-                        className="px-3 py-2 rounded-xl bg-red-500/10 border border-red-400/20 text-xs text-red-300 hover:bg-red-500/20 transition"
-                      >
-                        ✓ {overdueTodoCount} overdue
-                      </button>
-                    )}
-
-                    {recentNewsCount > 0 && (
-                      <button
-                        onClick={() => setTab("news")}
-                        className="px-3 py-2 rounded-xl bg-blue-500/10 border border-blue-400/20 text-xs text-blue-300 hover:bg-blue-500/20 transition"
-                      >
-                        📰 {recentNewsCount} recent
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </section>
-          )}
-
           <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 items-stretch lg:items-start">
             <aside
               className={`${sidebarOpen ? "block" : "hidden"} lg:block w-full lg:w-64 flex-shrink-0`}
