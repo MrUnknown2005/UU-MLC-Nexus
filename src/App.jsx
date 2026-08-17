@@ -3548,6 +3548,14 @@ function Profile({
   const [editMode, setEditMode] =
     useState(false);
 
+  const [profileStats, setProfileStats] =
+    useState({
+      rank: null,
+      totalMembers: 0,
+      pointEntries: 0,
+      completedClubTasks: 0,
+    });
+
   const uploadAvatar =
     async (event) => {
       const file =
@@ -3821,6 +3829,129 @@ function Profile({
       setSaving(false);
     };
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadProfileStats = async () => {
+      const [
+        memberResult,
+        pointResult,
+        todoResult,
+      ] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("id, points")
+          .neq("role", "guest")
+          .eq("is_active", true)
+          .order("points", {
+            ascending: false,
+          }),
+
+        supabase
+          .from("point_history")
+          .select("id", {
+            count: "exact",
+            head: true,
+          })
+          .eq("member_id", profile.id),
+
+        supabase
+          .from("todos")
+          .select("id", {
+            count: "exact",
+            head: true,
+          })
+          .eq("completed", true),
+      ]);
+
+      if (cancelled) {
+        return;
+      }
+
+      const activeMembers =
+        memberResult.data || [];
+
+      const rank =
+        activeMembers.findIndex(
+          (member) =>
+            member.id === profile.id
+        ) + 1;
+
+      setProfileStats({
+        rank: rank > 0 ? rank : null,
+        totalMembers: activeMembers.length,
+        pointEntries: pointResult.count || 0,
+        completedClubTasks:
+          todoResult.count || 0,
+      });
+    };
+
+    loadProfileStats();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    profile.id,
+    profile.points,
+    profile.role,
+    profile.is_active,
+  ]);
+
+  const joinDate =
+    profile.created_at
+      ? new Date(
+          profile.created_at
+        ).toLocaleDateString(
+          undefined,
+          {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          }
+        )
+      : "Unknown";
+
+  const points =
+    Number(profile.points || 0);
+
+  const badge =
+    profile.role === "head_admin"
+      ? {
+          label: "Head Admin",
+          icon: "👑",
+          description: "Club leadership",
+        }
+      : profile.role === "administrator"
+      ? {
+          label: "Administrator",
+          icon: "🛡️",
+          description: "Club administration",
+        }
+      : profile.role === "executive"
+      ? {
+          label: "Executive",
+          icon: "⭐",
+          description: "Executive team",
+        }
+      : points >= 100
+      ? {
+          label: "High Achiever",
+          icon: "🏆",
+          description: "100+ points",
+        }
+      : points >= 50
+      ? {
+          label: "Contributor",
+          icon: "🔥",
+          description: "50+ points",
+        }
+      : {
+          label: "Rising Member",
+          icon: "🌱",
+          description: "Building momentum",
+        };
+
   const displayName =
     profile.nickname ||
     profile.full_name ||
@@ -3902,6 +4033,16 @@ function Profile({
               <span className="px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/10 text-gray-300 text-xs font-semibold">
                 {profile.points ?? 0} points
               </span>
+
+              <span className="px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/10 text-gray-300 text-xs font-semibold">
+                {profileStats.rank
+                  ? `Rank #${profileStats.rank}`
+                  : "Rank —"}
+              </span>
+
+              <span className="px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/10 text-gray-300 text-xs font-semibold">
+                Joined {joinDate}
+              </span>
             </div>
           </div>
 
@@ -3920,11 +4061,11 @@ function Profile({
         </div>
       </section>
 
-      {/* Member summary */}
-      <section className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* Profile stats */}
+      <section className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white/[0.04] border border-white/10 rounded-2xl p-5">
           <p className="text-gray-600 text-xs uppercase tracking-wider">
-            Points
+            Current Points
           </p>
 
           <p className="text-3xl font-black mt-2">
@@ -3938,32 +4079,99 @@ function Profile({
 
         <div className="bg-white/[0.04] border border-white/10 rounded-2xl p-5">
           <p className="text-gray-600 text-xs uppercase tracking-wider">
-            Role
+            Current Rank
           </p>
 
-          <p className="text-xl font-black mt-2">
-            {ROLE_NAMES[
-              profile.role
-            ]}
+          <p className="text-3xl font-black mt-2 text-yellow-400">
+            {profileStats.rank
+              ? `#${profileStats.rank}`
+              : "—"}
           </p>
 
           <p className="text-gray-500 text-xs mt-1">
-            Account access level
+            Of {profileStats.totalMembers} active members
           </p>
         </div>
 
-        <div className="bg-white/[0.04] border border-white/10 rounded-2xl p-5 sm:col-span-2 lg:col-span-1">
+        <div className="bg-white/[0.04] border border-white/10 rounded-2xl p-5">
           <p className="text-gray-600 text-xs uppercase tracking-wider">
-            Status
+            Point Entries
           </p>
 
-          <p className="text-xl font-black text-green-400 mt-2">
-            Active
+          <p className="text-3xl font-black mt-2">
+            {profileStats.pointEntries}
           </p>
 
           <p className="text-gray-500 text-xs mt-1">
-            UU MLC Nexus account
+            Recorded point changes
           </p>
+        </div>
+
+        <div className="bg-white/[0.04] border border-white/10 rounded-2xl p-5">
+          <p className="text-gray-600 text-xs uppercase tracking-wider">
+            Club Tasks Done
+          </p>
+
+          <p className="text-3xl font-black mt-2">
+            {profileStats.completedClubTasks}
+          </p>
+
+          <p className="text-gray-500 text-xs mt-1">
+            Completed across the club
+          </p>
+        </div>
+      </section>
+
+      {/* Achievement + membership */}
+      <section className="grid lg:grid-cols-2 gap-6">
+        <div className="bg-yellow-400/10 border border-yellow-400/20 rounded-3xl p-6">
+          <p className="text-yellow-400 text-sm font-semibold">
+            Achievement
+          </p>
+
+          <div className="flex items-center gap-4 mt-4">
+            <div className="w-16 h-16 rounded-2xl bg-yellow-400/15 flex items-center justify-center text-3xl">
+              {badge.icon}
+            </div>
+
+            <div>
+              <h3 className="text-2xl font-black">
+                {badge.label}
+              </h3>
+
+              <p className="text-gray-400 text-sm mt-1">
+                {badge.description}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
+          <p className="text-yellow-400 text-sm font-semibold">
+            Membership
+          </p>
+
+          <div className="grid grid-cols-2 gap-4 mt-4">
+            <div className="rounded-2xl bg-black/10 border border-white/5 p-4">
+              <p className="text-gray-600 text-xs uppercase">
+                Joined
+              </p>
+
+              <p className="font-bold mt-2">
+                {joinDate}
+              </p>
+            </div>
+
+            <div className="rounded-2xl bg-black/10 border border-white/5 p-4">
+              <p className="text-gray-600 text-xs uppercase">
+                Status
+              </p>
+
+              <p className="font-bold text-green-400 mt-2">
+                Active
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
