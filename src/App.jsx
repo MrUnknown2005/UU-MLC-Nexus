@@ -11,39 +11,150 @@ const ROLE_NAMES = {
 };
 
 const PERMISSION_CATALOG = [
-  { key: "view_admin", name: "Admin Workspace", description: "Access the administration workspace and management navigation.", category: "Workspace" },
-  { key: "view_directory", name: "View Directory", description: "Browse active club members in the directory.", category: "Members" },
-  { key: "view_members", name: "View Member Management", description: "See the full member-management screen, including pending and inactive accounts.", category: "Members" },
-  { key: "manage_members", name: "Manage Members", description: "Approve members, change roles, and activate or deactivate accounts.", category: "Members" },
-  { key: "view_todo", name: "View To-Do", description: "Access club tasks and to-do views.", category: "Tasks" },
-  { key: "manage_todos", name: "Manage To-Do", description: "Create and manage club tasks where supported.", category: "Tasks" },
-  { key: "view_points", name: "View Points", description: "Open the points workspace and point history available to the role.", category: "Points" },
-  { key: "award_points", name: "Award Points", description: "Add or remove member points.", category: "Points" },
-  { key: "reset_points", name: "Reset Points", description: "Run point-reset operations.", category: "Points" },
-  { key: "view_analytics", name: "View Analytics", description: "View club analytics and performance metrics.", category: "Admin" },
-  { key: "view_history", name: "View History", description: "View administrative activity history.", category: "Admin" },
-  { key: "manage_news", name: "Manage News", description: "Create, edit, and delete club news.", category: "Content" },
-  { key: "manage_roles", name: "Manage Roles", description: "Create custom roles and assign permissions.", category: "Security" },
+  {
+    key: "view_admin",
+    name: "Admin Workspace",
+    description:
+      "Access the administration workspace and management navigation.",
+    category: "Workspace",
+  },
+  {
+    key: "view_directory",
+    name: "View Directory",
+    description: "Browse active club members in the directory.",
+    category: "Members",
+  },
+  {
+    key: "view_members",
+    name: "View Member Management",
+    description:
+      "See the full member-management screen, including pending and inactive accounts.",
+    category: "Members",
+  },
+  {
+    key: "manage_members",
+    name: "Manage Members",
+    description:
+      "Approve members, change roles, and activate or deactivate accounts.",
+    category: "Members",
+  },
+  {
+    key: "view_todo",
+    name: "View To-Do",
+    description: "Access club tasks and to-do views.",
+    category: "Tasks",
+  },
+  {
+    key: "manage_todos",
+    name: "Manage To-Do",
+    description: "Create and manage club tasks where supported.",
+    category: "Tasks",
+  },
+  {
+    key: "view_points",
+    name: "View Points",
+    description:
+      "Open the points workspace and point history available to the role.",
+    category: "Points",
+  },
+  {
+    key: "award_points",
+    name: "Award Points",
+    description: "Add or remove member points.",
+    category: "Points",
+  },
+  {
+    key: "reset_points",
+    name: "Reset Points",
+    description: "Run point-reset operations.",
+    category: "Points",
+  },
+  {
+    key: "view_analytics",
+    name: "View Analytics",
+    description: "View club analytics and performance metrics.",
+    category: "Admin",
+  },
+  {
+    key: "view_history",
+    name: "View History",
+    description: "View administrative activity history.",
+    category: "Admin",
+  },
+  {
+    key: "manage_news",
+    name: "Manage News",
+    description: "Create, edit, and delete club news.",
+    category: "Content",
+  },
+  {
+    key: "manage_roles",
+    name: "Manage Roles",
+    description: "Create custom roles and assign permissions.",
+    category: "Security",
+  },
 ];
 
 const PERMISSION_KEYS = PERMISSION_CATALOG.map((permission) => permission.key);
 
 const SYSTEM_ROLE_DEFINITIONS = [
-  { role_key: "guest", name: "Guest", description: "Pending account with limited access.", is_system: true },
-  { role_key: "member", name: "Member", description: "Standard active club member.", is_system: true },
-  { role_key: "executive", name: "Executive", description: "Club executive with operational permissions.", is_system: true },
-  { role_key: "administrator", name: "Administrator", description: "Club administrator.", is_system: true },
-  { role_key: "head_admin", name: "Head Administrator", description: "Highest-level club administrator.", is_system: true },
+  {
+    role_key: "guest",
+    name: "Guest",
+    description: "Pending account with limited access.",
+    is_system: true,
+  },
+  {
+    role_key: "member",
+    name: "Member",
+    description: "Standard active club member.",
+    is_system: true,
+  },
+  {
+    role_key: "executive",
+    name: "Executive",
+    description: "Club executive with operational permissions.",
+    is_system: true,
+  },
+  {
+    role_key: "administrator",
+    name: "Administrator",
+    description: "Club administrator.",
+    is_system: true,
+  },
+  {
+    role_key: "head_admin",
+    name: "Head Administrator",
+    description: "Highest-level club administrator.",
+    is_system: true,
+  },
 ];
 
 const LEGACY_ROLE_PERMISSIONS = {
   guest: [],
   member: ["view_directory", "view_todo", "view_points"],
-  executive: ["view_admin", "view_directory", "view_members", "view_todo", "manage_todos", "view_points", "award_points"],
+  executive: [
+    "view_admin",
+    "view_directory",
+    "view_members",
+    "view_todo",
+    "manage_todos",
+    "view_points",
+    "award_points",
+  ],
   administrator: [
-    "view_admin", "view_directory", "view_members", "manage_members",
-    "view_todo", "manage_todos", "view_points", "award_points",
-    "reset_points", "view_analytics", "view_history", "manage_news",
+    "view_admin",
+    "view_directory",
+    "view_members",
+    "manage_members",
+    "view_todo",
+    "manage_todos",
+    "view_points",
+    "award_points",
+    "reset_points",
+    "view_analytics",
+    "view_history",
+    "manage_news",
   ],
   head_admin: PERMISSION_KEYS,
 };
@@ -819,8 +930,7 @@ function Dashboard({ profile, onLogout, reloadProfile }) {
 
   const isHeadAdmin = profile.role === "head_admin";
 
-  const hasPermission = (permissionKey) =>
-    permissions.includes(permissionKey);
+  const hasPermission = (permissionKey) => permissions.includes(permissionKey);
 
   const canManageMembers = hasPermission("manage_members");
   const canManageTodos = hasPermission("manage_todos");
@@ -831,12 +941,21 @@ function Dashboard({ profile, onLogout, reloadProfile }) {
   const canViewHistory = hasPermission("view_history");
   const canManageNews = hasPermission("manage_news");
   const canManageRoles = hasPermission("manage_roles");
-  const isAdmin = hasPermission("view_admin") || canViewMembers || canViewAnalytics || canViewHistory || canManageNews || canManageRoles;
+  const isAdmin =
+    hasPermission("view_admin") ||
+    canViewMembers ||
+    canViewAnalytics ||
+    canViewHistory ||
+    canManageNews ||
+    canManageRoles;
 
   const loadRoleAccess = async () => {
     const [permissionResult, roleResult] = await Promise.all([
       supabase.rpc("get_my_permissions"),
-      supabase.from("role_definitions").select("role_key, name, description, is_system").order("name", { ascending: true }),
+      supabase
+        .from("role_definitions")
+        .select("role_key, name, description, is_system")
+        .order("name", { ascending: true }),
     ]);
 
     if (!permissionResult.error && Array.isArray(permissionResult.data)) {
@@ -844,7 +963,10 @@ function Dashboard({ profile, onLogout, reloadProfile }) {
     } else {
       setPermissions(LEGACY_ROLE_PERMISSIONS[profile.role] || []);
       if (permissionResult.error) {
-        console.warn("Permission load fallback:", permissionResult.error.message);
+        console.warn(
+          "Permission load fallback:",
+          permissionResult.error.message,
+        );
       }
     }
 
@@ -853,7 +975,10 @@ function Dashboard({ profile, onLogout, reloadProfile }) {
     } else {
       setRoleDefinitions(SYSTEM_ROLE_DEFINITIONS);
       if (roleResult.error) {
-        console.warn("Role definition load fallback:", roleResult.error.message);
+        console.warn(
+          "Role definition load fallback:",
+          roleResult.error.message,
+        );
       }
     }
   };
@@ -1311,9 +1436,10 @@ function Dashboard({ profile, onLogout, reloadProfile }) {
           ? "PROMOTE_MEMBER"
           : "ROLE_CHANGE",
       targetUserId: memberId,
-      details: `Role changed from ${getRoleDisplayName(oldRole, roleDefinitions)} to ${
-        getRoleDisplayName(newRole, roleDefinitions)
-      }.`,
+      details: `Role changed from ${getRoleDisplayName(oldRole, roleDefinitions)} to ${getRoleDisplayName(
+        newRole,
+        roleDefinitions,
+      )}.`,
     });
 
     await loadData();
@@ -2042,7 +2168,9 @@ ROLE MANAGER / PERMISSIONS
 */
 
 function RoleManager({ currentUser, roleDefinitions, onRolesChanged }) {
-  const [roles, setRoles] = useState(roleDefinitions || SYSTEM_ROLE_DEFINITIONS);
+  const [roles, setRoles] = useState(
+    roleDefinitions || SYSTEM_ROLE_DEFINITIONS,
+  );
   const [permissions, setPermissions] = useState(PERMISSION_CATALOG);
   const [selectedRoleKey, setSelectedRoleKey] = useState("");
   const [selectedPermissionKeys, setSelectedPermissionKeys] = useState([]);
@@ -2053,18 +2181,20 @@ function RoleManager({ currentUser, roleDefinitions, onRolesChanged }) {
   const [message, setMessage] = useState("");
 
   const loadRoles = async () => {
-    const [{ data: roleData, error: roleError }, { data: permissionData, error: permissionError }] =
-      await Promise.all([
-        supabase
-          .from("role_definitions")
-          .select("role_key, name, description, is_system")
-          .order("name", { ascending: true }),
-        supabase
-          .from("permissions")
-          .select("permission_key, name, description, category")
-          .order("category", { ascending: true })
-          .order("name", { ascending: true }),
-      ]);
+    const [
+      { data: roleData, error: roleError },
+      { data: permissionData, error: permissionError },
+    ] = await Promise.all([
+      supabase
+        .from("role_definitions")
+        .select("role_key, name, description, is_system")
+        .order("name", { ascending: true }),
+      supabase
+        .from("permissions")
+        .select("permission_key, name, description, category")
+        .order("category", { ascending: true })
+        .order("name", { ascending: true }),
+    ]);
 
     if (!roleError && roleData?.length) {
       setRoles(roleData);
@@ -2104,7 +2234,9 @@ function RoleManager({ currentUser, roleDefinitions, onRolesChanged }) {
         .eq("role_key", selectedRoleKey);
 
       if (!error) {
-        setSelectedPermissionKeys((data || []).map((item) => item.permission_key));
+        setSelectedPermissionKeys(
+          (data || []).map((item) => item.permission_key),
+        );
       }
     };
 
@@ -2137,8 +2269,13 @@ function RoleManager({ currentUser, roleDefinitions, onRolesChanged }) {
       return;
     }
 
-    const normalizedKey = roleKey.trim().toLowerCase().replace(/[^a-z0-9_]+/g, "_");
-    const existingRole = roles.find((role) => role.role_key === selectedRoleKey);
+    const normalizedKey = roleKey
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9_]+/g, "_");
+    const existingRole = roles.find(
+      (role) => role.role_key === selectedRoleKey,
+    );
 
     if (existingRole?.is_system) {
       setMessage("Built-in roles are protected. Create a custom role instead.");
@@ -2195,7 +2332,11 @@ function RoleManager({ currentUser, roleDefinitions, onRolesChanged }) {
         if (permissionError) throw permissionError;
       }
 
-      setMessage(selectedRoleKey ? "Role updated successfully." : "Role created successfully.");
+      setMessage(
+        selectedRoleKey
+          ? "Role updated successfully."
+          : "Role created successfully.",
+      );
       await loadRoles();
       await onRolesChanged?.();
 
@@ -2231,7 +2372,9 @@ function RoleManager({ currentUser, roleDefinitions, onRolesChanged }) {
       if (countError) throw countError;
 
       if ((count || 0) > 0) {
-        setMessage("This role is assigned to members. Reassign them before deleting it.");
+        setMessage(
+          "This role is assigned to members. Reassign them before deleting it.",
+        );
         return;
       }
 
@@ -2306,7 +2449,9 @@ function RoleManager({ currentUser, roleDefinitions, onRolesChanged }) {
                     </span>
                   )}
                 </div>
-                <p className="text-gray-600 text-xs mt-1">{role.description || role.role_key}</p>
+                <p className="text-gray-600 text-xs mt-1">
+                  {role.description || role.role_key}
+                </p>
               </button>
             ))}
           </div>
@@ -2318,7 +2463,11 @@ function RoleManager({ currentUser, roleDefinitions, onRolesChanged }) {
         >
           <div>
             <p className="text-yellow-400 text-sm font-semibold">
-              {selectedRole ? (selectedRole.is_system ? "System Role" : "Edit Custom Role") : "New Custom Role"}
+              {selectedRole
+                ? selectedRole.is_system
+                  ? "System Role"
+                  : "Edit Custom Role"
+                : "New Custom Role"}
             </p>
             <h3 className="text-2xl font-black mt-1">
               {selectedRole ? selectedRole.name : "Create a role"}
@@ -2364,11 +2513,16 @@ function RoleManager({ currentUser, roleDefinitions, onRolesChanged }) {
             <div className="space-y-4">
               {Object.entries(groupedPermissions).map(([category, items]) => (
                 <div key={category}>
-                  <p className="text-gray-500 text-xs uppercase tracking-wider mb-2">{category}</p>
+                  <p className="text-gray-500 text-xs uppercase tracking-wider mb-2">
+                    {category}
+                  </p>
                   <div className="grid sm:grid-cols-2 gap-2">
                     {items.map((permission) => {
-                      const checked = selectedPermissionKeys.includes(permission.permission_key || permission.key);
-                      const permissionKey = permission.permission_key || permission.key;
+                      const checked = selectedPermissionKeys.includes(
+                        permission.permission_key || permission.key,
+                      );
+                      const permissionKey =
+                        permission.permission_key || permission.key;
                       return (
                         <label
                           key={permissionKey}
@@ -2386,8 +2540,12 @@ function RoleManager({ currentUser, roleDefinitions, onRolesChanged }) {
                             className="mt-1"
                           />
                           <span className="min-w-0">
-                            <span className="block text-sm font-semibold">{permission.name}</span>
-                            <span className="block text-gray-600 text-[11px] mt-1">{permission.description}</span>
+                            <span className="block text-sm font-semibold">
+                              {permission.name}
+                            </span>
+                            <span className="block text-gray-600 text-[11px] mt-1">
+                              {permission.description}
+                            </span>
                           </span>
                         </label>
                       );
@@ -2399,7 +2557,9 @@ function RoleManager({ currentUser, roleDefinitions, onRolesChanged }) {
           </div>
 
           {message && (
-            <p className="text-yellow-400 text-sm whitespace-pre-wrap">{message}</p>
+            <p className="text-yellow-400 text-sm whitespace-pre-wrap">
+              {message}
+            </p>
           )}
 
           <div className="flex flex-wrap gap-3">
@@ -2409,7 +2569,11 @@ function RoleManager({ currentUser, roleDefinitions, onRolesChanged }) {
                 disabled={saving}
                 className="px-6 py-3 rounded-xl bg-yellow-400 text-black font-bold disabled:opacity-50"
               >
-                {saving ? "Saving..." : selectedRole ? "Save Changes" : "Create Role"}
+                {saving
+                  ? "Saving..."
+                  : selectedRole
+                    ? "Save Changes"
+                    : "Create Role"}
               </button>
             )}
 
@@ -2429,7 +2593,8 @@ function RoleManager({ currentUser, roleDefinitions, onRolesChanged }) {
 
       <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
         <p className="text-gray-500 text-sm">
-          Built-in roles stay protected. Custom roles can be created, edited, assigned to members, and given only the permissions they need.
+          Built-in roles stay protected. Custom roles can be created, edited,
+          assigned to members, and given only the permissions they need.
         </p>
       </section>
     </div>
@@ -3525,45 +3690,6 @@ function Profile({ profile, reloadProfile, onLogAction }) {
       })
     : "Unknown";
 
-  const points = Number(profile.points || 0);
-
-  const badge =
-    profile.role === "head_admin"
-      ? {
-          label: "Head Admin",
-          icon: "👑",
-          description: "Club leadership",
-        }
-      : profile.role === "administrator"
-        ? {
-            label: "Administrator",
-            icon: "🛡️",
-            description: "Club administration",
-          }
-        : profile.role === "executive"
-          ? {
-              label: "Executive",
-              icon: "⭐",
-              description: "Executive team",
-            }
-          : points >= 100
-            ? {
-                label: "High Achiever",
-                icon: "🏆",
-                description: "100+ points",
-              }
-            : points >= 50
-              ? {
-                  label: "Contributor",
-                  icon: "🔥",
-                  description: "50+ points",
-                }
-              : {
-                  label: "Rising Member",
-                  icon: "🌱",
-                  description: "Building momentum",
-                };
-
   const displayName = profile.nickname || profile.full_name || "UU MLC Member";
 
   const initials =
@@ -3712,39 +3838,21 @@ function Profile({ profile, reloadProfile, onLogAction }) {
         </div>
       </section>
 
-      {/* Achievement + membership */}
-      <section className="grid lg:grid-cols-2 gap-6">
-        <div className="bg-yellow-400/10 border border-yellow-400/20 rounded-3xl p-6">
-          <p className="text-yellow-400 text-sm font-semibold">Achievement</p>
+      {/* Membership */}
+      <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
+        <p className="text-yellow-400 text-sm font-semibold">Membership</p>
 
-          <div className="flex items-center gap-4 mt-4">
-            <div className="w-16 h-16 rounded-2xl bg-yellow-400/15 flex items-center justify-center text-3xl">
-              {badge.icon}
-            </div>
+        <div className="grid md:grid-cols-2 gap-4 mt-4">
+          <div className="rounded-2xl bg-black/10 border border-white/5 p-4">
+            <p className="text-gray-600 text-xs uppercase">Joined</p>
 
-            <div>
-              <h3 className="text-2xl font-black">{badge.label}</h3>
-
-              <p className="text-gray-400 text-sm mt-1">{badge.description}</p>
-            </div>
+            <p className="font-bold mt-2">{joinDate}</p>
           </div>
-        </div>
 
-        <div className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
-          <p className="text-yellow-400 text-sm font-semibold">Membership</p>
+          <div className="rounded-2xl bg-black/10 border border-white/5 p-4">
+            <p className="text-gray-600 text-xs uppercase">Status</p>
 
-          <div className="grid grid-cols-2 gap-4 mt-4">
-            <div className="rounded-2xl bg-black/10 border border-white/5 p-4">
-              <p className="text-gray-600 text-xs uppercase">Joined</p>
-
-              <p className="font-bold mt-2">{joinDate}</p>
-            </div>
-
-            <div className="rounded-2xl bg-black/10 border border-white/5 p-4">
-              <p className="text-gray-600 text-xs uppercase">Status</p>
-
-              <p className="font-bold text-green-400 mt-2">Active</p>
-            </div>
+            <p className="font-bold text-green-400 mt-2">Active</p>
           </div>
         </div>
       </section>
@@ -4037,8 +4145,7 @@ function Members({
     ? roleDefinitions
     : SYSTEM_ROLE_DEFINITIONS;
 
-  const roleName = (roleKey) =>
-    getRoleDisplayName(roleKey, availableRoles);
+  const roleName = (roleKey) => getRoleDisplayName(roleKey, availableRoles);
 
   const canModifyTarget = (member) => {
     if (currentUserRole === "head_admin") {
@@ -4317,7 +4424,12 @@ function Members({
                     className="flex-1 min-w-40 bg-[#18181b] border border-white/10 rounded-xl px-3 py-2.5"
                   >
                     {availableRoles
-                      .filter((role) => isCurrentUser || role.role_key !== "head_admin" || currentUserRole === "head_admin")
+                      .filter(
+                        (role) =>
+                          isCurrentUser ||
+                          role.role_key !== "head_admin" ||
+                          currentUserRole === "head_admin",
+                      )
                       .map((role) => (
                         <option key={role.role_key} value={role.role_key}>
                           {role.name || roleName(role.role_key)}
