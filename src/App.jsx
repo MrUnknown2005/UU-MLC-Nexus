@@ -754,8 +754,6 @@ function Dashboard({ profile, onLogout, reloadProfile }) {
   const [notificationError, setNotificationError] = useState("");
   const [todosForBadge, setTodosForBadge] = useState([]);
 
-  const [members, setMembers] = useState([]);
-
   const [news, setNews] = useState([]);
 
   const [pointHistory, setPointHistory] = useState([]);
@@ -1930,6 +1928,7 @@ function Dashboard({ profile, onLogout, reloadProfile }) {
                 <Achievements
                   currentUser={profile}
                   onLogAction={logAdminAction}
+                  members={members}
                 />
               )}
 
@@ -4493,9 +4492,8 @@ NEWS
 =========================================================
 */
 
-function Achievements({ currentUser, onLogAction }) {
+function Achievements({ currentUser, onLogAction, members }) {
   const [achievements, setAchievements] = useState([]);
-  const [members, setMembers] = useState([]);
   const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -4507,26 +4505,20 @@ function Achievements({ currentUser, onLogAction }) {
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
 
+  const activeMembers = members.filter(
+    (member) => member.role !== "guest" && member.is_active !== false,
+  );
+
   const loadAll = async () => {
-    const [achievementResult, memberResult, assignmentResult] =
-      await Promise.all([
-        supabase.from("achievements").select("*").order("created_at", {
-          ascending: false,
-        }),
+    const [achievementResult, assignmentResult] = await Promise.all([
+      supabase.from("achievements").select("*").order("created_at", {
+        ascending: false,
+      }),
 
-        supabase
-          .from("profiles")
-          .select("id, full_name, nickname, email, role, is_active")
-          .neq("role", "guest")
-          .eq("is_active", true)
-          .order("full_name", {
-            ascending: true,
-          }),
-
-        supabase
-          .from("profile_achievements")
-          .select(
-            `
+      supabase
+        .from("profile_achievements")
+        .select(
+          `
           id,
           user_id,
           achievement_id,
@@ -4543,32 +4535,24 @@ function Achievements({ currentUser, onLogAction }) {
             icon
           )
         `,
-          )
-          .order("awarded_at", {
-            ascending: false,
-          }),
-      ]);
+        )
+        .order("awarded_at", {
+          ascending: false,
+        }),
+    ]);
 
     if (!achievementResult.error) {
       setAchievements(achievementResult.data || []);
-    }
-
-    if (!memberResult.error) {
-      setMembers(memberResult.data || []);
     }
 
     if (!assignmentResult.error) {
       setAssignments(assignmentResult.data || []);
     }
 
-    if (
-      achievementResult.error ||
-      memberResult.error ||
-      assignmentResult.error
-    ) {
+    if (achievementResult.error || assignmentResult.error) {
       console.error(
         "Achievement management load error:",
-        achievementResult.error || memberResult.error || assignmentResult.error,
+        achievementResult.error || assignmentResult.error,
       );
     }
 
@@ -4881,7 +4865,7 @@ function Achievements({ currentUser, onLogAction }) {
           >
             <option value="">Select member</option>
 
-            {members.map((member) => (
+            {activeMembers.map((member) => (
               <option key={member.id} value={member.id}>
                 {member.nickname || member.full_name}
               </option>
