@@ -6026,7 +6026,6 @@ function Todo({ profile, isAdmin, onLogAction }) {
               {completedTodos.length}
             </span>
           </div>
-
           <span className="text-gray-600 text-sm">
             {showCompleted ? "Hide" : "Show"}
           </span>
