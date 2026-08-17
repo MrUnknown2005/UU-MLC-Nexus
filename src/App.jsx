@@ -916,6 +916,8 @@ function Dashboard({
 }) {
   const [tab, setTab] = useState(() => localStorage.getItem("uu-mlc-active-tab") || "overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
   const [todosForBadge, setTodosForBadge] = useState([]);
 
   const [members, setMembers] =
@@ -1269,6 +1271,96 @@ function Dashboard({
       .subscribe();
     return () => supabase.removeChannel(channel);
   }, [profile.id]);
+
+  const loadNotifications = async () => {
+    const { data, error } = await supabase
+      .from("notifications")
+      .select("*")
+      .eq("user_id", profile.id)
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (error) {
+      console.error("Notification load error:", error);
+      setNotifications([]);
+      return;
+    }
+
+    setNotifications(data || []);
+  };
+
+  useEffect(() => {
+    loadNotifications();
+
+    const channel = supabase
+      .channel(`notifications-${profile.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${profile.id}`,
+        },
+        () => loadNotifications()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [profile.id]);
+
+  const markNotificationRead = async (notificationId) => {
+    const { error } = await supabase.rpc(
+      "mark_notification_read",
+      { p_notification_id: notificationId }
+    );
+
+    if (error) {
+      console.error("Mark notification read error:", error);
+      return;
+    }
+
+    setNotifications((current) =>
+      current.map((item) =>
+        item.id === notificationId
+          ? { ...item, read_at: new Date().toISOString() }
+          : item
+      )
+    );
+  };
+
+  const markAllNotificationsRead = async () => {
+    const { error } = await supabase.rpc(
+      "mark_all_notifications_read"
+    );
+
+    if (error) {
+      console.error("Mark all notifications read error:", error);
+      return;
+    }
+
+    setNotifications((current) =>
+      current.map((item) =>
+        item.read_at
+          ? item
+          : { ...item, read_at: new Date().toISOString() }
+      )
+    );
+  };
+
+  const openNotification = async (notification) => {
+    if (!notification.read_at) {
+      await markNotificationRead(notification.id);
+    }
+
+    if (notification.target_tab) {
+      setTab(notification.target_tab);
+    }
+
+    setNotificationsOpen(false);
+  };
 
   /*
   =========================================================
@@ -1959,10 +2051,10 @@ function Dashboard({
             1000
     ).length;
 
-  const notificationCount =
-    pendingMemberCount +
-    overdueTodoCount +
-    recentNewsCount;
+  const unreadNotificationCount =
+    notifications.filter(
+      (item) => !item.read_at
+    ).length;
 
   return (
     <>
@@ -2025,93 +2117,113 @@ function Dashboard({
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="relative group">
+            <div className="relative">
               <button
                 type="button"
-                className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition flex items-center justify-center"
+                onClick={() =>
+                  setNotificationsOpen(
+                    (value) => !value
+                  )
+                }
+                className="relative w-11 h-11 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition flex items-center justify-center"
                 aria-label="Notifications"
+                aria-expanded={notificationsOpen}
               >
-                <span className="text-lg">
-                  🔔
-                </span>
+                <span className="text-lg">🔔</span>
 
-                {notificationCount > 0 && (
+                {unreadNotificationCount > 0 && (
                   <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
-                    {notificationCount > 99
+                    {unreadNotificationCount > 99
                       ? "99+"
-                      : notificationCount}
+                      : unreadNotificationCount}
                   </span>
                 )}
               </button>
 
-              {notificationCount > 0 && (
-                <div className="absolute right-0 top-12 z-50 w-[calc(100vw-1.5rem)] max-w-80 rounded-2xl bg-[#151519] border border-white/10 shadow-2xl p-4 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition">
-                  <p className="font-semibold">
-                    Notifications
-                  </p>
+              {notificationsOpen && (
+                <div className="absolute right-0 top-12 z-50 w-[calc(100vw-1.5rem)] max-w-80 rounded-2xl bg-[#151519] border border-white/10 shadow-2xl overflow-hidden">
+                  <div className="flex items-center justify-between gap-3 p-4 border-b border-white/10">
+                    <div>
+                      <p className="font-semibold">Notifications</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {unreadNotificationCount > 0
+                          ? `${unreadNotificationCount} unread`
+                          : "You're all caught up"}
+                      </p>
+                    </div>
 
-                  <div className="space-y-2 mt-3">
-                    {pendingMemberCount > 0 && (
+                    {unreadNotificationCount > 0 && (
                       <button
-                        onClick={() =>
-                          setTab("members")
-                        }
-                        className="w-full text-left rounded-xl bg-yellow-400/10 border border-yellow-400/20 p-3 hover:bg-yellow-400/15 transition"
+                        type="button"
+                        onClick={markAllNotificationsRead}
+                        className="text-xs text-yellow-400 hover:text-yellow-300"
                       >
-                        <p className="text-yellow-300 text-sm font-semibold">
-                          Pending members
-                        </p>
-                        <p className="text-gray-400 text-xs mt-1">
-                          {pendingMemberCount}{" "}
-                          {pendingMemberCount === 1
-                            ? "join request"
-                            : "join requests"}{" "}
-                          need review.
-                        </p>
-                      </button>
-                    )}
-
-                    {overdueTodoCount > 0 && (
-                      <button
-                        onClick={() =>
-                          setTab("todo")
-                        }
-                        className="w-full text-left rounded-xl bg-red-500/10 border border-red-400/20 p-3 hover:bg-red-500/15 transition"
-                      >
-                        <p className="text-red-300 text-sm font-semibold">
-                          Overdue tasks
-                        </p>
-                        <p className="text-gray-400 text-xs mt-1">
-                          {overdueTodoCount}{" "}
-                          {overdueTodoCount === 1
-                            ? "task is"
-                            : "tasks are"}{" "}
-                          overdue.
-                        </p>
-                      </button>
-                    )}
-
-                    {recentNewsCount > 0 && (
-                      <button
-                        onClick={() =>
-                          setTab("news")
-                        }
-                        className="w-full text-left rounded-xl bg-blue-500/10 border border-blue-400/20 p-3 hover:bg-blue-500/15 transition"
-                      >
-                        <p className="text-blue-300 text-sm font-semibold">
-                          Recent news
-                        </p>
-                        <p className="text-gray-400 text-xs mt-1">
-                          {recentNewsCount}{" "}
-                          recent{" "}
-                          {recentNewsCount === 1
-                            ? "announcement"
-                            : "announcements"}{" "}
-                          this week.
-                        </p>
+                        Mark all read
                       </button>
                     )}
                   </div>
+
+                  {notifications.length === 0 ? (
+                    <div className="p-8 text-center">
+                      <div className="text-3xl">🔔</div>
+                      <p className="text-gray-400 mt-3">
+                        No notifications yet.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="max-h-[28rem] overflow-y-auto">
+                      {notifications.map((notification) => (
+                        <button
+                          key={notification.id}
+                          type="button"
+                          onClick={() =>
+                            openNotification(notification)
+                          }
+                          className={`w-full text-left p-4 border-b border-white/5 hover:bg-white/5 transition ${
+                            notification.read_at
+                              ? ""
+                              : "bg-yellow-400/[0.04]"
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <span className="text-lg">
+                              {notification.type === "news"
+                                ? "📰"
+                                : notification.type === "todo"
+                                ? "✓"
+                                : notification.type === "points"
+                                ? "🏆"
+                                : notification.type === "member"
+                                ? "👥"
+                                : "🔔"}
+                            </span>
+
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-start justify-between gap-3">
+                                <p className="text-sm font-semibold">
+                                  {notification.title}
+                                </p>
+
+                                {!notification.read_at && (
+                                  <span className="w-2 h-2 rounded-full bg-yellow-400 shrink-0 mt-1.5" />
+                                )}
+                              </div>
+
+                              <p className="text-xs text-gray-400 mt-1 leading-relaxed">
+                                {notification.message}
+                              </p>
+
+                              <p className="text-[11px] text-gray-600 mt-2">
+                                {new Date(
+                                  notification.created_at
+                                ).toLocaleString()}
+                              </p>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -2129,13 +2241,13 @@ function Dashboard({
           </div>
         </div>
 
-        {notificationCount > 0 && (
+        {unreadNotificationCount > 0 && (
           <section className="mb-6 rounded-3xl border border-yellow-400/20 bg-yellow-400/[0.04] p-5">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
                 <p className="text-yellow-400 text-sm font-semibold">
-                  {notificationCount}{" "}
-                  {notificationCount === 1
+                  {unreadNotificationCount}{" "}
+                  {unreadNotificationCount === 1
                     ? "item needs"
                     : "items need"}{" "}
                   your attention
