@@ -183,7 +183,7 @@ function LandingPage({ onLogin, onJoin }) {
               <p className="text-xs text-gray-500">Nexus</p>
             </div>
           </div>
-          <button onClick={onLogin} className="px-4 py-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition">
+          <button onClick={onLogin} className="px-3 sm:px-4 py-2 rounded-xl border border-white/10 text-sm sm:text-base shrink-0 bg-white/5 hover:bg-white/10 transition">
             Member Login
           </button>
         </header>
@@ -780,20 +780,20 @@ function Header({
 }) {
   return (
     <header className="border-b border-white/10 bg-white/[0.03]">
-      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <img
             src={logo}
             alt="UU MLC Logo"
-            className="w-12 h-12 rounded-full object-cover border border-yellow-400/20"
+            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border border-yellow-400/20 shrink-0"
           />
 
-          <div>
-            <h1 className="font-bold">
+          <div className="min-w-0">
+            <h1 className="font-bold text-sm sm:text-base truncate">
               UU MLC Nexus
             </h1>
 
-            <p className="text-gray-500 text-xs">
+            <p className="hidden sm:block text-gray-500 text-xs truncate">
               Uttara University Machine Learning Club
             </p>
           </div>
@@ -846,8 +846,8 @@ function GuestDashboard({
         onLogout={onLogout}
       />
 
-      <main className="max-w-5xl mx-auto px-6 py-10">
-        <section className="bg-white/[0.04] border border-yellow-400/20 rounded-3xl p-8 mb-8">
+      <main className="max-w-5xl mx-auto px-3 sm:px-6 py-5 sm:py-10">
+        <section className="bg-white/[0.04] border border-yellow-400/20 rounded-3xl p-5 sm:p-8 mb-5 sm:mb-8">
           <p className="text-gray-400">
             Welcome,{" "}
             {profile.nickname ||
@@ -1965,17 +1965,61 @@ function Dashboard({
     recentNewsCount;
 
   return (
-    <div className="min-h-screen bg-[#0b0b0d] text-white">
+    <>
+      <style>{`
+        .nexus-mobile-root {
+          overflow-x: hidden;
+        }
+
+        .nexus-mobile-root input,
+        .nexus-mobile-root textarea,
+        .nexus-mobile-root select,
+        .nexus-mobile-root button {
+          max-width: 100%;
+        }
+
+        .nexus-mobile-root img {
+          max-width: 100%;
+        }
+
+        @media (max-width: 640px) {
+          .nexus-mobile-root section,
+          .nexus-mobile-root article {
+            min-width: 0;
+          }
+
+          .nexus-mobile-root h1,
+          .nexus-mobile-root h2,
+          .nexus-mobile-root h3,
+          .nexus-mobile-root h4,
+          .nexus-mobile-root p {
+            overflow-wrap: anywhere;
+          }
+
+          .nexus-mobile-root button,
+          .nexus-mobile-root select,
+          .nexus-mobile-root input,
+          .nexus-mobile-root textarea {
+            min-height: 44px;
+          }
+
+          .nexus-mobile-root input[type="file"] {
+            min-height: auto;
+          }
+        }
+      `}</style>
+
+      <div className="nexus-mobile-root min-h-screen bg-[#0b0b0d] text-white">
       <Header
         profile={profile}
         onLogout={onLogout}
       />
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="mb-8 flex items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
+        <div className="mb-5 sm:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <p className="text-gray-500 text-sm">Workspace</p>
-            <h1 className="text-2xl md:text-3xl font-black mt-1">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-black mt-1">
               UU MLC Nexus
             </h1>
           </div>
@@ -2001,7 +2045,7 @@ function Dashboard({
               </button>
 
               {notificationCount > 0 && (
-                <div className="absolute right-0 top-12 z-50 w-80 rounded-2xl bg-[#151519] border border-white/10 shadow-2xl p-4 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition">
+                <div className="absolute right-0 top-12 z-50 w-[calc(100vw-1.5rem)] max-w-80 rounded-2xl bg-[#151519] border border-white/10 shadow-2xl p-4 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition">
                   <p className="font-semibold">
                     Notifications
                   </p>
@@ -2136,9 +2180,9 @@ function Dashboard({
           </section>
         )}
 
-        <div className="flex gap-6 items-start">
+        <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 items-stretch lg:items-start">
           <aside className={`${sidebarOpen ? "block" : "hidden"} lg:block w-full lg:w-64 flex-shrink-0`}>
-            <div className="sticky top-6 bg-white/[0.04] border border-white/10 rounded-3xl p-3 backdrop-blur-xl">
+            <div className="lg:sticky lg:top-6 bg-white/[0.04] border border-white/10 rounded-2xl sm:rounded-3xl p-2 sm:p-3 backdrop-blur-xl max-h-[70vh] overflow-y-auto">
               <NavItem active={tab === "overview"} onClick={() => setTab("overview")} icon="⌂">Overview</NavItem>
               <NavItem active={tab === "profile"} onClick={() => setTab("profile")} icon="◉">Profile</NavItem>
               <NavItem active={tab === "directory"} onClick={() => setTab("directory")} icon="👥">Directory</NavItem>
@@ -2148,7 +2192,7 @@ function Dashboard({
               {isAdmin && <NavItem active={tab === "analytics"} onClick={() => setTab("analytics")} icon="◫">Analytics</NavItem>}
               {isAdmin && <NavItem active={tab === "activity"} onClick={() => setTab("activity")} icon="▤">History</NavItem>}
               {isAdmin && <NavItem active={tab === "news"} onClick={() => setTab("news")} icon="📰" badge={recentNewsCount}>News</NavItem>}
-              <button onClick={onLogout} className="w-full mt-3 px-4 py-3 rounded-2xl text-left text-red-300 hover:bg-red-500/10 transition">↪ Sign out</button>
+              <button onClick={onLogout} className="w-full mt-2 sm:mt-3 px-3 sm:px-4 py-3.5 sm:py-3 rounded-xl sm:rounded-2xl text-left text-sm sm:text-base text-red-300 hover:bg-red-500/10 transition">↪ Sign out</button>
             </div>
           </aside>
 
@@ -2350,7 +2394,8 @@ function Dashboard({
           </main>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 
@@ -2992,7 +3037,7 @@ function NavItem({ active, onClick, icon, children, badge = 0 }) {
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-2xl text-left transition ${active ? "bg-yellow-400 text-black" : "text-gray-300 hover:bg-white/10"}`}
+      className={`w-full flex items-center justify-between gap-3 px-3 sm:px-4 py-3.5 sm:py-3 rounded-xl sm:rounded-2xl text-left text-sm sm:text-base transition ${active ? "bg-yellow-400 text-black" : "text-gray-300 hover:bg-white/10"}`}
     >
       <span className="flex items-center gap-3"><span className="w-6 text-center">{icon}</span>{children}</span>
       {badge > 0 && <span className={`min-w-6 h-6 px-2 rounded-full text-xs flex items-center justify-center font-bold ${active ? "bg-black text-yellow-300" : "bg-red-500 text-white"}`}>{badge > 99 ? "99+" : badge}</span>}
