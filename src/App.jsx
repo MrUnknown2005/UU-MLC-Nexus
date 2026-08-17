@@ -70,12 +70,6 @@ const PERMISSION_CATALOG = [
     category: "Points",
   },
   {
-    key: "view_analytics",
-    name: "View Analytics",
-    description: "View club analytics and performance metrics.",
-    category: "Admin",
-  },
-  {
     key: "view_history",
     name: "View History",
     description: "View administrative activity history.",
@@ -152,7 +146,6 @@ const LEGACY_ROLE_PERMISSIONS = {
     "view_points",
     "award_points",
     "reset_points",
-    "view_analytics",
     "view_history",
     "manage_news",
   ],
@@ -173,6 +166,7 @@ APP
 
 export default function App() {
   const [showLanding, setShowLanding] = useState(true);
+  const [authMode, setAuthMode] = useState("login");
 
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -261,14 +255,24 @@ export default function App() {
     if (showLanding) {
       return (
         <LandingPage
-          onLogin={() => setShowLanding(false)}
-          onJoin={() => setShowLanding(false)}
+          onLogin={() => {
+            setAuthMode("login");
+            setShowLanding(false);
+          }}
+          onJoin={() => {
+            setAuthMode("signup");
+            setShowLanding(false);
+          }}
         />
       );
     }
 
     return (
-      <AuthScreen onAuth={loadSession} onBack={() => setShowLanding(true)} />
+      <AuthScreen
+        initialMode={authMode}
+        onAuth={loadSession}
+        onBack={() => setShowLanding(true)}
+      />
     );
   }
 
@@ -396,8 +400,8 @@ AUTH SCREEN
 =========================================================
 */
 
-function AuthScreen({ onAuth, onBack }) {
-  const [mode, setMode] = useState("login");
+function AuthScreen({ initialMode = "login", onAuth, onBack }) {
+  const [mode, setMode] = useState(initialMode);
 
   const toggleMode = () => {
     setMode((current) => (current === "login" ? "signup" : "login"));
@@ -1348,6 +1352,11 @@ function Dashboard({ profile, onLogout, reloadProfile }) {
   */
 
   const adjustPoints = async (memberId, points, reason) => {
+    if (!canAwardPoints) {
+      alert("You do not have permission to award or deduct points.");
+      return false;
+    }
+
     const target = members.find((member) => member.id === memberId);
 
     const { error } = await supabase.rpc("award_points", {
@@ -2088,6 +2097,7 @@ function Dashboard({ profile, onLogout, reloadProfile }) {
                     history={pointHistory}
                     allHistory={allPointHistory}
                     onAdjust={adjustPoints}
+                    canAwardPoints={canAwardPoints}
                     canSeeAllPointHistory={canViewHistory}
                     isHeadAdmin={isHeadAdmin}
                     onDeleteAllPointData={deleteAllPointData}
@@ -2579,453 +2589,6 @@ function RoleManager({ currentUser, roleDefinitions, onRolesChanged }) {
         </p>
       </section>
     </div>
-  );
-}
-
-/*
-=========================================================
-ANALYTICS
-=========================================================
-*/
-
-function Analytics({ members, pointHistory, news, profile }) {
-  const [todos, setTodos] = useState([]);
-
-  const [range, setRange] = useState("30");
-
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const loadAnalyticsTodos = async () => {
-      const { data, error } = await supabase
-        .from("todos")
-        .select("id, completed, created_at, completed_at, deadline");
-
-      if (error) {
-        console.error("Analytics todo error:", error);
-        setTodos([]);
-      } else {
-        setTodos(data || []);
-      }
-
-      setLoading(false);
-    };
-
-    loadAnalyticsTodos();
-  }, []);
-
-  const activeMembers = members.filter(
-    (member) => member.is_active !== false && member.role !== "guest",
-  );
-
-  const pendingMembers = members.filter(
-    (member) => member.role === "guest" && member.is_active !== false,
-  );
-
-  const totalPoints = activeMembers.reduce(
-    (sum, member) => sum + Number(member.points || 0),
-    0,
-  );
-
-  const averagePoints = activeMembers.length
-    ? Math.round(totalPoints / activeMembers.length)
-    : 0;
-
-  const completedTasks = todos.filter((todo) => todo.completed);
-
-  const overdueTasks = todos.filter(
-    (todo) =>
-      !todo.completed &&
-      todo.deadline &&
-      new Date(`${todo.deadline}T23:59:59`) < new Date(),
-  );
-
-  const cutoff = Date.now() - Number(range) * 24 * 60 * 60 * 1000;
-
-  const filteredHistory = pointHistory.filter(
-    (item) => !item.created_at || new Date(item.created_at).getTime() >= cutoff,
-  );
-
-  const filteredNews = news.filter(
-    (item) => !item.created_at || new Date(item.created_at).getTime() >= cutoff,
-  );
-
-  const pointsAdded = filteredHistory.reduce(
-    (sum, item) => sum + Math.max(0, Number(item.points || 0)),
-    0,
-  );
-
-  const pointsRemoved = filteredHistory.reduce(
-    (sum, item) => sum + Math.max(0, -Number(item.points || 0)),
-    0,
-  );
-
-  const topPerformers = [...activeMembers]
-    .sort((a, b) => Number(b.points || 0) - Number(a.points || 0))
-    .slice(0, 5);
-
-  const roleCounts = activeMembers.reduce((acc, member) => {
-    const role = roleName(member.role) || member.role || "Unknown";
-
-    acc[role] = (acc[role] || 0) + 1;
-
-    return acc;
-  }, {});
-
-  const recentActivity = [...filteredHistory]
-    .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
-    .slice(0, 6);
-
-  const statCards = [
-    {
-      label: "Active Members",
-      value: activeMembers.length,
-      note: `${pendingMembers.length} pending`,
-      icon: "👥",
-    },
-    {
-      label: "Total Points",
-      value: totalPoints,
-      note: `Avg ${averagePoints} per member`,
-      icon: "🏆",
-    },
-    {
-      label: "Tasks Completed",
-      value: completedTasks.length,
-      note: `${overdueTasks.length} overdue`,
-      icon: "✓",
-    },
-    {
-      label: "News in Range",
-      value: filteredNews.length,
-      note: `Last ${range} days`,
-      icon: "📰",
-    },
-  ];
-
-  return (
-    <div className="space-y-6">
-      <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-6 md:p-7">
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-5">
-          <div>
-            <p className="text-yellow-400 text-sm font-semibold">
-              Admin Insights
-            </p>
-
-            <h2 className="text-3xl font-black mt-1">Club Analytics</h2>
-
-            <p className="text-gray-500 mt-2">
-              Membership, performance, tasks, and club activity at a glance.
-            </p>
-          </div>
-
-          <select
-            value={range}
-            onChange={(event) => setRange(event.target.value)}
-            className="bg-[#17171b] border border-white/10 rounded-xl px-4 py-3 text-white outline-none"
-          >
-            <option value="7">Last 7 days</option>
-            <option value="30">Last 30 days</option>
-            <option value="90">Last 90 days</option>
-            <option value="365">Last year</option>
-          </select>
-        </div>
-      </section>
-
-      <section className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        {statCards.map((card) => (
-          <div
-            key={card.label}
-            className="bg-white/[0.04] border border-white/10 rounded-2xl p-5"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-gray-500 text-xs uppercase tracking-wider">
-                  {card.label}
-                </p>
-
-                <p className="text-3xl font-black mt-2">{card.value}</p>
-
-                <p className="text-gray-600 text-xs mt-1">{card.note}</p>
-              </div>
-
-              <div className="text-2xl">{card.icon}</div>
-            </div>
-          </div>
-        ))}
-      </section>
-
-      <section className="grid xl:grid-cols-2 gap-5">
-        <div className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
-          <p className="text-yellow-400 text-sm font-semibold">
-            Points Activity
-          </p>
-
-          <h3 className="text-2xl font-black mt-1">Point Flow</h3>
-
-          <div className="grid grid-cols-2 gap-3 mt-6">
-            <div className="rounded-2xl bg-green-500/10 border border-green-400/20 p-5">
-              <p className="text-green-300 text-xs uppercase tracking-wider">
-                Added
-              </p>
-
-              <p className="text-3xl font-black mt-2">+{pointsAdded}</p>
-            </div>
-
-            <div className="rounded-2xl bg-red-500/10 border border-red-400/20 p-5">
-              <p className="text-red-300 text-xs uppercase tracking-wider">
-                Removed
-              </p>
-
-              <p className="text-3xl font-black mt-2">-{pointsRemoved}</p>
-            </div>
-          </div>
-
-          <div className="mt-5">
-            <p className="text-gray-500 text-sm">Recent point activity</p>
-
-            <div className="space-y-2 mt-3">
-              {recentActivity.length === 0 ? (
-                <p className="text-gray-600 text-sm py-4">
-                  No point activity in this range.
-                </p>
-              ) : (
-                recentActivity.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between gap-3 bg-white/[0.025] rounded-xl px-4 py-3"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold truncate">
-                        {item.reason || "Point adjustment"}
-                      </p>
-
-                      <p className="text-gray-600 text-xs mt-1">
-                        {item.created_at
-                          ? new Date(item.created_at).toLocaleDateString()
-                          : ""}
-                      </p>
-                    </div>
-
-                    <span
-                      className={
-                        Number(item.points || 0) >= 0
-                          ? "text-green-400 font-bold"
-                          : "text-red-400 font-bold"
-                      }
-                    >
-                      {Number(item.points || 0) >= 0 ? "+" : ""}
-                      {item.points}
-                    </span>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
-          <p className="text-yellow-400 text-sm font-semibold">Membership</p>
-
-          <h3 className="text-2xl font-black mt-1">Member Breakdown</h3>
-
-          <div className="space-y-3 mt-6">
-            {Object.entries(roleCounts).map(([role, count]) => {
-              const percentage = activeMembers.length
-                ? Math.round((count / activeMembers.length) * 100)
-                : 0;
-
-              return (
-                <div key={role}>
-                  <div className="flex items-center justify-between gap-4 text-sm">
-                    <span className="text-gray-300">{role}</span>
-
-                    <span className="text-gray-500">
-                      {count} · {percentage}%
-                    </span>
-                  </div>
-
-                  <div className="h-2 bg-white/10 rounded-full overflow-hidden mt-2">
-                    <div
-                      className="h-full bg-yellow-400 rounded-full"
-                      style={{
-                        width: `${percentage}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-
-            {pendingMembers.length > 0 && (
-              <div className="rounded-xl bg-yellow-400/10 border border-yellow-400/20 p-4 mt-4">
-                <p className="text-yellow-300 text-sm font-semibold">
-                  Pending join requests
-                </p>
-
-                <p className="text-2xl font-black mt-1">
-                  {pendingMembers.length}
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      <section className="grid xl:grid-cols-[1.15fr_0.85fr] gap-5">
-        <div className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
-          <p className="text-yellow-400 text-sm font-semibold">Performance</p>
-
-          <h3 className="text-2xl font-black mt-1">Top 5 Members</h3>
-
-          <div className="space-y-3 mt-5">
-            {topPerformers.length === 0 ? (
-              <p className="text-gray-600 py-5">No active members yet.</p>
-            ) : (
-              topPerformers.map((member, index) => (
-                <div
-                  key={member.id}
-                  className="flex items-center justify-between gap-4 rounded-2xl bg-white/[0.025] border border-white/5 p-4"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span className="w-7 text-center font-black text-yellow-400">
-                      #{index + 1}
-                    </span>
-
-                    <SafeImage
-                      src={member.avatar_url || logo}
-                      alt=""
-                      className="w-10 h-10 rounded-full object-cover"
-                    />
-
-                    <div className="min-w-0">
-                      <p className="font-semibold truncate">
-                        {member.nickname || member.full_name}
-                      </p>
-
-                      <p className="text-gray-600 text-xs mt-1">
-                        {roleName(member.role)}
-                      </p>
-                    </div>
-                  </div>
-
-                  <span className="font-black">{member.points ?? 0}</span>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        <div className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
-          <p className="text-yellow-400 text-sm font-semibold">Task Health</p>
-
-          <h3 className="text-2xl font-black mt-1">To-Do Overview</h3>
-
-          <div className="space-y-4 mt-6">
-            <div className="flex items-center justify-between rounded-2xl bg-white/[0.025] border border-white/5 p-4">
-              <div>
-                <p className="text-gray-400 text-sm">Completed</p>
-                <p className="text-2xl font-black mt-1">
-                  {completedTasks.length}
-                </p>
-              </div>
-              <span className="text-green-400 text-2xl">✓</span>
-            </div>
-
-            <div className="flex items-center justify-between rounded-2xl bg-red-500/[0.04] border border-red-400/10 p-4">
-              <div>
-                <p className="text-gray-400 text-sm">Overdue</p>
-                <p className="text-2xl font-black mt-1">
-                  {overdueTasks.length}
-                </p>
-              </div>
-              <span className="text-red-400 text-2xl">!</span>
-            </div>
-
-            <div className="flex items-center justify-between rounded-2xl bg-blue-500/[0.04] border border-blue-400/10 p-4">
-              <div>
-                <p className="text-gray-400 text-sm">Total tasks</p>
-                <p className="text-2xl font-black mt-1">{todos.length}</p>
-              </div>
-              <span className="text-blue-300 text-2xl">✓</span>
-            </div>
-          </div>
-
-          {loading && (
-            <p className="text-gray-600 text-xs mt-4">
-              Updating task metrics...
-            </p>
-          )}
-        </div>
-      </section>
-
-      <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
-        <p className="text-yellow-400 text-sm font-semibold">Highlights</p>
-
-        <h3 className="text-2xl font-black mt-1">Club Snapshot</h3>
-
-        <div className="grid md:grid-cols-3 gap-4 mt-5">
-          <div className="rounded-2xl bg-white/[0.025] border border-white/5 p-5">
-            <p className="text-gray-600 text-xs uppercase tracking-wider">
-              Top performer
-            </p>
-            <p className="font-bold mt-2">
-              {topPerformers[0]
-                ? topPerformers[0].nickname || topPerformers[0].full_name
-                : "—"}
-            </p>
-            <p className="text-yellow-400 text-sm mt-1">
-              {topPerformers[0]?.points ?? 0} points
-            </p>
-          </div>
-
-          <div className="rounded-2xl bg-white/[0.025] border border-white/5 p-5">
-            <p className="text-gray-600 text-xs uppercase tracking-wider">
-              Recent news
-            </p>
-            <p className="font-bold mt-2">
-              {filteredNews[0]?.title || "No recent news"}
-            </p>
-            <p className="text-gray-600 text-xs mt-1">
-              {filteredNews.length} in selected range
-            </p>
-          </div>
-
-          <div className="rounded-2xl bg-white/[0.025] border border-white/5 p-5">
-            <p className="text-gray-600 text-xs uppercase tracking-wider">
-              Signed-in admin
-            </p>
-            <p className="font-bold mt-2">
-              {profile.nickname || profile.full_name}
-            </p>
-            <p className="text-gray-600 text-xs mt-1">
-              {ROLE_NAMES[profile.role]}
-            </p>
-          </div>
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function NavItem({ active, onClick, icon, children, badge = 0 }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`w-full flex items-center justify-between gap-3 px-3 sm:px-4 py-3.5 sm:py-3 rounded-xl sm:rounded-2xl text-left text-sm sm:text-base transition ${active ? "bg-yellow-400 text-black" : "text-gray-300 hover:bg-white/10"}`}
-    >
-      <span className="flex items-center gap-3">
-        <span className="w-6 text-center">{icon}</span>
-        {children}
-      </span>
-      {badge > 0 && (
-        <span
-          className={`min-w-6 h-6 px-2 rounded-full text-xs flex items-center justify-center font-bold ${active ? "bg-black text-yellow-300" : "bg-red-500 text-white"}`}
-        >
-          {badge > 99 ? "99+" : badge}
-        </span>
-      )}
-    </button>
   );
 }
 
@@ -4482,6 +4045,7 @@ function Points({
   history,
   allHistory,
   onAdjust,
+  canAwardPoints,
   canSeeAllPointHistory,
   isHeadAdmin,
   onDeleteAllPointData,
@@ -4521,57 +4085,60 @@ function Points({
 
   return (
     <div className="space-y-8">
-      {/* Point adjustment */}
       <div className="grid lg:grid-cols-2 gap-6">
-        <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
-          <h2 className="text-2xl font-bold">Adjust Points</h2>
+        {canAwardPoints && (
+          <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
+            <h2 className="text-2xl font-bold">Adjust Points</h2>
 
-          <p className="text-gray-500 text-sm mt-2 mb-6">
-            Positive numbers award. Negative numbers deduct.
-          </p>
+            <p className="text-gray-500 text-sm mt-2 mb-6">
+              Positive numbers award. Negative numbers deduct.
+            </p>
 
-          <form onSubmit={submit} className="space-y-4">
-            <select
-              value={memberId}
-              onChange={(e) => setMemberId(e.target.value)}
-              className="w-full bg-[#18181b] border border-white/10 rounded-xl px-4 py-3"
-            >
-              <option value="">Select member</option>
+            <form onSubmit={submit} className="space-y-4">
+              <select
+                value={memberId}
+                onChange={(e) => setMemberId(e.target.value)}
+                className="w-full bg-[#18181b] border border-white/10 rounded-xl px-4 py-3"
+              >
+                <option value="">Select member</option>
 
-              {members.map((member) => (
-                <option key={member.id} value={member.id}>
-                  {member.nickname || member.full_name}
-                </option>
-              ))}
-            </select>
+                {members.map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {member.nickname || member.full_name}
+                  </option>
+                ))}
+              </select>
 
-            <input
-              type="number"
-              value={points}
-              onChange={(e) => setPoints(e.target.value)}
-              placeholder="Example: 10 or -5"
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3"
-            />
+              <input
+                type="number"
+                value={points}
+                onChange={(e) => setPoints(e.target.value)}
+                placeholder="Example: 10 or -5"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3"
+              />
 
-            <textarea
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder="Reason"
-              rows="4"
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3"
-            />
+              <textarea
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder="Reason"
+                rows="4"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3"
+              />
 
-            <button
-              type="submit"
-              className="w-full bg-yellow-400 text-black font-semibold py-3 rounded-xl"
-            >
-              Save Point Adjustment
-            </button>
-          </form>
-        </section>
+              <button
+                type="submit"
+                className="w-full bg-yellow-400 text-black font-semibold py-3 rounded-xl"
+              >
+                Save Point Adjustment
+              </button>
+            </form>
+          </section>
+        )}
 
         {/* Personal history */}
-        <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
+        <section className={`bg-white/[0.04] border border-white/10 rounded-3xl p-6 ${
+          canAwardPoints ? "" : "lg:col-span-2"
+        }`}>
           <h2 className="text-2xl font-bold mb-5">My Point History</h2>
 
           <PersonalPointHistory history={history} />
