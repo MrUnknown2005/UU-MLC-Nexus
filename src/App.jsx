@@ -157,7 +157,71 @@ const getRoleDisplayName = (roleKey, roleDefinitions = []) =>
   roleDefinitions.find((role) => role.role_key === roleKey)?.name ||
   roleKey ||
   "Unknown";
+/*
+GUEST DASHBOARD
+*/
 
+function GuestDashboard({ profile, onLogout }) {
+  const [news, setNews] = useState([]);
+
+  useEffect(() => {
+    loadNews();
+  }, []);
+
+  const loadNews = async () => {
+    const { data } = await supabase
+      .from("news")
+      .select("*")
+      .order("created_at", {
+        ascending: false,
+      });
+
+    setNews(data || []);
+  };
+
+  return (
+<div className="min-h-screen bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl text-white">
+      <Header profile={profile} onLogout={onLogout} />
+
+      <main className="max-w-5xl mx-auto px-3 sm:px-6 py-5 sm:py-10">
+        <section className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl p-5 mb-5">
+          <p className="text-gray-400">
+            Welcome, {profile.nickname || profile.full_name}
+          </p>
+
+          <h2 className="text-3xl font-bold mt-2">Your account is pending</h2>
+
+          <p className="text-gray-400 mt-4">
+            An administrator needs to promote your account before you become a
+            club member.
+          </p>
+
+          <div className="inline-flex mt-5 px-4 py-2 rounded-full bg-yellow-400/10 text-yellow-400 text-sm">
+            Guest
+          </div>
+        </section>
+
+        <section className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl p-6">
+          <h3 className="text-2xl font-bold mb-5">Club News</h3>
+
+          {news.length === 0 ? (
+            <p className="text-gray-500">No news published yet.</p>
+          ) : (
+            <div className="space-y-4">
+              {news.map((item) => (
+                <div key={item.id} className="bg-white/[0.03] rounded-2xl p-4">
+                  <h4 className="font-semibold">{item.title}</h4>
+
+                  <p className="text-gray-400 mt-2">{item.content}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      </main>
+    </div>
+);
+}
 /*
 =========================================================
 APP
@@ -318,7 +382,7 @@ LANDING PAGE
 
 function LandingPage({ onLogin, onJoin }) {
   return (
-    <div className="min-h-screen bg-[#08090b] text-white overflow-hidden relative">
+    <div className="min-h-screen bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl text-white overflow-hidden relative">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(250,204,21,0.16),transparent_35%),radial-gradient(circle_at_bottom_left,rgba(234,179,8,0.08),transparent_35%)]" />
       <div className="relative max-w-6xl mx-auto px-6 py-10 md:py-16">
         <header className="flex items-center justify-between">
@@ -337,7 +401,7 @@ function LandingPage({ onLogin, onJoin }) {
           </button>
         </header>
 
-        <main className="grid lg:grid-cols-[1.15fr_0.85fr] gap-10 items-center py-16 md:py-24">
+        <main className="flex flex-col lg:flex-row gap-10 items-center py-16 md:py-24">
           <section>
             <span className="inline-flex px-3 py-1 rounded-full bg-yellow-400/10 border border-yellow-400/20 text-yellow-300 text-sm">
               Interweek • UU MLC
@@ -416,9 +480,9 @@ function AuthScreen({ initialMode = "login", onAuth, onBack }) {
 
 function AuthLayout({ title, subtitle, children, onBack }) {
   return (
-    <div className="min-h-screen bg-[#0b0b0d] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl flex items-center justify-center px-4">
       <div className="w-full max-w-md">
-        <div className="bg-white/[0.06] border border-white/10 rounded-3xl p-8 shadow-2xl">
+        <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl p-8 shadow-2xl">
           <div className="flex justify-center mb-6">
             <img src={logo} alt="UU MLC" className="w-24 h-24 object-contain" />
           </div>
@@ -798,7 +862,7 @@ HEADER
 
 function Header({ profile, onLogout }) {
   return (
-    <header className="border-b border-white/10 bg-white/[0.03]">
+    <header className="border-b border-white/10 bg-white/10 backdrop-blur-lg">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <img
@@ -854,11 +918,11 @@ function GuestDashboard({ profile, onLogout }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#0b0b0d] text-white">
+<div className="min-h-screen bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl text-white">
       <Header profile={profile} onLogout={onLogout} />
 
       <main className="max-w-5xl mx-auto px-3 sm:px-6 py-5 sm:py-10">
-        <section className="bg-white/[0.04] border border-yellow-400/20 rounded-3xl p-5 sm:p-8 mb-5 sm:mb-8">
+        <section className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl p-5 mb-5">
           <p className="text-gray-400">
             Welcome, {profile.nickname || profile.full_name}
           </p>
@@ -875,7 +939,7 @@ function GuestDashboard({ profile, onLogout }) {
           </div>
         </section>
 
-        <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
+        <section className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl p-6">
           <h3 className="text-2xl font-bold mb-5">Club News</h3>
 
           {news.length === 0 ? (
@@ -1887,7 +1951,7 @@ function Dashboard({ profile, onLogout, reloadProfile }) {
                                   ).toLocaleString()}
                                 </p>
                               </div>
-                            </div>
+                        </div>
                           </button>
                         ))}
                       </div>
