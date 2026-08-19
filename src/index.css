@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./styles/NexusMorphism.css";
 
 /* =========================================================
    UU MLC NEXUS
@@ -16,7 +17,7 @@
     sans-serif;
 
   color: #ffffff;
-  background: #0b0b0d;
+  background: #08080c;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -31,7 +32,7 @@
 html {
   min-width: 320px;
   min-height: 100%;
-  background: #0b0b0d;
+  background: #08080c;
 }
 
 body {
@@ -39,7 +40,13 @@ body {
   min-width: 320px;
   min-height: 100vh;
 
-  background: #0b0b0d;
+  background:
+    radial-gradient(1200px 800px at 12% -10%, rgba(250, 204, 21, 0.12), transparent 55%),
+    radial-gradient(900px 700px at 92% 8%, rgba(139, 92, 246, 0.16), transparent 55%),
+    radial-gradient(800px 600px at 80% 95%, rgba(34, 211, 238, 0.12), transparent 55%),
+    radial-gradient(700px 500px at 8% 88%, rgba(244, 114, 182, 0.10), transparent 55%),
+    linear-gradient(180deg, #08080c 0%, #0b0b0f 50%, #08080c 100%);
+  background-attachment: fixed;
   color: #ffffff;
 }
 
@@ -70,4 +77,29 @@ img {
 a {
   color: inherit;
   text-decoration: none;
+}
+
+/* Scrollbar styling for the rich dark UI */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(139, 92, 246, 0.55), rgba(34, 211, 238, 0.45));
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(139, 92, 246, 0.75), rgba(34, 211, 238, 0.65));
+  background-clip: padding-box;
+}
+
+/* Selection colour */
+::selection {
+  background: rgba(250, 204, 21, 0.35);
+  color: #ffffff;
 }

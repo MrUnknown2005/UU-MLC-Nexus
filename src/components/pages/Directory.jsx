@@ -27,68 +27,94 @@ function Directory({ members }) {
   });
 
   return (
-    <section>
-      <h2 className="text-3xl font-bold">Member Directory</h2>
+    <section className="space-y-6">
+      <div className="nexus-glass-strong rounded-3xl p-6 relative overflow-hidden">
+        <div className="absolute -top-10 -right-10 w-56 h-56 rounded-full bg-purple-500/10 blur-3xl pointer-events-none" />
 
-      <p className="text-gray-500 mt-1">Browse active club members.</p>
+        <div className="relative">
+          <p className="nexus-text-aurora text-xs font-bold uppercase tracking-wider">
+            Community
+          </p>
 
-      <input
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search members..."
-        className="w-full md:w-96 mt-6 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white"
-      />
+          <h2 className="text-3xl font-black mt-1">
+            <span className="nexus-text-aurora">Member</span>{" "}
+            <span className="nexus-text-ocean">Directory</span>
+          </h2>
 
-      <div className="flex flex-wrap gap-2 mt-4 mb-6">
-        {[
-          ["all", "All"],
-          ["member", "Members"],
-          ["executive", "Executives"],
-          ["administrator", "Administrators"],
-          ["head_admin", "Head Admins"],
-        ].map(([value, label]) => (
-          <button
-            key={value}
-            onClick={() => setFilter(value)}
-            className={`px-4 py-2 rounded-xl ${
-              filter === value
-                ? "bg-yellow-400 text-black"
-                : "bg-white/5 text-gray-300"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
+          <p className="text-gray-500 mt-2">Browse active club members.</p>
+        </div>
+      </div>
+
+      <div className="nexus-glass-strong rounded-3xl p-5">
+        <div className="flex flex-col md:flex-row gap-3">
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search members..."
+            className="nexus-input flex-1"
+          />
+        </div>
+
+        <div className="flex flex-wrap gap-2 mt-4">
+          {[
+            ["all", "All", "yellow"],
+            ["member", "Members", "cyan"],
+            ["executive", "Executives", "purple"],
+            ["administrator", "Administrators", "pink"],
+            ["head_admin", "Head Admins", "red"],
+          ].map(([value, label, tone]) => (
+            <button
+              key={value}
+              onClick={() => setFilter(value)}
+              className={`px-4 py-2 rounded-xl text-sm font-semibold transition backdrop-blur-md ${
+                filter === value
+                  ? `bg-gradient-aurora bg-[length:200%_200%] animate-grad-pan text-black shadow-[0_8px_22px_rgba(139,92,246,0.30)]`
+                  : `nexus-glass-flat text-gray-300 hover:bg-white/[0.10] hover:!border-${tone}-400/30`
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {filtered.map((member) => (
           <div
             key={member.id}
-            className="bg-white/[0.04] border border-white/10 rounded-3xl p-6"
+            className="nexus-glass-strong rounded-3xl p-6 relative overflow-hidden hover:-translate-y-1 transition group"
           >
-            <div className="flex justify-center">
-              <SafeImage
-                src={member.avatar_url || logo}
-                alt={member.nickname || member.full_name}
-                className="w-24 h-24 rounded-full object-cover"
-              />
+            <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-yellow-400/15 via-purple-500/10 to-cyan-400/15 blur-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition" />
+
+            <div className="relative flex justify-center">
+              <div className="relative">
+                <div className="absolute inset-0 rounded-full bg-gradient-aurora blur-md opacity-50" />
+                <SafeImage
+                  src={member.avatar_url || logo}
+                  alt={member.nickname || member.full_name}
+                  className="relative w-24 h-24 rounded-full object-cover border-2 border-white/20"
+                />
+              </div>
             </div>
 
             <div className="text-center mt-4">
-              <h3 className="text-xl font-semibold">
+              <h3 className="text-xl font-black">
                 {member.nickname || member.full_name}
               </h3>
 
-              <p className="text-yellow-400 text-sm mt-2">
+              <p className="text-yellow-300 text-sm mt-2 font-semibold">
                 {ROLE_NAMES[member.role]}
               </p>
 
-              <p className="text-2xl font-bold mt-4">{member.points}</p>
+              <p className="text-3xl font-black mt-4 nexus-text-aurora">
+                {member.points}
+              </p>
 
-              <p className="text-gray-500 text-sm">points</p>
+              <p className="text-gray-500 text-xs uppercase tracking-wider">
+                points
+              </p>
 
-              <p className="text-gray-400 text-sm mt-4">
+              <p className="text-gray-400 text-sm mt-4 line-clamp-3">
                 {member.bio || "No bio yet."}
               </p>
             </div>
@@ -97,15 +123,16 @@ function Directory({ members }) {
       </div>
 
       {filtered.length === 0 && (
-        <div className="text-center py-16">
-          <p className="text-gray-500">No members found.</p>
+        <div className="text-center py-16 nexus-glass-strong rounded-3xl">
+          <div className="text-4xl">🔍</div>
+          <p className="text-gray-500 mt-4">No members found.</p>
 
           <button
             onClick={() => {
               setSearch("");
               setFilter("all");
             }}
-            className="mt-4 px-4 py-2 bg-yellow-400 text-black rounded-xl"
+            className="mt-5 nexus-morphic-button-ghost px-5 py-2.5"
           >
             Clear Filters
           </button>

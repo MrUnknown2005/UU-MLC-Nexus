@@ -34,7 +34,7 @@ function AdminActivity({ activityLog, members = [], isHeadAdmin, onWipe }) {
       value.includes("DELETE") ||
       value.includes("DEACTIVATED")
     ) {
-      return "bg-red-500/10 text-red-300 border-red-400/20";
+      return "bg-red-500/10 text-red-300 border-red-400/30";
     }
 
     if (
@@ -42,11 +42,15 @@ function AdminActivity({ activityLog, members = [], isHeadAdmin, onWipe }) {
       value.includes("PROMOT") ||
       value.includes("ROLE")
     ) {
-      return "bg-yellow-400/10 text-yellow-300 border-yellow-400/20";
+      return "bg-yellow-400/10 text-yellow-300 border-yellow-400/30";
     }
 
     if (value.includes("TODO") || value.includes("NEWS")) {
-      return "bg-blue-500/10 text-blue-300 border-blue-400/20";
+      return "bg-cyan-400/10 text-cyan-300 border-cyan-400/30";
+    }
+
+    if (value.includes("PROFILE")) {
+      return "bg-purple-500/10 text-purple-200 border-purple-400/30";
     }
 
     return "bg-white/[0.04] text-gray-300 border-white/10";
@@ -84,12 +88,19 @@ function AdminActivity({ activityLog, members = [], isHeadAdmin, onWipe }) {
   });
 
   return (
-    <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
-      <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-4">
-        <div>
-          <p className="text-yellow-400 text-sm">Accountability</p>
+    <section className="nexus-glass-strong rounded-3xl p-6 relative overflow-hidden">
+      <div className="nexus-glow-purple w-72 h-72 -top-20 -right-20" />
 
-          <h2 className="text-2xl font-bold mt-1">Admin Activity History</h2>
+      <div className="relative flex flex-col xl:flex-row xl:items-start xl:justify-between gap-4">
+        <div>
+          <p className="nexus-text-aurora text-xs font-bold uppercase tracking-wider">
+            Accountability
+          </p>
+
+          <h2 className="text-2xl font-black mt-1">
+            Admin Activity{" "}
+            <span className="nexus-text-ocean">History</span>
+          </h2>
 
           <p className="text-gray-500 text-sm mt-1">
             See who did what, who it affected, and exactly when it happened.
@@ -99,7 +110,7 @@ function AdminActivity({ activityLog, members = [], isHeadAdmin, onWipe }) {
         {isHeadAdmin && (
           <button
             onClick={onWipe}
-            className="px-5 py-3 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-500 transition"
+            className="nexus-morphic-button-danger px-5 py-3"
           >
             Wipe Activity History
           </button>
@@ -111,13 +122,13 @@ function AdminActivity({ activityLog, members = [], isHeadAdmin, onWipe }) {
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Search actor, target, action, or details..."
-          className="w-full rounded-xl bg-black/20 border border-white/10 px-4 py-3 text-sm text-white placeholder:text-gray-600 outline-none focus:border-yellow-400/40"
+          className="nexus-input text-sm"
         />
 
         <select
           value={actionFilter}
           onChange={(event) => setActionFilter(event.target.value)}
-          className="rounded-xl bg-black/20 border border-white/10 px-4 py-3 text-sm text-white outline-none"
+          className="nexus-select text-sm"
         >
           <option value="all">All actions</option>
 
@@ -131,7 +142,7 @@ function AdminActivity({ activityLog, members = [], isHeadAdmin, onWipe }) {
         <select
           value={actorFilter}
           onChange={(event) => setActorFilter(event.target.value)}
-          className="rounded-xl bg-black/20 border border-white/10 px-4 py-3 text-sm text-white outline-none"
+          className="nexus-select text-sm"
         >
           <option value="all">All actors</option>
 
@@ -149,7 +160,7 @@ function AdminActivity({ activityLog, members = [], isHeadAdmin, onWipe }) {
 
       <div className="flex flex-wrap items-center justify-between gap-3 mt-4 text-xs text-gray-500">
         <span>
-          Showing {filtered.length} of {activityLog.length} activities
+          Showing <span className="text-yellow-300 font-bold">{filtered.length}</span> of {activityLog.length} activities
         </span>
 
         {(search || actionFilter !== "all" || actorFilter !== "all") && (
@@ -159,7 +170,7 @@ function AdminActivity({ activityLog, members = [], isHeadAdmin, onWipe }) {
               setActionFilter("all");
               setActorFilter("all");
             }}
-            className="text-yellow-400 hover:text-yellow-300"
+            className="text-yellow-300 hover:text-yellow-200 font-bold"
           >
             Clear filters
           </button>
@@ -185,25 +196,28 @@ function AdminActivity({ activityLog, members = [], isHeadAdmin, onWipe }) {
             return (
               <div
                 key={item.id}
-                className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 hover:bg-white/[0.045] transition"
+                className="nexus-glass-flat rounded-2xl p-4 hover:border-yellow-400/30 hover:bg-white/[0.06] transition"
               >
                 <div className="flex items-start gap-3">
-                  <SafeImage
-                    src={actor?.avatar_url || logo}
-                    alt=""
-                    className="w-11 h-11 rounded-full object-cover shrink-0"
-                  />
+                  <div className="relative shrink-0">
+                    <div className="absolute inset-0 rounded-full bg-gradient-aurora blur-sm opacity-50" />
+                    <SafeImage
+                      src={actor?.avatar_url || logo}
+                      alt=""
+                      className="relative w-11 h-11 rounded-full object-cover border border-white/20"
+                    />
+                  </div>
 
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-semibold text-white">
+                      <span className="font-bold text-white">
                         {actorName}
                       </span>
 
-                      <span className="text-gray-600">→</span>
+                      <span className="text-gray-500">→</span>
 
                       <span
-                        className={`px-2.5 py-1 rounded-lg border text-xs font-semibold ${actionTone(
+                        className={`px-2.5 py-1 rounded-lg border text-xs font-bold ${actionTone(
                           item.action,
                         )}`}
                       >
@@ -211,7 +225,7 @@ function AdminActivity({ activityLog, members = [], isHeadAdmin, onWipe }) {
                       </span>
 
                       {actor?.role && (
-                        <span className="px-2 py-1 rounded-lg bg-white/[0.04] border border-white/10 text-gray-500 text-xs">
+                        <span className="px-2 py-1 rounded-lg nexus-glass-flat text-gray-400 text-xs font-semibold">
                           {ROLE_NAMES[actor.role] || actor.role}
                         </span>
                       )}
@@ -220,7 +234,7 @@ function AdminActivity({ activityLog, members = [], isHeadAdmin, onWipe }) {
                     {targetName && (
                       <p className="text-sm text-gray-300 mt-2">
                         Target:{" "}
-                        <span className="font-semibold text-white">
+                        <span className="font-bold text-white">
                           {targetName}
                         </span>
                       </p>
@@ -232,7 +246,7 @@ function AdminActivity({ activityLog, members = [], isHeadAdmin, onWipe }) {
                       </p>
                     )}
 
-                    <p className="text-xs text-gray-600 mt-3">
+                    <p className="text-xs text-gray-500 mt-3">
                       {item.created_at
                         ? new Date(item.created_at).toLocaleString(undefined, {
                             dateStyle: "medium",

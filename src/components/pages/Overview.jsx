@@ -29,51 +29,77 @@ function Overview({
   return (
     <div className="space-y-6">
       {/* Welcome */}
-      <section className="relative overflow-hidden bg-white/[0.04] border border-white/10 rounded-3xl p-6 md:p-8">
-        <div className="absolute -right-20 -top-24 w-72 h-72 rounded-full bg-yellow-400/10 blur-3xl pointer-events-none" />
+      <section className="relative overflow-hidden nexus-glass-strong rounded-3xl p-6 md:p-8">
+        <div className="nexus-glow-yellow w-72 h-72 -right-20 -top-24" />
+        <div className="nexus-glow-purple w-64 h-64 -left-10 -bottom-20" />
 
         <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <p className="text-yellow-400 text-sm font-semibold">
+            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-400/10 border border-yellow-400/30 text-yellow-300 text-xs font-bold uppercase tracking-wider">
+              <span className="nexus-dot-glow" />
               Welcome back
-            </p>
+            </span>
 
-            <h2 className="text-3xl md:text-4xl font-black mt-1">
-              {profile.nickname || profile.full_name}
+            <h2 className="text-3xl md:text-5xl font-black mt-3 leading-tight">
+              <span className="nexus-text-aurora">
+                {profile.nickname || profile.full_name}
+              </span>
             </h2>
 
-            <p className="text-gray-500 mt-2">{ROLE_NAMES[profile.role]}</p>
+            <p className="text-gray-400 mt-2">{ROLE_NAMES[profile.role]}</p>
           </div>
 
-          <SafeImage
-            src={profile.avatar_url || logo}
-            alt=""
-            className="w-16 h-16 rounded-2xl object-cover border border-white/10"
-          />
+          <div className="relative">
+            <div className="absolute inset-0 rounded-2xl bg-gradient-aurora blur-xl opacity-50" />
+            <SafeImage
+              src={profile.avatar_url || logo}
+              alt=""
+              className="relative w-16 h-16 rounded-2xl object-cover border-2 border-white/20"
+            />
+          </div>
         </div>
       </section>
 
       {/* Quick stats */}
       <section className="grid grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4">
-        <Stat title="Total Members" value={rankedMembers.length} />
+        <Stat
+          title="Total Members"
+          value={rankedMembers.length}
+          tone="purple"
+          icon="👥"
+        />
 
-        <Stat title="Your Points" value={profile.points ?? 0} />
+        <Stat
+          title="Your Points"
+          value={profile.points ?? 0}
+          tone="yellow"
+          icon="🏆"
+        />
 
         <Stat
           title="Your Rank"
           value={currentRank > 0 ? `#${currentRank}` : "—"}
+          tone="cyan"
+          icon="📈"
         />
 
-        <Stat title="Your Role" value={ROLE_NAMES[profile.role]} />
+        <Stat
+          title="Your Role"
+          value={ROLE_NAMES[profile.role]}
+          tone="pink"
+          icon="✨"
+        />
       </section>
 
       {/* Main dashboard */}
       <section className="grid xl:grid-cols-[1.15fr_0.85fr] gap-5 items-start">
         {/* Leaderboard */}
-        <div className="bg-white/[0.04] border border-white/10 rounded-3xl p-5 md:p-6">
-          <div className="flex items-end justify-between gap-4 mb-5">
+        <div className="nexus-glass-strong rounded-3xl p-5 md:p-6 relative overflow-hidden">
+          <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full bg-yellow-400/10 blur-3xl pointer-events-none" />
+
+          <div className="relative flex items-end justify-between gap-4 mb-5">
             <div>
-              <p className="text-yellow-400 text-sm font-semibold">
+              <p className="nexus-text-aurora text-xs font-bold uppercase tracking-wider">
                 Current Month
               </p>
 
@@ -82,7 +108,7 @@ function Overview({
               </h3>
             </div>
 
-            <span className="text-xs text-gray-600">
+            <span className="nexus-badge-yellow">
               {topFive.length} ranked
             </span>
           </div>
@@ -96,19 +122,29 @@ function Overview({
                   key={member.id}
                   className={`flex items-center justify-between gap-3 rounded-2xl px-4 py-3.5 border transition ${
                     member.id === profile.id
-                      ? "bg-yellow-400/10 border-yellow-400/20"
-                      : "bg-white/[0.025] border-white/5 hover:bg-white/[0.04]"
+                      ? "bg-gradient-to-r from-yellow-400/15 to-purple-500/10 border-yellow-400/30 shadow-[0_0_24px_rgba(250,204,21,0.18)]"
+                      : "nexus-glass-flat hover:border-yellow-400/30 hover:bg-white/[0.06]"
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <span className="w-7 text-center text-yellow-400 font-black">
+                    <span
+                      className={`w-7 text-center font-black ${
+                        index === 0
+                          ? "nexus-text-aurora"
+                          : index === 1
+                            ? "text-purple-300"
+                            : index === 2
+                              ? "text-cyan-300"
+                              : "text-gray-500"
+                      }`}
+                    >
                       #{index + 1}
                     </span>
 
                     <SafeImage
                       src={member.avatar_url || logo}
                       alt=""
-                      className="w-10 h-10 rounded-full object-cover shrink-0"
+                      className="w-10 h-10 rounded-full object-cover shrink-0 border border-white/10"
                     />
 
                     <div className="min-w-0">
@@ -122,7 +158,7 @@ function Overview({
                     </div>
                   </div>
 
-                  <span className="font-black shrink-0">
+                  <span className="font-black shrink-0 nexus-text-aurora">
                     {member.points ?? 0}
                   </span>
                 </div>
@@ -132,10 +168,12 @@ function Overview({
         </div>
 
         {/* Latest news */}
-        <div className="bg-white/[0.04] border border-white/10 rounded-3xl p-5 md:p-6">
-          <div className="flex items-end justify-between gap-4 mb-5">
+        <div className="nexus-glass-strong rounded-3xl p-5 md:p-6 relative overflow-hidden">
+          <div className="absolute -top-10 -left-10 w-48 h-48 rounded-full bg-purple-500/10 blur-3xl pointer-events-none" />
+
+          <div className="relative flex items-end justify-between gap-4 mb-5">
             <div>
-              <p className="text-yellow-400 text-sm font-semibold">
+              <p className="nexus-text-ocean text-xs font-bold uppercase tracking-wider">
                 Club Updates
               </p>
 
@@ -144,7 +182,7 @@ function Overview({
               </h3>
             </div>
 
-            <span className="text-xs text-gray-600">{news.length} total</span>
+            <span className="nexus-badge-cyan">{news.length} total</span>
           </div>
 
           {latestNews.length === 0 ? (
@@ -154,7 +192,7 @@ function Overview({
               {latestNews.map((item) => (
                 <article
                   key={item.id}
-                  className="overflow-hidden bg-white/[0.025] border border-white/5 rounded-2xl"
+                  className="overflow-hidden nexus-glass-flat rounded-2xl hover:border-yellow-400/30 transition"
                 >
                   {item.image_url && (
                     <img
@@ -189,9 +227,11 @@ function Overview({
       </section>
 
       {/* Previous month standouts */}
-      <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-5 md:p-6">
-        <div className="mb-5">
-          <p className="text-yellow-400 text-sm font-semibold">
+      <section className="nexus-glass-strong rounded-3xl p-5 md:p-6 relative overflow-hidden">
+        <div className="absolute -top-10 right-1/3 w-56 h-56 rounded-full bg-pink-500/10 blur-3xl pointer-events-none" />
+
+        <div className="relative mb-5">
+          <p className="nexus-text-sunset text-xs font-bold uppercase tracking-wider">
             {monthLabel || "Previous Month"}
           </p>
 
@@ -201,19 +241,19 @@ function Overview({
         </div>
 
         {!previousMonth ? (
-          <div className="rounded-2xl bg-white/[0.025] border border-white/5 p-6">
+          <div className="rounded-2xl nexus-glass-flat p-6">
             <p className="text-gray-500">
               No previous month has been completed yet.
             </p>
           </div>
         ) : (
           <div className="grid md:grid-cols-2 gap-4">
-            <div className="rounded-2xl bg-yellow-400/10 border border-yellow-400/20 p-5">
+            <div className="rounded-2xl bg-gradient-to-br from-yellow-400/15 to-amber-500/10 border border-yellow-400/30 p-5 backdrop-blur-md shadow-[0_0_30px_rgba(250,204,21,0.18)]">
               <div className="flex items-center gap-4">
                 <div className="text-4xl">🏆</div>
 
                 <div className="min-w-0">
-                  <p className="text-yellow-400 text-xs font-bold uppercase tracking-wider">
+                  <p className="nexus-text-aurora text-xs font-black uppercase tracking-wider">
                     Top Performer
                   </p>
 
@@ -228,12 +268,12 @@ function Overview({
               </div>
             </div>
 
-            <div className="rounded-2xl bg-white/[0.025] border border-white/10 p-5">
+            <div className="rounded-2xl nexus-glass-flat border-purple-400/20 p-5">
               <div className="flex items-center gap-4">
                 <div className="text-4xl">🥈</div>
 
                 <div className="min-w-0">
-                  <p className="text-gray-400 text-xs font-bold uppercase tracking-wider">
+                  <p className="text-purple-300 text-xs font-bold uppercase tracking-wider">
                     Runner Up
                   </p>
 
@@ -252,15 +292,17 @@ function Overview({
       </section>
 
       {/* Personal history */}
-      <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-5 md:p-6">
-        <div className="flex items-center justify-between gap-4">
+      <section className="nexus-glass-strong rounded-3xl p-5 md:p-6 relative overflow-hidden">
+        <div className="absolute -bottom-10 right-10 w-48 h-48 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" />
+
+        <div className="relative flex items-center justify-between gap-4">
           <div>
             <p className="text-gray-500 text-sm">Your activity</p>
 
-            <h3 className="text-xl font-bold mt-1">My Point History</h3>
+            <h3 className="text-xl font-black mt-1">My Point History</h3>
           </div>
 
-          <span className="text-xs text-gray-600">
+          <span className="nexus-badge-cyan">
             {pointHistory.length} records
           </span>
         </div>

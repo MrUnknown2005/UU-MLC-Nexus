@@ -348,12 +348,12 @@ function Todo({ profile, isAdmin, onLogAction }) {
 
   const TodoCard = ({ todo }) => (
     <div
-      className={`group bg-white/[0.04] border rounded-2xl p-4 transition ${
+      className={`group nexus-glass rounded-2xl p-4 transition ${
         todo.completed
-          ? "border-white/5 opacity-70"
+          ? "opacity-70"
           : isOverdue(todo.deadline)
-            ? "border-red-400/20 bg-red-500/[0.03]"
-            : "border-white/10 hover:border-yellow-400/30"
+            ? "border-red-400/30 bg-red-500/[0.04] shadow-[0_0_24px_rgba(239,68,68,0.18)]"
+            : "hover:border-yellow-400/40 hover:-translate-y-0.5 hover:shadow-[0_0_28px_rgba(250,204,21,0.18)]"
       }`}
     >
       <div className="flex items-start gap-4">
@@ -365,7 +365,7 @@ function Todo({ profile, isAdmin, onLogAction }) {
           }
           className={`mt-1 w-7 h-7 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition ${
             todo.completed
-              ? "bg-yellow-400 border-yellow-400 text-black"
+              ? "bg-gradient-aurora bg-[length:200%_200%] animate-grad-pan border-transparent text-black shadow-[0_0_18px_rgba(250,204,21,0.45)]"
               : "border-gray-600 hover:border-yellow-400"
           }`}
         >
@@ -383,13 +383,13 @@ function Todo({ profile, isAdmin, onLogAction }) {
             </h4>
 
             {todo.deadline && !todo.completed && isOverdue(todo.deadline) && (
-              <span className="px-2 py-1 rounded-full bg-red-500/10 text-red-400 text-[10px] font-bold uppercase">
+              <span className="nexus-badge-red">
                 Overdue
               </span>
             )}
 
             {todo.deadline === todayString && !todo.completed && (
-              <span className="px-2 py-1 rounded-full bg-yellow-400/10 text-yellow-300 text-[10px] font-bold uppercase">
+              <span className="nexus-badge-yellow">
                 Due today
               </span>
             )}
@@ -420,10 +420,10 @@ function Todo({ profile, isAdmin, onLogAction }) {
           <div className="flex flex-wrap gap-2 mt-3">
             {todo.deadline && (
               <span
-                className={`text-xs px-3 py-1 rounded-full ${
+                className={`text-xs px-3 py-1 rounded-full font-semibold backdrop-blur-md ${
                   !todo.completed && isOverdue(todo.deadline)
-                    ? "bg-red-500/10 text-red-400"
-                    : "bg-white/5 text-gray-400"
+                    ? "bg-red-500/10 text-red-300 border border-red-400/20"
+                    : "bg-white/[0.05] text-gray-400 border border-white/10"
                 }`}
               >
                 {isOverdue(todo.deadline) && !todo.completed
@@ -434,7 +434,7 @@ function Todo({ profile, isAdmin, onLogAction }) {
             )}
 
             {todo.completed && (
-              <span className="text-xs px-3 py-1 rounded-full bg-yellow-400/10 text-yellow-400">
+              <span className="nexus-badge-yellow">
                 Completed
               </span>
             )}
@@ -446,7 +446,7 @@ function Todo({ profile, isAdmin, onLogAction }) {
             <button
               type="button"
               onClick={() => beginEdit(todo)}
-              className="px-3 py-2 bg-white/5 rounded-lg text-gray-300 hover:bg-white/10"
+              className="px-3 py-2 nexus-morphic-button-ghost text-xs"
             >
               Edit
             </button>
@@ -454,7 +454,7 @@ function Todo({ profile, isAdmin, onLogAction }) {
             <button
               type="button"
               onClick={() => deleteTodo(todo)}
-              className="px-3 py-2 bg-red-500/10 rounded-lg text-red-400 hover:bg-red-500/20"
+              className="px-3 py-2 rounded-lg bg-red-500/10 text-red-300 border border-red-400/20 hover:bg-red-500/20 text-xs font-semibold transition"
             >
               Delete
             </button>
@@ -466,7 +466,7 @@ function Todo({ profile, isAdmin, onLogAction }) {
 
   if (loading) {
     return (
-      <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-8">
+      <section className="nexus-glass-strong rounded-3xl p-8">
         <p className="text-gray-500">Loading tasks...</p>
       </section>
     );
@@ -475,12 +475,17 @@ function Todo({ profile, isAdmin, onLogAction }) {
   return (
     <div className="space-y-6">
       {/* Header and progress */}
-      <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
-        <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
-          <div>
-            <p className="text-yellow-400 text-sm">Club Tasks</p>
+      <section className="nexus-glass-strong rounded-3xl p-6 relative overflow-hidden">
+        <div className="nexus-glow-yellow w-72 h-72 -top-20 -right-20" />
+        <div className="nexus-glow-purple w-72 h-72 -bottom-20 -left-20" />
 
-            <h2 className="text-3xl font-bold mt-1">To-Do List</h2>
+        <div className="relative flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+          <div>
+            <p className="nexus-text-aurora text-xs font-bold uppercase tracking-wider">
+              Club Tasks
+            </p>
+
+            <h2 className="text-3xl font-black mt-1">To-Do List</h2>
 
             <p className="text-gray-500 mt-1">
               {activeTodos.length} active · {completedTodos.length} completed
@@ -488,19 +493,31 @@ function Todo({ profile, isAdmin, onLogAction }) {
           </div>
 
           <div className="grid grid-cols-3 gap-2">
-            <div className="rounded-xl bg-white/[0.03] border border-white/10 px-4 py-3">
-              <p className="text-gray-600 text-[10px] uppercase">Progress</p>
-              <p className="font-black text-lg mt-1">{completionPercent}%</p>
+            <div className="nexus-glass-flat rounded-xl px-4 py-3">
+              <p className="text-gray-500 text-[10px] uppercase font-bold">
+                Progress
+              </p>
+              <p className="font-black text-lg mt-1 nexus-text-aurora">
+                {completionPercent}%
+              </p>
             </div>
 
-            <div className="rounded-xl bg-yellow-400/10 border border-yellow-400/20 px-4 py-3">
-              <p className="text-yellow-300 text-[10px] uppercase">Today</p>
-              <p className="font-black text-lg mt-1">{dueTodayCount}</p>
+            <div className="rounded-xl bg-yellow-400/10 border border-yellow-400/30 px-4 py-3 backdrop-blur-md">
+              <p className="text-yellow-300 text-[10px] uppercase font-bold">
+                Today
+              </p>
+              <p className="font-black text-lg mt-1 text-yellow-300">
+                {dueTodayCount}
+              </p>
             </div>
 
-            <div className="rounded-xl bg-red-500/10 border border-red-400/20 px-4 py-3">
-              <p className="text-red-300 text-[10px] uppercase">Overdue</p>
-              <p className="font-black text-lg mt-1">{overdueCount}</p>
+            <div className="rounded-xl bg-red-500/10 border border-red-400/30 px-4 py-3 backdrop-blur-md">
+              <p className="text-red-300 text-[10px] uppercase font-bold">
+                Overdue
+              </p>
+              <p className="font-black text-lg mt-1 text-red-300">
+                {overdueCount}
+              </p>
             </div>
           </div>
         </div>
@@ -513,9 +530,9 @@ function Todo({ profile, isAdmin, onLogAction }) {
             </span>
           </div>
 
-          <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+          <div className="nexus-progress">
             <div
-              className="h-full bg-yellow-400 rounded-full transition-all"
+              className="nexus-progress-bar"
               style={{
                 width: `${completionPercent}%`,
               }}
@@ -532,7 +549,7 @@ function Todo({ profile, isAdmin, onLogAction }) {
               resetForm();
               setShowForm(true);
             }}
-            className="px-5 py-3 bg-yellow-400 text-black font-semibold rounded-xl hover:bg-yellow-300"
+            className="nexus-morphic-button px-5 py-3"
           >
             + Add Task
           </button>
@@ -541,10 +558,14 @@ function Todo({ profile, isAdmin, onLogAction }) {
 
       {/* Admin editor */}
       {isAdmin && showForm && (
-        <section className="bg-white/[0.04] border border-yellow-400/20 rounded-3xl p-6">
-          <div className="flex items-center justify-between mb-5">
-            <h3 className="text-xl font-bold">
-              {editingTodo ? "Edit Task" : "Add Task"}
+        <section className="nexus-glass-strong rounded-3xl p-6 relative overflow-hidden border-yellow-400/20">
+          <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/[0.04] via-purple-500/[0.04] to-transparent pointer-events-none" />
+
+          <div className="relative flex items-center justify-between mb-5">
+            <h3 className="text-xl font-black">
+              <span className="nexus-text-aurora">
+                {editingTodo ? "Edit Task" : "Add Task"}
+              </span>
             </h3>
 
             <button
@@ -556,13 +577,13 @@ function Todo({ profile, isAdmin, onLogAction }) {
             </button>
           </div>
 
-          <form onSubmit={saveTodo} className="space-y-4">
+          <form onSubmit={saveTodo} className="relative space-y-4">
             <input
               type="text"
               value={title}
               onChange={(event) => setTitle(event.target.value)}
               placeholder="Task title"
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-yellow-400"
+              className="nexus-input"
             />
 
             <textarea
@@ -570,7 +591,7 @@ function Todo({ profile, isAdmin, onLogAction }) {
               onChange={(event) => setDescription(event.target.value)}
               placeholder="Task description"
               rows="4"
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-yellow-400"
+              className="nexus-textarea"
             />
 
             <div>
@@ -582,11 +603,11 @@ function Todo({ profile, isAdmin, onLogAction }) {
                 type="date"
                 value={deadline}
                 onChange={(event) => setDeadline(event.target.value)}
-                className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white"
+                className="nexus-input"
               />
             </div>
 
-            <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4">
+            <div className="nexus-glass-flat rounded-2xl p-4">
               <label className="block text-sm text-gray-300 mb-2">
                 Attach Picture <span className="text-gray-600">(optional)</span>
               </label>
@@ -612,7 +633,7 @@ function Todo({ profile, isAdmin, onLogAction }) {
                       setImageFile(null);
                       setImagePreview(editingTodo?.image_url || "");
                     }}
-                    className="mt-2 text-sm text-red-400"
+                    className="mt-2 text-sm text-red-300 hover:text-red-200"
                   >
                     Remove new picture
                   </button>
@@ -624,7 +645,7 @@ function Todo({ profile, isAdmin, onLogAction }) {
               <button
                 type="submit"
                 disabled={saving}
-                className="px-6 py-3 bg-yellow-400 text-black font-semibold rounded-xl hover:bg-yellow-300 disabled:opacity-50"
+                className="nexus-morphic-button px-6 py-3 disabled:opacity-50"
               >
                 {saving
                   ? "Saving..."
@@ -636,7 +657,7 @@ function Todo({ profile, isAdmin, onLogAction }) {
               <button
                 type="button"
                 onClick={resetForm}
-                className="px-6 py-3 bg-white/5 text-gray-300 rounded-xl hover:bg-white/10"
+                className="nexus-morphic-button-ghost px-6 py-3"
               >
                 Cancel
               </button>
@@ -646,19 +667,19 @@ function Todo({ profile, isAdmin, onLogAction }) {
       )}
 
       {/* Filters */}
-      <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-5">
+      <section className="nexus-glass-strong rounded-3xl p-5">
         <div className="grid lg:grid-cols-[1fr_auto_auto] gap-3">
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search tasks..."
-            className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-yellow-400"
+            className="nexus-input"
           />
 
           <select
             value={deadlineFilter}
             onChange={(event) => setDeadlineFilter(event.target.value)}
-            className="bg-[#17171b] border border-white/10 rounded-xl px-4 py-3 text-white outline-none"
+            className="nexus-select"
           >
             <option value="all">All deadlines</option>
             <option value="overdue">Overdue</option>
@@ -670,7 +691,7 @@ function Todo({ profile, isAdmin, onLogAction }) {
           <select
             value={sortBy}
             onChange={(event) => setSortBy(event.target.value)}
-            className="bg-[#17171b] border border-white/10 rounded-xl px-4 py-3 text-white outline-none"
+            className="nexus-select"
           >
             <option value="deadline">Sort: Deadline</option>
             <option value="overdue">Sort: Overdue first</option>
@@ -684,17 +705,19 @@ function Todo({ profile, isAdmin, onLogAction }) {
       <section>
         <div className="flex items-center justify-between mb-4">
           <div>
-            <p className="text-yellow-400 text-sm">In progress</p>
-            <h3 className="text-xl font-semibold mt-1">Active</h3>
+            <p className="nexus-text-aurora text-xs font-bold uppercase tracking-wider">
+              In progress
+            </p>
+            <h3 className="text-xl font-black mt-1">Active</h3>
           </div>
 
-          <span className="text-sm text-gray-600">
+          <span className="nexus-badge-purple">
             {filteredActiveTodos.length} shown
           </span>
         </div>
 
         {filteredActiveTodos.length === 0 ? (
-          <div className="bg-white/[0.03] border border-dashed border-white/10 rounded-2xl p-8 text-center">
+          <div className="nexus-glass rounded-2xl border-dashed border-white/10 p-8 text-center">
             <div className="text-3xl">✓</div>
 
             <p className="text-gray-500 mt-2">
@@ -715,25 +738,25 @@ function Todo({ profile, isAdmin, onLogAction }) {
         <button
           type="button"
           onClick={() => setShowCompleted((current) => !current)}
-          className="w-full flex items-center justify-between bg-white/[0.03] hover:bg-white/[0.05] rounded-2xl px-5 py-4"
+          className="w-full flex items-center justify-between nexus-glass-flat rounded-2xl px-5 py-4 hover:bg-white/[0.07] transition"
         >
           <div className="flex items-center gap-3">
             <span
-              className={`transition-transform ${
+              className={`transition-transform text-yellow-300 ${
                 showCompleted ? "rotate-90" : ""
               }`}
             >
               ▶
             </span>
 
-            <span className="font-semibold text-gray-400">Completed</span>
+            <span className="font-bold text-gray-300">Completed</span>
 
-            <span className="text-xs px-2 py-1 rounded-full bg-white/5 text-gray-500">
+            <span className="nexus-badge">
               {completedTodos.length}
             </span>
           </div>
 
-          <span className="text-gray-600 text-sm">
+          <span className="text-gray-500 text-sm">
             {showCompleted ? "Hide" : "Show"}
           </span>
         </button>

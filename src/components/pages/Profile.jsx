@@ -259,12 +259,14 @@ function Profile({ profile, reloadProfile, onLogAction }) {
   return (
     <div className="space-y-6">
       {/* Profile hero */}
-      <section className="relative overflow-hidden bg-white/[0.04] border border-white/10 rounded-3xl p-6 md:p-8">
-        <div className="absolute -right-24 -top-32 w-96 h-96 rounded-full bg-yellow-400/10 blur-3xl pointer-events-none" />
+      <section className="relative overflow-hidden nexus-glass-strong rounded-3xl p-6 md:p-8">
+        <div className="nexus-glow-purple w-96 h-96 -right-24 -top-32" />
+        <div className="nexus-glow-pink w-72 h-72 -left-16 -bottom-24" />
 
         <div className="relative flex flex-col md:flex-row md:items-center gap-6">
           <div className="relative shrink-0">
-            <div className="w-32 h-32 rounded-3xl overflow-hidden border-2 border-yellow-400/30 bg-white/[0.03]">
+            <div className="absolute inset-0 rounded-3xl bg-gradient-aurora blur-xl opacity-50" />
+            <div className="relative w-32 h-32 rounded-3xl overflow-hidden border-2 border-yellow-400/40 bg-white/[0.03] backdrop-blur-md">
               {avatarUrl ? (
                 <SafeImage
                   src={avatarUrl}
@@ -272,14 +274,14 @@ function Profile({ profile, reloadProfile, onLogAction }) {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-4xl font-black text-yellow-400">
+                <div className="w-full h-full flex items-center justify-center text-4xl font-black nexus-text-aurora">
                   {initials}
                 </div>
               )}
             </div>
 
             {editMode && (
-              <label className="absolute -bottom-2 -right-2 w-10 h-10 rounded-xl bg-yellow-400 text-black flex items-center justify-center cursor-pointer shadow-lg hover:bg-yellow-300 transition">
+              <label className="absolute -bottom-2 -right-2 w-10 h-10 rounded-xl bg-gradient-aurora text-black flex items-center justify-center cursor-pointer shadow-[0_0_22px_rgba(250,204,21,0.45)] hover:scale-110 transition border border-white/30">
                 ✎
                 <input
                   type="file"
@@ -293,12 +295,12 @@ function Profile({ profile, reloadProfile, onLogAction }) {
           </div>
 
           <div className="min-w-0 flex-1">
-            <p className="text-yellow-400 text-sm font-semibold">
+            <span className="inline-flex px-3 py-1 rounded-full bg-yellow-400/10 border border-yellow-400/30 text-yellow-300 text-[10px] font-black uppercase tracking-[0.25em]">
               Member Profile
-            </p>
+            </span>
 
-            <h2 className="text-3xl md:text-4xl font-black mt-1 truncate">
-              {displayName}
+            <h2 className="text-3xl md:text-5xl font-black mt-3 truncate">
+              <span className="nexus-text-aurora">{displayName}</span>
             </h2>
 
             {profile.nickname &&
@@ -308,19 +310,19 @@ function Profile({ profile, reloadProfile, onLogAction }) {
               )}
 
             <div className="flex flex-wrap gap-2 mt-4">
-              <span className="px-3 py-1.5 rounded-full bg-yellow-400/10 border border-yellow-400/20 text-yellow-300 text-xs font-semibold">
+              <span className="nexus-badge-yellow">
                 {ROLE_NAMES[profile.role]}
               </span>
 
-              <span className="px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/10 text-gray-300 text-xs font-semibold">
+              <span className="nexus-badge-purple">
                 {profile.points ?? 0} points
               </span>
 
-              <span className="px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/10 text-gray-300 text-xs font-semibold">
+              <span className="nexus-badge-cyan">
                 {profileStats.rank ? `Rank #${profileStats.rank}` : "Rank —"}
               </span>
 
-              <span className="px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/10 text-gray-300 text-xs font-semibold">
+              <span className="nexus-badge">
                 Joined {joinDate}
               </span>
             </div>
@@ -333,7 +335,7 @@ function Profile({ profile, reloadProfile, onLogAction }) {
                 setMessage("");
                 setEditMode(true);
               }}
-              className="px-5 py-3 rounded-xl bg-yellow-400 text-black font-bold hover:bg-yellow-300 transition shrink-0"
+              className="nexus-morphic-button px-5 py-3 shrink-0"
             >
               Edit Profile
             </button>
@@ -343,22 +345,24 @@ function Profile({ profile, reloadProfile, onLogAction }) {
 
       {/* Profile stats */}
       <section className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white/[0.04] border border-white/10 rounded-2xl p-5">
-          <p className="text-gray-600 text-xs uppercase tracking-wider">
+        <div className="nexus-stat nexus-stat-stat-yellow">
+          <p className="text-gray-500 text-xs uppercase tracking-wider">
             Current Points
           </p>
 
-          <p className="text-3xl font-black mt-2">{profile.points ?? 0}</p>
+          <p className="text-3xl font-black mt-2 nexus-text-aurora">
+            {profile.points ?? 0}
+          </p>
 
           <p className="text-gray-500 text-xs mt-1">Current club points</p>
         </div>
 
-        <div className="bg-white/[0.04] border border-white/10 rounded-2xl p-5">
-          <p className="text-gray-600 text-xs uppercase tracking-wider">
+        <div className="nexus-stat nexus-stat-stat-cyan">
+          <p className="text-gray-500 text-xs uppercase tracking-wider">
             Current Rank
           </p>
 
-          <p className="text-3xl font-black mt-2 text-yellow-400">
+          <p className="text-3xl font-black mt-2 text-cyan-300">
             {profileStats.rank ? `#${profileStats.rank}` : "—"}
           </p>
 
@@ -367,24 +371,24 @@ function Profile({ profile, reloadProfile, onLogAction }) {
           </p>
         </div>
 
-        <div className="bg-white/[0.04] border border-white/10 rounded-2xl p-5">
-          <p className="text-gray-600 text-xs uppercase tracking-wider">
+        <div className="nexus-stat nexus-stat-stat-purple">
+          <p className="text-gray-500 text-xs uppercase tracking-wider">
             Point Entries
           </p>
 
-          <p className="text-3xl font-black mt-2">
+          <p className="text-3xl font-black mt-2 text-purple-300">
             {profileStats.pointEntries}
           </p>
 
           <p className="text-gray-500 text-xs mt-1">Recorded point changes</p>
         </div>
 
-        <div className="bg-white/[0.04] border border-white/10 rounded-2xl p-5">
-          <p className="text-gray-600 text-xs uppercase tracking-wider">
+        <div className="nexus-stat nexus-stat-stat-pink">
+          <p className="text-gray-500 text-xs uppercase tracking-wider">
             Club Tasks Done
           </p>
 
-          <p className="text-3xl font-black mt-2">
+          <p className="text-3xl font-black mt-2 text-pink-300">
             {profileStats.completedClubTasks}
           </p>
 
@@ -395,32 +399,42 @@ function Profile({ profile, reloadProfile, onLogAction }) {
       </section>
 
       {/* Membership */}
-      <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
-        <p className="text-yellow-400 text-sm font-semibold">Membership</p>
+      <section className="nexus-glass-strong rounded-3xl p-6 relative overflow-hidden">
+        <div className="absolute -top-10 right-10 w-48 h-48 rounded-full bg-purple-500/10 blur-3xl pointer-events-none" />
 
-        <div className="grid md:grid-cols-2 gap-4 mt-4">
-          <div className="rounded-2xl bg-black/10 border border-white/5 p-4">
-            <p className="text-gray-600 text-xs uppercase">Joined</p>
+        <div className="relative">
+          <p className="nexus-text-aurora text-xs font-bold uppercase tracking-wider">
+            Membership
+          </p>
 
-            <p className="font-bold mt-2">{joinDate}</p>
-          </div>
+          <div className="grid md:grid-cols-2 gap-4 mt-4">
+            <div className="rounded-2xl nexus-glass-flat p-4">
+              <p className="text-gray-600 text-xs uppercase">Joined</p>
 
-          <div className="rounded-2xl bg-black/10 border border-white/5 p-4">
-            <p className="text-gray-600 text-xs uppercase">Status</p>
+              <p className="font-bold mt-2">{joinDate}</p>
+            </div>
 
-            <p className="font-bold text-green-400 mt-2">Active</p>
+            <div className="rounded-2xl nexus-glass-flat p-4">
+              <p className="text-gray-600 text-xs uppercase">Status</p>
+
+              <p className="font-bold text-green-300 mt-2">Active</p>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Profile editor / bio */}
-      <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-6 md:p-7">
-        {!editMode ? (
-          <div className="grid md:grid-cols-[1fr_auto] gap-6">
-            <div>
-              <p className="text-yellow-400 text-sm font-semibold">About</p>
+      <section className="nexus-glass-strong rounded-3xl p-6 md:p-7 relative overflow-hidden">
+        <div className="absolute -bottom-10 left-1/3 w-48 h-48 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" />
 
-              <h3 className="text-xl font-bold mt-1">Bio</h3>
+        {!editMode ? (
+          <div className="relative grid md:grid-cols-[1fr_auto] gap-6">
+            <div>
+              <p className="nexus-text-aurora text-xs font-bold uppercase tracking-wider">
+                About
+              </p>
+
+              <h3 className="text-xl font-black mt-1">Bio</h3>
 
               <p className="text-gray-400 leading-relaxed mt-4 whitespace-pre-wrap">
                 {profile.bio ||
@@ -428,7 +442,7 @@ function Profile({ profile, reloadProfile, onLogAction }) {
               </p>
             </div>
 
-            <div className="rounded-2xl bg-black/10 border border-white/5 p-5 md:w-64">
+            <div className="rounded-2xl nexus-glass-flat p-5 md:w-64">
               <p className="text-gray-600 text-xs uppercase tracking-wider">
                 Profile picture
               </p>
@@ -439,9 +453,9 @@ function Profile({ profile, reloadProfile, onLogAction }) {
             </div>
           </div>
         ) : (
-          <form onSubmit={saveProfile} className="space-y-5">
+          <form onSubmit={saveProfile} className="relative space-y-5">
             <div>
-              <p className="text-yellow-400 text-sm font-semibold">
+              <p className="nexus-text-aurora text-xs font-bold uppercase tracking-wider">
                 Edit Profile
               </p>
 
@@ -458,7 +472,7 @@ function Profile({ profile, reloadProfile, onLogAction }) {
                   value={fullName}
                   onChange={(event) => setFullName(event.target.value)}
                   placeholder="Full name"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3.5 text-white outline-none focus:border-yellow-400"
+                  className="nexus-input"
                 />
               </div>
 
@@ -471,7 +485,7 @@ function Profile({ profile, reloadProfile, onLogAction }) {
                   value={nickname}
                   onChange={(event) => setNickname(event.target.value)}
                   placeholder="Nickname"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3.5 text-white outline-none focus:border-yellow-400"
+                  className="nexus-input"
                 />
               </div>
             </div>
@@ -484,11 +498,11 @@ function Profile({ profile, reloadProfile, onLogAction }) {
                 onChange={(event) => setBio(event.target.value)}
                 placeholder="Tell the club a little about yourself..."
                 rows={5}
-                className="w-full bg-white/5 border border-white/10 rounded-xl p-3.5 text-white resize-none outline-none focus:border-yellow-400"
+                className="nexus-textarea"
               />
             </div>
 
-            <div className="rounded-2xl bg-white/[0.03] border border-white/10 p-4">
+            <div className="rounded-2xl nexus-glass-flat p-4">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-xl overflow-hidden bg-black/20">
                   <SafeImage
@@ -509,13 +523,17 @@ function Profile({ profile, reloadProfile, onLogAction }) {
               </div>
             </div>
 
-            {message && <p className="text-yellow-400 text-sm">{message}</p>}
+            {message && (
+              <div className="nexus-badge-yellow rounded-xl px-3 py-2">
+                {message}
+              </div>
+            )}
 
             <div className="flex flex-wrap gap-3">
               <button
                 type="submit"
                 disabled={saving}
-                className="px-6 py-3 bg-yellow-400 text-black rounded-xl font-semibold disabled:opacity-50 hover:bg-yellow-300 transition"
+                className="nexus-morphic-button px-6 py-3 disabled:opacity-50"
               >
                 {saving ? "Saving..." : "Save Profile"}
               </button>
@@ -524,7 +542,7 @@ function Profile({ profile, reloadProfile, onLogAction }) {
                 type="button"
                 onClick={resetEdits}
                 disabled={saving}
-                className="px-6 py-3 bg-white/5 text-gray-300 rounded-xl hover:bg-white/10 transition"
+                className="nexus-morphic-button-ghost px-6 py-3"
               >
                 Cancel
               </button>

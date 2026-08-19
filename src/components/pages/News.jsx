@@ -197,14 +197,20 @@ function News({ news, profile, reload, onLogAction }) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-5">
+      <section className="nexus-glass-strong rounded-3xl p-6 relative overflow-hidden">
+        <div className="nexus-glow-cyan w-72 h-72 -top-20 -right-20" />
+        <div className="nexus-glow-purple w-72 h-72 -bottom-20 -left-20" />
+
+        <div className="relative flex flex-col md:flex-row md:items-end md:justify-between gap-5">
           <div>
-            <p className="text-yellow-400 text-sm font-semibold">
+            <p className="nexus-text-ocean text-xs font-bold uppercase tracking-wider">
               Club Updates
             </p>
 
-            <h2 className="text-3xl font-black mt-1">News & Announcements</h2>
+            <h2 className="text-3xl font-black mt-1">
+              News &{" "}
+              <span className="nexus-text-aurora">Announcements</span>
+            </h2>
 
             <p className="text-gray-500 mt-2">
               Publish updates and keep members informed.
@@ -212,16 +218,22 @@ function News({ news, profile, reload, onLogAction }) {
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-2xl bg-white/[0.03] border border-white/10 px-4 py-3">
-              <p className="text-gray-600 text-xs">Total</p>
+            <div className="nexus-glass-flat rounded-2xl px-4 py-3">
+              <p className="text-gray-500 text-xs uppercase font-bold">
+                Total
+              </p>
 
               <p className="text-2xl font-black mt-1">{news.length}</p>
             </div>
 
-            <div className="rounded-2xl bg-blue-500/10 border border-blue-400/20 px-4 py-3">
-              <p className="text-blue-300 text-xs">Showing</p>
+            <div className="rounded-2xl bg-cyan-400/10 border border-cyan-400/30 backdrop-blur-md px-4 py-3 shadow-[0_0_22px_rgba(34,211,238,0.18)]">
+              <p className="text-cyan-300 text-xs uppercase font-bold">
+                Showing
+              </p>
 
-              <p className="text-2xl font-black mt-1">{filteredNews.length}</p>
+              <p className="text-2xl font-black mt-1 text-cyan-300">
+                {filteredNews.length}
+              </p>
             </div>
           </div>
         </div>
@@ -229,10 +241,12 @@ function News({ news, profile, reload, onLogAction }) {
 
       <div className="grid xl:grid-cols-[0.85fr_1.15fr] gap-7 items-start">
         {/* Publish / Edit */}
-        <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
-          <div className="flex items-center justify-between gap-4 mb-6">
+        <section className="nexus-glass-strong rounded-3xl p-6 relative overflow-hidden">
+          <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full bg-yellow-400/10 blur-3xl pointer-events-none" />
+
+          <div className="relative flex items-center justify-between gap-4 mb-6">
             <div>
-              <p className="text-yellow-400 text-sm font-semibold">
+              <p className="nexus-text-aurora text-xs font-bold uppercase tracking-wider">
                 {editingNews ? "Edit Announcement" : "New Announcement"}
               </p>
 
@@ -252,12 +266,12 @@ function News({ news, profile, reload, onLogAction }) {
             )}
           </div>
 
-          <form onSubmit={publish} className="space-y-4">
+          <form onSubmit={publish} className="relative space-y-4">
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="News title"
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white outline-none focus:border-yellow-400"
+              className="nexus-input"
             />
 
             <textarea
@@ -265,10 +279,10 @@ function News({ news, profile, reload, onLogAction }) {
               onChange={(e) => setContent(e.target.value)}
               placeholder="Write announcement..."
               rows="8"
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white resize-none outline-none focus:border-yellow-400"
+              className="nexus-textarea"
             />
 
-            <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4">
+            <div className="nexus-glass-flat rounded-2xl p-4">
               <label className="block text-sm text-gray-300 mb-2">
                 Attach Picture <span className="text-gray-600">(optional)</span>
               </label>
@@ -291,7 +305,7 @@ function News({ news, profile, reload, onLogAction }) {
                   <button
                     type="button"
                     onClick={clearImage}
-                    className="mt-2 text-sm text-red-400"
+                    className="mt-2 text-sm text-red-300 hover:text-red-200"
                   >
                     Remove picture
                   </button>
@@ -302,7 +316,7 @@ function News({ news, profile, reload, onLogAction }) {
             <button
               type="submit"
               disabled={publishing}
-              className="w-full bg-yellow-400 text-black font-semibold py-3.5 rounded-xl hover:bg-yellow-300 disabled:opacity-50 transition"
+              className="nexus-morphic-button w-full py-3.5 disabled:opacity-50"
             >
               {publishing
                 ? editingNews
@@ -316,8 +330,10 @@ function News({ news, profile, reload, onLogAction }) {
         </section>
 
         {/* Published news */}
-        <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-5">
+        <section className="nexus-glass-strong rounded-3xl p-6 relative overflow-hidden">
+          <div className="absolute -top-10 -left-10 w-48 h-48 rounded-full bg-purple-500/10 blur-3xl pointer-events-none" />
+
+          <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-5">
             <div>
               <p className="text-gray-500 text-sm">Published</p>
 
@@ -329,13 +345,13 @@ function News({ news, profile, reload, onLogAction }) {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search news..."
-                className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white outline-none"
+                className="nexus-input text-sm"
               />
 
               <select
                 value={sortOrder}
                 onChange={(e) => setSortOrder(e.target.value)}
-                className="bg-[#17171b] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white outline-none"
+                className="nexus-select text-sm"
               >
                 <option value="newest">Newest first</option>
                 <option value="oldest">Oldest first</option>
@@ -344,8 +360,8 @@ function News({ news, profile, reload, onLogAction }) {
           </div>
 
           {filteredNews.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-white/10 p-10 text-center">
-              <div className="text-3xl">📰</div>
+            <div className="rounded-2xl border border-dashed border-white/10 nexus-glass-flat p-10 text-center">
+              <div className="text-4xl">📰</div>
 
               <p className="text-gray-500 mt-3">
                 {news.length === 0
@@ -356,7 +372,7 @@ function News({ news, profile, reload, onLogAction }) {
               {search && (
                 <button
                   onClick={() => setSearch("")}
-                  className="mt-4 text-yellow-400 text-sm"
+                  className="mt-4 nexus-text-aurora text-sm font-bold"
                 >
                   Clear search
                 </button>
@@ -367,10 +383,10 @@ function News({ news, profile, reload, onLogAction }) {
               {filteredNews.map((item) => (
                 <article
                   key={item.id}
-                  className={`overflow-hidden bg-white/[0.03] border rounded-2xl ${
+                  className={`overflow-hidden nexus-glass-flat rounded-2xl transition hover:-translate-y-0.5 ${
                     editingNews?.id === item.id
-                      ? "border-yellow-400/30"
-                      : "border-white/5"
+                      ? "border-yellow-400/40 shadow-[0_0_28px_rgba(250,204,21,0.20)]"
+                      : "hover:border-yellow-400/30"
                   }`}
                 >
                   {item.image_url && (
@@ -388,10 +404,12 @@ function News({ news, profile, reload, onLogAction }) {
                   <div className="p-5">
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0">
-                        <h4 className="font-bold text-xl">{item.title}</h4>
+                        <h4 className="font-black text-xl">
+                          {item.title}
+                        </h4>
 
                         {item.created_at && (
-                          <p className="text-gray-600 text-xs mt-1.5">
+                          <p className="text-gray-500 text-xs mt-1.5">
                             {new Date(item.created_at).toLocaleString()}
                           </p>
                         )}
@@ -401,7 +419,7 @@ function News({ news, profile, reload, onLogAction }) {
                         <button
                           type="button"
                           onClick={() => beginEdit(item)}
-                          className="px-3 py-2 rounded-lg bg-white/5 text-gray-300 text-xs hover:bg-white/10 transition"
+                          className="px-3 py-2 rounded-lg nexus-glass-flat text-xs hover:border-yellow-400/30"
                         >
                           Edit
                         </button>
@@ -410,7 +428,7 @@ function News({ news, profile, reload, onLogAction }) {
                           type="button"
                           onClick={() => deleteNews(item)}
                           disabled={deletingId === item.id}
-                          className="px-3 py-2 rounded-lg bg-red-500/10 text-red-400 text-xs hover:bg-red-500/20 disabled:opacity-50 transition"
+                          className="px-3 py-2 rounded-lg bg-red-500/10 text-red-300 border border-red-400/20 text-xs hover:bg-red-500/20 disabled:opacity-50 transition font-semibold"
                         >
                           {deletingId === item.id ? "Deleting..." : "Delete"}
                         </button>

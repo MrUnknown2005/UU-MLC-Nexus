@@ -241,11 +241,19 @@ function RoleManager({ currentUser, roleDefinitions, onRolesChanged }) {
 
   return (
     <div className="space-y-6">
-      <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-5">
+      <section className="nexus-glass-strong rounded-3xl p-6 relative overflow-hidden">
+        <div className="nexus-glow-purple w-72 h-72 -top-20 -right-20" />
+        <div className="nexus-glow-cyan w-72 h-72 -bottom-20 -left-20" />
+
+        <div className="relative flex flex-col md:flex-row md:items-end md:justify-between gap-5">
           <div>
-            <p className="text-yellow-400 text-sm font-semibold">Security</p>
-            <h2 className="text-3xl font-black mt-1">Roles & Permissions</h2>
+            <p className="nexus-text-aurora text-xs font-bold uppercase tracking-wider">
+              Security
+            </p>
+            <h2 className="text-3xl font-black mt-1">
+              Roles &{" "}
+              <span className="nexus-text-ocean">Permissions</span>
+            </h2>
             <p className="text-gray-500 mt-2">
               Create custom roles and decide exactly what each role can access.
             </p>
@@ -254,7 +262,7 @@ function RoleManager({ currentUser, roleDefinitions, onRolesChanged }) {
           <button
             type="button"
             onClick={resetEditor}
-            className="px-5 py-3 rounded-xl bg-yellow-400 text-black font-bold hover:bg-yellow-300"
+            className="nexus-morphic-button px-5 py-3"
           >
             + New Custom Role
           </button>
@@ -262,29 +270,36 @@ function RoleManager({ currentUser, roleDefinitions, onRolesChanged }) {
       </section>
 
       <section className="grid lg:grid-cols-[0.7fr_1.3fr] gap-5">
-        <div className="bg-white/[0.04] border border-white/10 rounded-3xl p-5">
-          <h3 className="text-xl font-bold">Available Roles</h3>
+        <div className="nexus-glass-strong rounded-3xl p-5 relative overflow-hidden">
+          <div className="absolute -top-10 -left-10 w-48 h-48 rounded-full bg-yellow-400/10 blur-3xl pointer-events-none" />
+
+          <div className="relative">
+            <p className="nexus-text-aurora text-xs font-bold uppercase tracking-wider">
+              Library
+            </p>
+            <h3 className="text-xl font-black mt-1">Available Roles</h3>
+          </div>
           <div className="space-y-2 mt-4">
             {roles.map((role) => (
               <button
                 key={role.role_key}
                 type="button"
                 onClick={() => setSelectedRoleKey(role.role_key)}
-                className={`w-full text-left p-4 rounded-2xl border transition ${
+                className={`w-full text-left p-4 rounded-2xl border transition backdrop-blur-md ${
                   selectedRoleKey === role.role_key
-                    ? "bg-yellow-400/10 border-yellow-400/30"
-                    : "bg-white/[0.025] border-white/5 hover:bg-white/5"
+                    ? "bg-gradient-to-r from-yellow-400/15 to-purple-500/10 border-yellow-400/40 shadow-[0_0_24px_rgba(250,204,21,0.18)]"
+                    : "nexus-glass-flat hover:border-yellow-400/30 hover:bg-white/[0.06]"
                 }`}
               >
                 <div className="flex items-center justify-between gap-3">
-                  <span className="font-semibold">{role.name}</span>
+                  <span className="font-bold">{role.name}</span>
                   {role.is_system && (
-                    <span className="text-[10px] px-2 py-1 rounded-lg bg-white/5 text-gray-500 border border-white/10">
-                      SYSTEM
+                    <span className="text-[10px] px-2 py-1 rounded-lg nexus-badge uppercase font-bold">
+                      System
                     </span>
                   )}
                 </div>
-                <p className="text-gray-600 text-xs mt-1">
+                <p className="text-gray-500 text-xs mt-1">
                   {role.description || role.role_key}
                 </p>
               </button>
@@ -294,10 +309,12 @@ function RoleManager({ currentUser, roleDefinitions, onRolesChanged }) {
 
         <form
           onSubmit={saveRole}
-          className="bg-white/[0.04] border border-white/10 rounded-3xl p-6 space-y-5"
+          className="nexus-glass-strong rounded-3xl p-6 space-y-5 relative overflow-hidden"
         >
-          <div>
-            <p className="text-yellow-400 text-sm font-semibold">
+          <div className="absolute -bottom-10 -right-10 w-56 h-56 rounded-full bg-purple-500/10 blur-3xl pointer-events-none" />
+
+          <div className="relative">
+            <p className="nexus-text-aurora text-xs font-bold uppercase tracking-wider">
               {selectedRole
                 ? selectedRole.is_system
                   ? "System Role"
@@ -309,38 +326,40 @@ function RoleManager({ currentUser, roleDefinitions, onRolesChanged }) {
             </h3>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="relative grid md:grid-cols-2 gap-4">
             <input
               value={name}
               onChange={(event) => setName(event.target.value)}
               disabled={selectedRole?.is_system}
               placeholder="Role name — e.g. Senior Executive"
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none disabled:opacity-50"
+              className="nexus-input disabled:opacity-50"
             />
             <input
               value={roleKey}
               onChange={(event) => setRoleKey(event.target.value)}
               disabled={Boolean(selectedRole)}
               placeholder="Role key — e.g. senior_executive"
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none disabled:opacity-50"
+              className="nexus-input disabled:opacity-50"
             />
           </div>
 
-          <textarea
-            value={description}
-            onChange={(event) => setDescription(event.target.value)}
-            disabled={selectedRole?.is_system}
-            rows={3}
-            placeholder="Describe this role..."
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 resize-none outline-none disabled:opacity-50"
-          />
+          <div className="relative">
+            <textarea
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              disabled={selectedRole?.is_system}
+              rows={3}
+              placeholder="Describe this role..."
+              className="nexus-textarea disabled:opacity-50"
+            />
+          </div>
 
-          <div>
+          <div className="relative">
             <div className="flex items-center justify-between gap-3 mb-3">
               <div>
-                <p className="font-semibold">Permissions</p>
-                <p className="text-gray-600 text-xs mt-1">
-                  {selectedPermissionKeys.length} selected
+                <p className="font-bold">Permissions</p>
+                <p className="text-gray-500 text-xs mt-1">
+                  <span className="text-yellow-300 font-bold">{selectedPermissionKeys.length}</span> selected
                 </p>
               </div>
             </div>
@@ -348,7 +367,7 @@ function RoleManager({ currentUser, roleDefinitions, onRolesChanged }) {
             <div className="space-y-4">
               {Object.entries(groupedPermissions).map(([category, items]) => (
                 <div key={category}>
-                  <p className="text-gray-500 text-xs uppercase tracking-wider mb-2">
+                  <p className="text-gray-500 text-xs uppercase tracking-wider mb-2 font-bold">
                     {category}
                   </p>
                   <div className="grid sm:grid-cols-2 gap-2">
@@ -361,10 +380,10 @@ function RoleManager({ currentUser, roleDefinitions, onRolesChanged }) {
                       return (
                         <label
                           key={permissionKey}
-                          className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition ${
+                          className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition backdrop-blur-md ${
                             checked
-                              ? "bg-yellow-400/[0.07] border-yellow-400/20"
-                              : "bg-white/[0.025] border-white/5"
+                              ? "bg-gradient-to-br from-yellow-400/10 to-purple-500/10 border-yellow-400/40 shadow-[0_0_18px_rgba(250,204,21,0.16)]"
+                              : "nexus-glass-flat hover:border-yellow-400/30"
                           } ${selectedRole?.is_system ? "cursor-default" : ""}`}
                         >
                           <input
@@ -372,13 +391,13 @@ function RoleManager({ currentUser, roleDefinitions, onRolesChanged }) {
                             checked={checked}
                             disabled={selectedRole?.is_system}
                             onChange={() => togglePermission(permissionKey)}
-                            className="mt-1"
+                            className="mt-1 accent-yellow-400"
                           />
                           <span className="min-w-0">
-                            <span className="block text-sm font-semibold">
+                            <span className="block text-sm font-bold">
                               {permission.name}
                             </span>
-                            <span className="block text-gray-600 text-[11px] mt-1">
+                            <span className="block text-gray-500 text-[11px] mt-1">
                               {permission.description}
                             </span>
                           </span>
@@ -392,17 +411,17 @@ function RoleManager({ currentUser, roleDefinitions, onRolesChanged }) {
           </div>
 
           {message && (
-            <p className="text-yellow-400 text-sm whitespace-pre-wrap">
+            <div className="relative nexus-badge-yellow rounded-xl px-3 py-2 whitespace-pre-wrap">
               {message}
-            </p>
+            </div>
           )}
 
-          <div className="flex flex-wrap gap-3">
+          <div className="relative flex flex-wrap gap-3">
             {!selectedRole?.is_system && (
               <button
                 type="submit"
                 disabled={saving}
-                className="px-6 py-3 rounded-xl bg-yellow-400 text-black font-bold disabled:opacity-50"
+                className="nexus-morphic-button px-6 py-3 disabled:opacity-50"
               >
                 {saving
                   ? "Saving..."
@@ -417,7 +436,7 @@ function RoleManager({ currentUser, roleDefinitions, onRolesChanged }) {
                 type="button"
                 onClick={deleteRole}
                 disabled={saving}
-                className="px-6 py-3 rounded-xl bg-red-500/10 text-red-300 border border-red-400/20 disabled:opacity-50"
+                className="nexus-morphic-button-danger px-6 py-3 disabled:opacity-50"
               >
                 Delete Role
               </button>
@@ -426,10 +445,11 @@ function RoleManager({ currentUser, roleDefinitions, onRolesChanged }) {
         </form>
       </section>
 
-      <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
-        <p className="text-gray-500 text-sm">
-          Built-in roles stay protected. Custom roles can be created, edited,
-          assigned to members, and given only the permissions they need.
+      <section className="nexus-glass-strong rounded-3xl p-6 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/[0.04] via-purple-500/[0.04] to-cyan-400/[0.04] pointer-events-none" />
+
+        <p className="relative text-gray-400 text-sm">
+          <span className="text-yellow-300 font-bold">Heads up:</span> Built-in roles stay protected. Custom roles can be created, edited, assigned to members, and given only the permissions they need.
         </p>
       </section>
     </div>

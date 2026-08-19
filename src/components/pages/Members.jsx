@@ -94,16 +94,20 @@ function Members({
     <div className="space-y-6">
 
       {/* Header */}
-      <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-5">
+      <section className="nexus-glass-strong rounded-3xl p-6 relative overflow-hidden">
+        <div className="nexus-glow-yellow w-72 h-72 -top-20 -right-20" />
+        <div className="nexus-glow-purple w-72 h-72 -bottom-20 -left-20" />
+
+        <div className="relative flex flex-col md:flex-row md:items-end md:justify-between gap-5">
 
           <div>
-            <p className="text-yellow-400 text-sm font-semibold">
+            <p className="nexus-text-aurora text-xs font-bold uppercase tracking-wider">
               Administration
             </p>
 
             <h2 className="text-3xl font-black mt-1">
-              Member Management
+              <span className="nexus-text-aurora">Member</span>{" "}
+              <span className="nexus-text-ocean">Management</span>
             </h2>
 
             <p className="text-gray-500 mt-2">
@@ -113,18 +117,18 @@ function Members({
 
           <div className="grid grid-cols-2 gap-3">
 
-            <div className="rounded-2xl bg-yellow-400/10 border border-yellow-400/20 px-4 py-3 min-w-28">
-              <p className="text-yellow-400 text-xs">
+            <div className="rounded-2xl bg-yellow-400/10 border border-yellow-400/30 backdrop-blur-md px-4 py-3 min-w-28 shadow-[0_0_22px_rgba(250,204,21,0.18)]">
+              <p className="text-yellow-300 text-xs uppercase font-bold">
                 Pending
               </p>
 
-              <p className="text-2xl font-black mt-1">
+              <p className="text-2xl font-black mt-1 text-yellow-300">
                 {pendingMembers.length}
               </p>
             </div>
 
-            <div className="rounded-2xl bg-white/[0.03] border border-white/10 px-4 py-3 min-w-28">
-              <p className="text-gray-500 text-xs">
+            <div className="nexus-glass-flat rounded-2xl px-4 py-3 min-w-28">
+              <p className="text-gray-500 text-xs uppercase font-bold">
                 Total
               </p>
 
@@ -139,12 +143,13 @@ function Members({
 
       {/* Pending requests */}
       {pendingMembers.length > 0 && (
-        <section className="bg-yellow-400/[0.045] border border-yellow-400/20 rounded-3xl p-6">
+        <section className="nexus-glass-strong rounded-3xl p-6 relative overflow-hidden border-yellow-400/30">
+          <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/[0.06] via-transparent to-purple-500/[0.06] pointer-events-none" />
 
-          <div className="flex items-center justify-between gap-4">
+          <div className="relative flex items-center justify-between gap-4">
 
             <div>
-              <p className="text-yellow-400 text-sm font-semibold">
+              <p className="nexus-text-aurora text-sm font-bold uppercase tracking-wider">
                 Needs Review
               </p>
 
@@ -157,7 +162,7 @@ function Members({
               </p>
             </div>
 
-            <span className="px-3 py-1.5 rounded-full bg-yellow-400 text-black text-xs font-black">
+            <span className="nexus-chip-gradient">
               {pendingMembers.length}
             </span>
 
@@ -175,16 +180,19 @@ function Members({
               return (
                 <div
                   key={member.id}
-                  className="rounded-2xl bg-black/10 border border-yellow-400/10 p-4"
+                  className="rounded-2xl nexus-glass-flat border-yellow-400/20 p-4 hover:border-yellow-400/40 transition"
                 >
 
                   <div className="flex items-center gap-3">
 
-                    <SafeImage
-                      src={member.avatar_url || logo}
-                      alt=""
-                      className="w-12 h-12 rounded-full object-cover"
-                    />
+                    <div className="relative shrink-0">
+                      <div className="absolute inset-0 rounded-full bg-gradient-aurora blur-sm opacity-60" />
+                      <SafeImage
+                        src={member.avatar_url || logo}
+                        alt=""
+                        className="relative w-12 h-12 rounded-full object-cover border border-white/20"
+                      />
+                    </div>
 
                     <div className="min-w-0">
 
@@ -206,7 +214,7 @@ function Members({
                     onClick={() =>
                       onRoleChange(member.id, "member")
                     }
-                    className="w-full mt-4 px-4 py-2.5 rounded-xl bg-yellow-400 text-black font-bold hover:bg-yellow-300 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                    className="nexus-morphic-button w-full mt-4 px-4 py-2.5 disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     Approve & Make Member
                   </button>
@@ -220,7 +228,7 @@ function Members({
       )}
 
       {/* Search and filters */}
-      <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-5">
+      <section className="nexus-glass-strong rounded-3xl p-5">
 
         <div className="grid md:grid-cols-[1fr_auto] gap-3">
 
@@ -230,7 +238,7 @@ function Members({
               setSearch(event.target.value)
             }
             placeholder="Search name, email, or role..."
-            className="w-full rounded-xl bg-black/20 border border-white/10 px-4 py-3 outline-none focus:border-yellow-400/40"
+            className="nexus-input"
           />
 
           <select
@@ -238,7 +246,7 @@ function Members({
             onChange={(event) =>
               setStatusFilter(event.target.value)
             }
-            className="rounded-xl bg-black/20 border border-white/10 px-4 py-3 outline-none"
+            className="nexus-select"
           >
             <option value="all">
               All accounts
@@ -259,8 +267,8 @@ function Members({
 
         </div>
 
-        <p className="text-xs text-gray-600 mt-3">
-          Showing {filteredMembers.length} of {members.length} accounts
+        <p className="text-xs text-gray-500 mt-3">
+          Showing <span className="text-yellow-300 font-bold">{filteredMembers.length}</span> of {members.length} accounts
         </p>
 
       </section>
@@ -281,23 +289,26 @@ function Members({
           return (
             <article
               key={member.id}
-              className={`bg-white/[0.04] border rounded-3xl p-5 ${
+              className={`nexus-glass-strong rounded-3xl p-5 relative overflow-hidden hover:-translate-y-1 transition ${
                 member.role === "guest" &&
                 member.is_active !== false
-                  ? "border-yellow-400/20"
-                  : "border-white/10"
+                  ? "border-yellow-400/30 shadow-[0_0_24px_rgba(250,204,21,0.18)]"
+                  : ""
               }`}
             >
 
-              <div className="flex items-start justify-between gap-3">
+              <div className="relative flex items-start justify-between gap-3">
 
                 <div className="flex items-center gap-3 min-w-0">
 
-                  <SafeImage
-                    src={member.avatar_url || logo}
-                    alt=""
-                    className="w-12 h-12 rounded-full object-cover shrink-0"
-                  />
+                  <div className="relative shrink-0">
+                    <div className="absolute inset-0 rounded-full bg-gradient-aurora blur-sm opacity-50" />
+                    <SafeImage
+                      src={member.avatar_url || logo}
+                      alt=""
+                      className="relative w-12 h-12 rounded-full object-cover border border-white/20"
+                    />
+                  </div>
 
                   <div className="min-w-0">
 
@@ -305,18 +316,18 @@ function Members({
                       {member.nickname || member.full_name}
                     </h3>
 
-                    <p className="text-yellow-400 text-xs mt-1">
+                    <p className="text-yellow-300 text-xs mt-1 font-semibold">
                       {ROLE_NAMES[member.role] ||
                         member.role}
                     </p>
 
                     <p
-                      className={`text-[11px] mt-1 ${
+                      className={`text-[11px] mt-1 font-semibold ${
                         member.is_active === false
-                          ? "text-red-400"
+                          ? "text-red-300"
                           : member.role === "guest"
                             ? "text-yellow-300"
-                            : "text-green-400"
+                            : "text-green-300"
                       }`}
                     >
                       {member.is_active === false
@@ -331,7 +342,7 @@ function Members({
 
                 {member.role === "guest" &&
                   member.is_active !== false && (
-                    <span className="px-2 py-1 rounded-lg bg-yellow-400/10 border border-yellow-400/20 text-yellow-300 text-[10px] font-bold">
+                    <span className="nexus-badge-yellow">
                       PENDING
                     </span>
                   )}
@@ -341,29 +352,29 @@ function Members({
               {/* Member stats */}
               <div className="mt-5 grid sm:grid-cols-3 gap-2">
 
-                <div className="rounded-xl bg-white/[0.03] p-3">
+                <div className="rounded-xl nexus-glass-flat p-3">
 
-                  <p className="text-gray-600 text-[10px] uppercase">
+                  <p className="text-gray-500 text-[10px] uppercase font-bold">
                     Points
                   </p>
 
-                  <p className="font-bold mt-1">
+                  <p className="font-black mt-1 nexus-text-aurora">
                     {member.points ?? 0}
                   </p>
 
                 </div>
 
-                <div className="rounded-xl bg-white/[0.03] p-3">
+                <div className="rounded-xl nexus-glass-flat p-3">
 
-                  <p className="text-gray-600 text-[10px] uppercase">
+                  <p className="text-gray-500 text-[10px] uppercase font-bold">
                     Status
                   </p>
 
                   <p
-                    className={`font-bold mt-1 ${
+                    className={`font-black mt-1 ${
                       member.is_active === false
-                        ? "text-red-400"
-                        : "text-green-400"
+                        ? "text-red-300"
+                        : "text-green-300"
                     }`}
                   >
                     {member.is_active === false
@@ -373,9 +384,9 @@ function Members({
 
                 </div>
 
-                <div className="rounded-xl bg-white/[0.03] p-3">
+                <div className="rounded-xl nexus-glass-flat p-3">
 
-                  <p className="text-gray-600 text-[10px] uppercase">
+                  <p className="text-gray-500 text-[10px] uppercase font-bold">
                     Joined
                   </p>
 
@@ -403,7 +414,7 @@ function Members({
                           "member"
                         )
                       }
-                      className="flex-1 min-w-40 px-3 py-2.5 bg-yellow-400 text-black rounded-xl font-bold hover:bg-yellow-300 transition"
+                      className="nexus-morphic-button flex-1 min-w-40 px-3 py-2.5"
                     >
                       Approve
                     </button>
@@ -421,7 +432,7 @@ function Members({
                           event.target.value
                         )
                       }
-                      className="flex-1 min-w-40 bg-[#18181b] border border-white/10 rounded-xl px-3 py-2.5"
+                      className="nexus-select flex-1 min-w-40"
                     >
 
                       {availableRoles
@@ -457,10 +468,10 @@ function Members({
                         !member.is_active
                       )
                     }
-                    className={`px-3 py-2.5 rounded-xl ${
+                    className={`px-3 py-2.5 rounded-xl text-sm font-semibold transition backdrop-blur-md ${
                       member.is_active
-                        ? "bg-red-500/10 text-red-400 border border-red-400/10"
-                        : "bg-green-500/10 text-green-400 border border-green-400/10"
+                        ? "bg-red-500/10 text-red-300 border border-red-400/20 hover:bg-red-500/20"
+                        : "bg-green-500/10 text-green-300 border border-green-400/20 hover:bg-green-500/20"
                     }`}
                   >
                     {member.is_active
@@ -471,7 +482,7 @@ function Members({
 
                 {/* Current user */}
                 {isCurrentUser && (
-                  <span className="w-full text-center text-yellow-400 text-xs py-2">
+                  <span className="w-full text-center nexus-text-aurora text-xs py-2 font-bold">
                     This is your account
                   </span>
                 )}
@@ -496,9 +507,10 @@ function Members({
 
       {/* Empty state */}
       {filteredMembers.length === 0 && (
-        <div className="text-center py-14 bg-white/[0.03] border border-white/10 rounded-3xl">
+        <div className="text-center py-14 nexus-glass-strong rounded-3xl">
 
-          <p className="text-gray-500">
+          <div className="text-4xl">🔍</div>
+          <p className="text-gray-500 mt-3">
             No accounts match your filters.
           </p>
 
@@ -507,7 +519,7 @@ function Members({
               setSearch("");
               setStatusFilter("all");
             }}
-            className="mt-4 px-4 py-2 bg-yellow-400 text-black rounded-xl font-semibold"
+            className="mt-5 nexus-morphic-button-ghost px-5 py-2.5"
           >
             Clear Filters
           </button>

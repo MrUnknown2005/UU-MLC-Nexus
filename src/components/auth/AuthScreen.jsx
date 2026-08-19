@@ -18,31 +18,47 @@ function AuthScreen({ initialMode = "login", onAuth, onBack }) {
 
 function AuthLayout({ title, subtitle, children, onBack }) {
   return (
-    <div className="min-h-screen bg-[#0b0b0d] flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        <div className="bg-white/[0.06] border border-white/10 rounded-3xl p-8 shadow-2xl">
-          <div className="flex justify-center mb-6">
-            <img src={logo} alt="UU MLC" className="w-24 h-24 object-contain" />
+    <div className="nexus-app-bg min-h-screen flex items-center justify-center px-4 py-10 relative">
+      {/* Glow blobs */}
+      <div className="nexus-glow-yellow w-[26rem] h-[26rem] -top-20 -left-20" />
+      <div className="nexus-glow-purple w-[28rem] h-[28rem] bottom-0 -right-20" />
+      <div className="nexus-glow-cyan w-[20rem] h-[20rem] top-1/3 right-10" />
+
+      <div className="relative w-full max-w-md z-10">
+        <div className="nexus-glass-strong rounded-3xl p-8 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-aurora opacity-[0.04] pointer-events-none" />
+
+          <div className="relative flex justify-center mb-6">
+            <div className="relative">
+              <div className="absolute inset-0 rounded-full bg-gradient-aurora blur-2xl opacity-50" />
+              <img
+                src={logo}
+                alt="UU MLC"
+                className="relative w-24 h-24 object-contain drop-shadow-[0_0_24px_rgba(139,92,246,0.5)]"
+              />
+            </div>
           </div>
 
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold">{title}</h1>
+          <div className="relative text-center mb-8">
+            <h1 className="text-3xl font-black nexus-text-aurora">{title}</h1>
 
             <p className="text-gray-400 text-sm mt-2">{subtitle}</p>
 
-            <p className="text-gray-500 text-xs mt-1">UU MLC Nexus</p>
+            <p className="text-[10px] uppercase tracking-[0.3em] text-yellow-300/80 mt-3">
+              UU MLC Nexus
+            </p>
           </div>
 
           {onBack && (
             <button
               onClick={onBack}
-              className="mb-4 text-sm text-gray-500 hover:text-white transition"
+              className="relative mb-4 text-sm text-gray-500 hover:text-yellow-300 transition"
             >
               ← Back to home
             </button>
           )}
 
-          {children}
+          <div className="relative">{children}</div>
         </div>
       </div>
     </div>
@@ -90,19 +106,23 @@ function Login({ onBack, onLogin, onSwitch }) {
     >
       <form onSubmit={submit} className="space-y-5">
         <div>
-          <label className="block text-sm text-gray-300 mb-2">Email</label>
+          <label className="block text-xs uppercase tracking-wider text-gray-400 mb-2">
+            Email
+          </label>
 
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
-            className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white outline-none focus:border-yellow-400"
+            className="nexus-input"
           />
         </div>
 
         <div>
-          <label className="block text-sm text-gray-300 mb-2">Password</label>
+          <label className="block text-xs uppercase tracking-wider text-gray-400 mb-2">
+            Password
+          </label>
 
           <div className="relative">
             <input
@@ -110,27 +130,31 @@ function Login({ onBack, onLogin, onSwitch }) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter your password"
-              className="w-full px-4 py-3 pr-20 rounded-xl bg-white/5 border border-white/10 text-white outline-none focus:border-yellow-400"
+              className="nexus-input pr-20"
             />
 
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-yellow-400 text-xs"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-yellow-300 text-xs font-semibold hover:text-yellow-200 transition"
             >
               {showPassword ? "Hide" : "Show"}
             </button>
           </div>
         </div>
 
-        {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+        {error && (
+          <div className="nexus-badge-red rounded-xl px-3 py-2 text-center">
+            {error}
+          </div>
+        )}
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-3 rounded-xl bg-yellow-400 text-black font-semibold hover:bg-yellow-300 disabled:opacity-50"
+          className="nexus-morphic-button w-full py-3.5 text-base"
         >
-          {loading ? "Signing in..." : "Sign In"}
+          {loading ? "Signing in..." : "Sign In →"}
         </button>
       </form>
 
@@ -140,7 +164,7 @@ function Login({ onBack, onLogin, onSwitch }) {
         <button
           type="button"
           onClick={onSwitch}
-          className="text-yellow-400 text-sm mt-1"
+          className="nexus-text-aurora font-bold text-sm mt-1 hover:brightness-110 transition"
         >
           Create an account
         </button>
@@ -226,14 +250,14 @@ function SignUp({ onBack, onSignup, onSwitch }) {
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
           placeholder="Full name"
-          className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white"
+          className="nexus-input"
         />
 
         <input
           value={nickname}
           onChange={(e) => setNickname(e.target.value)}
           placeholder="Nickname"
-          className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white"
+          className="nexus-input"
         />
 
         <input
@@ -241,7 +265,7 @@ function SignUp({ onBack, onSignup, onSwitch }) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Email"
-          className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white"
+          className="nexus-input"
         />
 
         <input
@@ -249,7 +273,7 @@ function SignUp({ onBack, onSignup, onSwitch }) {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Password"
-          className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white"
+          className="nexus-input"
         />
 
         <input
@@ -257,27 +281,31 @@ function SignUp({ onBack, onSignup, onSwitch }) {
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
           placeholder="Confirm password"
-          className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white"
+          className="nexus-input"
         />
 
         <button
           type="button"
           onClick={() => setShowPassword(!showPassword)}
-          className="text-yellow-400 text-xs"
+          className="text-yellow-300 text-xs font-semibold hover:text-yellow-200 transition"
         >
           {showPassword ? "Hide password" : "Show password"}
         </button>
 
-        {error && <p className="text-red-400 text-sm">{error}</p>}
+        {error && (
+          <div className="nexus-badge-red rounded-xl px-3 py-2">{error}</div>
+        )}
 
-        {message && <p className="text-yellow-400 text-sm">{message}</p>}
+        {message && (
+          <div className="nexus-badge-yellow rounded-xl px-3 py-2">{message}</div>
+        )}
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-3 rounded-xl bg-yellow-400 text-black font-semibold disabled:opacity-50"
+          className="nexus-morphic-button w-full py-3.5 text-base"
         >
-          {loading ? "Creating..." : "Create Account"}
+          {loading ? "Creating..." : "Create Account →"}
         </button>
       </form>
 
@@ -285,7 +313,7 @@ function SignUp({ onBack, onSignup, onSwitch }) {
         <button
           type="button"
           onClick={onSwitch}
-          className="text-yellow-400 text-sm"
+          className="nexus-text-aurora font-bold text-sm hover:brightness-110 transition"
         >
           Back to Sign In
         </button>
@@ -293,6 +321,5 @@ function SignUp({ onBack, onSignup, onSwitch }) {
     </AuthLayout>
   );
 }
-
 
 export default AuthScreen;

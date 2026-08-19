@@ -71,15 +71,24 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
         }
       `}</style>
 
-      <div className="nexus-mobile-root min-h-screen bg-[#0b0b0d] text-white">
+      <div className="nexus-mobile-root nexus-app-bg min-h-screen text-white">
+        {/* Decorative glow blobs */}
+        <div className="nexus-glow-yellow w-[26rem] h-[26rem] -top-32 -left-32" />
+        <div className="nexus-glow-purple w-[28rem] h-[28rem] top-1/3 -right-40" />
+        <div className="nexus-glow-cyan w-[22rem] h-[22rem] bottom-0 left-10" />
+        <div className="nexus-glow-pink w-[18rem] h-[18rem] top-1/4 right-1/3" />
+
         <Header profile={profile} onLogout={onLogout} />
 
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
+        <div className="relative max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-8 z-10">
           <div className="mb-5 sm:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <p className="text-gray-500 text-sm">Workspace</p>
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-black mt-1">
-                UU MLC Nexus
+              <p className="text-yellow-300 text-xs uppercase tracking-[0.3em]">
+                Workspace
+              </p>
+              <h1 className="text-xl sm:text-2xl md:text-4xl font-black mt-1">
+                <span className="nexus-text-aurora">UU MLC</span>{" "}
+                <span className="nexus-text-ocean">Nexus</span>
               </h1>
             </div>
 
@@ -88,14 +97,14 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
                 <button
                   type="button"
                   onClick={() => setNotificationsOpen((value) => !value)}
-                  className="relative w-11 h-11 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition flex items-center justify-center"
+                  className="relative w-11 h-11 rounded-xl nexus-glass hover:border-yellow-400/40 transition flex items-center justify-center"
                   aria-label="Notifications"
                   aria-expanded={notificationsOpen}
                 >
                   <span className="text-lg">🔔</span>
 
                   {unreadNotificationCount > 0 && (
-                    <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-gradient-to-br from-red-500 to-pink-500 text-white text-[10px] font-bold flex items-center justify-center shadow-[0_0_12px_rgba(239,68,68,0.6)]">
                       {unreadNotificationCount > 99
                         ? "99+"
                         : unreadNotificationCount}
@@ -104,10 +113,10 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
                 </button>
 
                 {notificationsOpen && (
-                  <div className="absolute right-0 top-12 z-50 w-[calc(100vw-1.5rem)] max-w-80 rounded-2xl bg-[#151519] border border-white/10 shadow-2xl overflow-hidden">
-                    <div className="flex items-center justify-between gap-3 p-4 border-b border-white/10">
+                  <div className="absolute right-0 top-12 z-50 w-[calc(100vw-1.5rem)] max-w-80 nexus-glass-strong rounded-2xl overflow-hidden">
+                    <div className="flex items-center justify-between gap-3 p-4 border-b border-white/10 bg-gradient-to-br from-white/[0.04] to-transparent">
                       <div>
-                        <p className="font-semibold">Notifications</p>
+                        <p className="font-bold nexus-text-aurora">Notifications</p>
                         <p className="text-xs text-gray-500 mt-1">
                           {unreadNotificationCount > 0
                             ? `${unreadNotificationCount} unread`
@@ -119,7 +128,7 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
                         <button
                           type="button"
                           onClick={markAllNotificationsRead}
-                          className="text-xs text-yellow-400 hover:text-yellow-300"
+                          className="text-xs text-yellow-300 hover:text-yellow-200 font-semibold"
                         >
                           Mark all read
                         </button>
@@ -141,7 +150,9 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
                             type="button"
                             onClick={() => openNotification(notification)}
                             className={`w-full text-left p-4 border-b border-white/5 hover:bg-white/5 transition ${
-                              notification.read_at ? "" : "bg-yellow-400/[0.04]"
+                              notification.read_at
+                                ? ""
+                                : "bg-yellow-400/[0.05]"
                             }`}
                           >
                             <div className="flex items-start gap-3">
@@ -164,7 +175,7 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
                                   </p>
 
                                   {!notification.read_at && (
-                                    <span className="w-2 h-2 rounded-full bg-yellow-400 shrink-0 mt-1.5" />
+                                    <span className="nexus-dot-glow shrink-0 mt-1.5" />
                                   )}
                                 </div>
 
@@ -189,7 +200,7 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
 
               <button
                 onClick={() => setSidebarOpen((value) => !value)}
-                className="lg:hidden px-4 py-3 rounded-xl bg-white/5 border border-white/10"
+                className="lg:hidden nexus-morphic-button-ghost px-4 py-3"
               >
                 ☰ Menu
               </button>
@@ -197,10 +208,11 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
           </div>
 
           {unreadNotificationCount > 0 && (
-            <section className="mb-6 rounded-3xl border border-yellow-400/20 bg-yellow-400/[0.04] p-5">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <section className="mb-6 nexus-glass-strong rounded-3xl p-5 relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/[0.05] via-transparent to-purple-500/[0.05] pointer-events-none" />
+              <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
-                  <p className="text-yellow-400 text-sm font-semibold">
+                  <p className="nexus-text-aurora text-sm font-bold">
                     {unreadNotificationCount}{" "}
                     {unreadNotificationCount === 1
                       ? "item needs"
@@ -212,7 +224,7 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
                     {pendingMemberCount > 0 && (
                       <button
                         onClick={() => setTab("members")}
-                        className="px-3 py-2 rounded-xl bg-white/[0.04] border border-white/10 text-xs text-gray-300 hover:bg-white/10 transition"
+                        className="nexus-morphic-button-ghost text-xs"
                       >
                         👥 {pendingMemberCount} pending
                       </button>
@@ -221,7 +233,7 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
                     {overdueTodoCount > 0 && (
                       <button
                         onClick={() => setTab("todo")}
-                        className="px-3 py-2 rounded-xl bg-red-500/10 border border-red-400/20 text-xs text-red-300 hover:bg-red-500/20 transition"
+                        className="nexus-morphic-button-ghost text-xs hover:!text-red-300 hover:!border-red-400/30"
                       >
                         ✓ {overdueTodoCount} overdue
                       </button>
@@ -230,7 +242,7 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
                     {recentNewsCount > 0 && (
                       <button
                         onClick={() => setTab("news")}
-                        className="px-3 py-2 rounded-xl bg-blue-500/10 border border-blue-400/20 text-xs text-blue-300 hover:bg-blue-500/20 transition"
+                        className="nexus-morphic-button-ghost text-xs hover:!text-cyan-200 hover:!border-cyan-400/30"
                       >
                         📰 {recentNewsCount} recent
                       </button>
@@ -245,7 +257,7 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
             <aside
               className={`${sidebarOpen ? "block" : "hidden"} lg:block w-full lg:w-64 flex-shrink-0`}
             >
-              <div className="lg:sticky lg:top-6 bg-white/[0.04] border border-white/10 rounded-2xl sm:rounded-3xl p-2 sm:p-3 backdrop-blur-xl max-h-[70vh] overflow-y-auto">
+              <div className="lg:sticky lg:top-6 nexus-glass-strong rounded-2xl sm:rounded-3xl p-2 sm:p-3 max-h-[70vh] overflow-y-auto">
                 <NavItem
                   active={tab === "overview"}
                   onClick={() => setTab("overview")}
@@ -325,7 +337,7 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
                 )}
                 <button
                   onClick={onLogout}
-                  className="w-full mt-2 sm:mt-3 px-3 sm:px-4 py-3.5 sm:py-3 rounded-xl sm:rounded-2xl text-left text-sm sm:text-base text-red-300 hover:bg-red-500/10 transition"
+                  className="w-full mt-2 sm:mt-3 px-3 sm:px-4 py-3.5 sm:py-3 rounded-xl sm:rounded-2xl text-left text-sm sm:text-base text-red-300 hover:bg-red-500/10 hover:border-red-400/30 border border-transparent transition"
                 >
                   ↪ Sign out
                 </button>

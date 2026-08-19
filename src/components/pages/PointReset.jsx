@@ -51,47 +51,69 @@ function PointReset({ members, onResetAll, onResetMember }) {
   };
 
   return (
-    <section className="bg-red-500/[0.05] border border-red-500/20 rounded-3xl p-6">
-      <h3 className="text-xl font-semibold text-red-300">Point Reset</h3>
+    <section className="nexus-glass-strong rounded-3xl p-6 relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-red-500/[0.08] via-orange-500/[0.06] to-yellow-500/[0.06] pointer-events-none" />
 
-      <div className="mt-5 bg-white/[0.03] rounded-2xl p-5">
-        <h4 className="font-semibold">Reset One Member</h4>
+      <div className="relative">
+        <div className="flex items-center gap-3 mb-1">
+          <span className="text-2xl">⚠️</span>
+          <h3 className="text-xl font-black text-red-300">
+            Point Reset
+          </h3>
+          <span className="nexus-badge-red">Danger Zone</span>
+        </div>
 
-        <div className="flex flex-col md:flex-row gap-3 mt-4">
-          <select
-            value={selectedMemberId}
-            onChange={(e) => setSelectedMemberId(e.target.value)}
-            className="flex-1 bg-[#18181b] border border-white/10 rounded-xl px-4 py-3"
-          >
-            <option value="">Select member</option>
+        <p className="text-gray-500 text-sm mb-6">
+          Use with care — these actions cannot be undone.
+        </p>
 
-            {members.map((member) => (
-              <option key={member.id} value={member.id}>
-                {member.nickname || member.full_name} — {member.points}
-              </option>
-            ))}
-          </select>
+        <div className="nexus-glass-flat rounded-2xl p-5">
+          <h4 className="font-bold flex items-center gap-2">
+            <span className="text-yellow-300">⚡</span> Reset One Member
+          </h4>
+
+          <div className="flex flex-col md:flex-row gap-3 mt-4">
+            <select
+              value={selectedMemberId}
+              onChange={(e) => setSelectedMemberId(e.target.value)}
+              className="nexus-select flex-1"
+            >
+              <option value="">Select member</option>
+
+              {members.map((member) => (
+                <option key={member.id} value={member.id}>
+                  {member.nickname || member.full_name} — {member.points}
+                </option>
+              ))}
+            </select>
+
+            <button
+              onClick={resetOne}
+              disabled={resettingMember}
+              className="nexus-morphic-button-danger px-5 py-3"
+            >
+              {resettingMember ? "Resetting..." : "Reset Member"}
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-4 nexus-glass-flat rounded-2xl p-5">
+          <h4 className="font-bold flex items-center gap-2">
+            <span className="text-red-300">🔥</span> Monthly Reset
+          </h4>
+
+          <p className="text-gray-500 text-sm mt-2">
+            Saves the current Top 2 as last month's winners, then zeroes out all member points.
+          </p>
 
           <button
-            onClick={resetOne}
-            disabled={resettingMember}
-            className="px-5 py-3 bg-red-500 text-white rounded-xl"
+            onClick={resetAll}
+            disabled={resettingAll}
+            className="nexus-morphic-button-danger mt-4 px-5 py-3"
           >
-            {resettingMember ? "Resetting..." : "Reset Member"}
+            {resettingAll ? "Resetting..." : "Reset All Points"}
           </button>
         </div>
-      </div>
-
-      <div className="mt-4 bg-white/[0.03] rounded-2xl p-5">
-        <h4 className="font-semibold">Monthly Reset</h4>
-
-        <button
-          onClick={resetAll}
-          disabled={resettingAll}
-          className="mt-4 px-5 py-3 bg-red-500 text-white rounded-xl"
-        >
-          {resettingAll ? "Resetting..." : "Reset All Points"}
-        </button>
       </div>
     </section>
   );

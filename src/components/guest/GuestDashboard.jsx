@@ -21,48 +21,107 @@ function GuestDashboard({ profile, onLogout }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#0b0b0d] text-white">
-      <Header profile={profile} onLogout={onLogout} />
+    <div className="nexus-app-bg min-h-screen text-white">
+      {/* Glow blobs */}
+      <div className="nexus-glow-yellow w-[22rem] h-[22rem] -top-32 -left-32" />
+      <div className="nexus-glow-purple w-[26rem] h-[26rem] top-1/3 -right-32" />
+      <div className="nexus-glow-cyan w-[20rem] h-[20rem] bottom-0 left-1/4" />
 
-      <main className="max-w-5xl mx-auto px-3 sm:px-6 py-5 sm:py-10">
-        <section className="bg-white/[0.04] border border-yellow-400/20 rounded-3xl p-5 sm:p-8 mb-5 sm:mb-8">
-          <p className="text-gray-400">
-            Welcome, {profile.nickname || profile.full_name}
-          </p>
+      <div className="relative z-10">
+        <Header profile={profile} onLogout={onLogout} />
 
-          <h2 className="text-3xl font-bold mt-2">Your account is pending</h2>
+        <main className="max-w-5xl mx-auto px-3 sm:px-6 py-5 sm:py-10 space-y-5 sm:space-y-8">
+          <section className="nexus-glass-strong rounded-3xl p-5 sm:p-8 relative overflow-hidden">
+            <div className="nexus-glow-yellow w-72 h-72 -top-20 -right-20" />
+            <div className="nexus-glow-purple w-72 h-72 -bottom-20 -left-20" />
 
-          <p className="text-gray-400 mt-4">
-            An administrator needs to promote your account before you become a
-            club member.
-          </p>
+            <div className="relative">
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-yellow-400/10 border border-yellow-400/30 text-yellow-300 text-xs font-bold uppercase tracking-[0.2em] backdrop-blur-md">
+                <span className="nexus-dot-glow" />
+                Pending
+              </span>
 
-          <div className="inline-flex mt-5 px-4 py-2 rounded-full bg-yellow-400/10 text-yellow-400 text-sm">
-            Guest
-          </div>
-        </section>
+              <p className="text-gray-400 mt-4">
+                Welcome,{" "}
+                <span className="nexus-text-aurora font-bold">
+                  {profile.nickname || profile.full_name}
+                </span>
+              </p>
 
-        <section className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
-          <h3 className="text-2xl font-bold mb-5">Club News</h3>
+              <h2 className="text-3xl sm:text-5xl font-black mt-2">
+                <span className="nexus-text-aurora">Your account</span>{" "}
+                <span className="nexus-text-ocean">is pending</span>
+              </h2>
 
-          {news.length === 0 ? (
-            <p className="text-gray-500">No news published yet.</p>
-          ) : (
-            <div className="space-y-4">
-              {news.map((item) => (
-                <div key={item.id} className="bg-white/[0.03] rounded-2xl p-4">
-                  <h4 className="font-semibold">{item.title}</h4>
+              <p className="text-gray-400 mt-4 max-w-2xl">
+                An administrator needs to promote your account before you
+                become a full club member. Hang tight — exciting things are
+                happening in the meantime.
+              </p>
 
-                  <p className="text-gray-400 mt-2">{item.content}</p>
-                </div>
-              ))}
+              <div className="flex flex-wrap gap-2 mt-6">
+                <span className="nexus-badge-yellow">
+                  Guest
+                </span>
+                <span className="nexus-badge-purple">
+                  Awaiting Approval
+                </span>
+                <span className="nexus-badge-cyan">
+                  {profile.points ?? 0} pts
+                </span>
+              </div>
             </div>
-          )}
-        </section>
-      </main>
+          </section>
+
+          <section className="nexus-glass-strong rounded-3xl p-6 relative overflow-hidden">
+            <div className="absolute -top-10 right-10 w-48 h-48 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" />
+
+            <div className="relative">
+              <p className="nexus-text-ocean text-xs font-bold uppercase tracking-wider">
+                Updates
+              </p>
+
+              <h3 className="text-2xl font-black mt-1 mb-5">
+                Club News
+              </h3>
+
+              {news.length === 0 ? (
+                <div className="text-center py-10 nexus-glass-flat rounded-2xl">
+                  <div className="text-4xl">📰</div>
+                  <p className="text-gray-500 mt-3">
+                    No news published yet.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {news.map((item) => (
+                    <article
+                      key={item.id}
+                      className="nexus-glass-flat rounded-2xl p-5 hover:border-yellow-400/30 hover:-translate-y-0.5 transition"
+                    >
+                      <h4 className="font-black text-lg">
+                        {item.title}
+                      </h4>
+
+                      <p className="text-gray-400 mt-2 whitespace-pre-wrap">
+                        {item.content}
+                      </p>
+
+                      {item.created_at && (
+                        <p className="text-gray-600 text-xs mt-3">
+                          {new Date(item.created_at).toLocaleString()}
+                        </p>
+                      )}
+                    </article>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        </main>
+      </div>
     </div>
   );
 }
-
 
 export default GuestDashboard;
