@@ -105,7 +105,7 @@
     radial-gradient(700px 500px at 8% 88%, rgba(244, 114, 182, 0.08), transparent 55%),
     radial-gradient(600px 500px at 50% 50%, rgba(52, 211, 153, 0.06), transparent 60%),
     linear-gradient(180deg, #0a0a0d 0%, #0b0b0d 50%, #0a0a0d 100%);
-  background-attachment: fixed, fixed, fixed, fixed, fixed, fixed;
+  background-attachment: fixed;
 }
 
 .nexus-app-bg::before {
@@ -236,6 +236,9 @@
     rgba(244, 114, 182, 0.18)
   );
   -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+          mask:
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
