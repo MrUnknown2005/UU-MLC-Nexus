@@ -1,60 +1,42 @@
 /* =========================================================
    UU MLC Nexus — Aurora Glass Morphism System
-   Rich color · Glass surface · Animated ambient
    ========================================================= */
 
 :root {
-  /* Brand accents */
   --color-accent: #facc15;          /* primary yellow */
   --color-accent-2: #8b5cf6;        /* secondary purple */
   --color-accent-3: #22d3ee;        /* tertiary cyan */
-  --color-accent-4: #f472b6;        /* accent pink */
-  --color-accent-5: #34d399;        /* mint green */
   --color-danger: #f87171;          /* destructive red */
   --color-success: #34d399;         /* positive green */
 
-  /* Glass surfaces — stronger opacity for richer feel */
-  --surface-glass: rgba(255, 255, 255, 0.07);
-  --surface-glass-2: rgba(255, 255, 255, 0.04);
-  --surface-glass-strong: rgba(255, 255, 255, 0.10);
-  --surface-glass-rich: rgba(255, 255, 255, 0.12);
+  --surface-glass: rgba(255, 255, 255, 0.06);
+  --surface-glass-2: rgba(255, 255, 255, 0.035);
+  --surface-glass-strong: rgba(255, 255, 255, 0.085);
+  --border-glass: rgba(255, 255, 255, 0.10);
+  --border-glass-hi: rgba(250, 204, 21, 0.32);
+  --border-glass-purple: rgba(139, 92, 246, 0.32);
+  --border-glass-cyan: rgba(34, 211, 238, 0.28);
 
-  --border-glass: rgba(255, 255, 255, 0.12);
-  --border-glass-hi: rgba(250, 204, 21, 0.40);
-  --border-glass-purple: rgba(139, 92, 246, 0.40);
-  --border-glass-cyan: rgba(34, 211, 238, 0.35);
-  --border-glass-pink: rgba(244, 114, 182, 0.35);
-
-  --shadow-soft: 0 10px 40px rgba(0, 0, 0, 0.36);
-  --shadow-lift: 0 22px 60px rgba(0, 0, 0, 0.50);
-  --shadow-glow-yellow: 0 0 60px rgba(250, 204, 21, 0.22);
-  --shadow-glow-purple: 0 0 60px rgba(139, 92, 246, 0.26);
-  --shadow-glow-cyan: 0 0 60px rgba(34, 211, 238, 0.22);
-  --shadow-glow-pink: 0 0 60px rgba(244, 114, 182, 0.22);
-
-  /* Brand gradient presets */
-  --grad-aurora: linear-gradient(135deg, #facc15 0%, #f472b6 35%, #8b5cf6 70%, #22d3ee 100%);
-  --grad-aurora-soft: linear-gradient(135deg, rgba(250, 204, 21, 0.18), rgba(139, 92, 246, 0.18), rgba(34, 211, 238, 0.18));
-  --grad-sunset: linear-gradient(135deg, #f97316 0%, #facc15 45%, #f472b6 100%);
-  --grad-ocean: linear-gradient(135deg, #22d3ee 0%, #8b5cf6 50%, #f472b6 100%);
-  --grad-forest: linear-gradient(135deg, #34d399 0%, #22d3ee 60%, #8b5cf6 100%);
-  --grad-ember: linear-gradient(135deg, #ef4444 0%, #f97316 60%, #facc15 100%);
+  --shadow-soft: 0 10px 40px rgba(0, 0, 0, 0.32);
+  --shadow-lift: 0 22px 60px rgba(0, 0, 0, 0.45);
+  --shadow-glow-yellow: 0 0 60px rgba(250, 204, 21, 0.18);
+  --shadow-glow-purple: 0 0 60px rgba(139, 92, 246, 0.20);
+  --shadow-glcdow-cyan: 0 0 60px rgba(34, 211, 238, 0.18);
 }
 
 /* =========================================================
-   Animated aurora mesh background — richer & faster hue drift
+   Animated aurora mesh background
    ========================================================= */
 
 .nexus-app-bg {
   position: relative;
   background:
-    radial-gradient(1200px 800px at 12% -10%, rgba(250, 204, 21, 0.14), transparent 55%),
-    radial-gradient(900px 700px at 92% 8%, rgba(139, 92, 246, 0.18), transparent 55%),
-    radial-gradient(800px 600px at 80% 95%, rgba(34, 211, 238, 0.14), transparent 55%),
-    radial-gradient(700px 500px at 8% 88%, rgba(244, 114, 182, 0.10), transparent 55%),
-    radial-gradient(600px 400px at 50% 50%, rgba(139, 92, 246, 0.08), transparent 60%),
-    linear-gradient(180deg, #08080c 0%, #0b0b0f 50%, #08080c 100%);
-  background-attachment: fixed;
+    radial-gradient(1200px 800px at 12% -10%, rgba(250, 204, 21, 0.10), transparent 55%),
+    radial-gradient(900px 700px at 92% 8%, rgba(139, 92, 246, 0.14), transparent 55%),
+    radial-gradient(800px 600px at 80% 95%, rgba(34, 211, 238, 0.10), transparent 55%),
+    radial-gradient(700px 500px at 8% 88%, rgba(250, 204, 21, 0.06), transparent 55%),
+    linear-gradient(180deg, #0a0a0d 0%, #0b0b0d 50%, #0a0a0d 100%);
+  background-attachment: fixed, fixed, fixed, fixed, fixed;
 }
 
 .nexus-app-bg::before {
@@ -64,31 +46,10 @@
   z-index: -1;
   pointer-events: none;
   background:
-    conic-gradient(
-      from 0deg at 30% 30%,
-      rgba(250, 204, 21, 0.16),
-      transparent 25%,
-      rgba(139, 92, 246, 0.14) 50%,
-      transparent 75%,
-      rgba(34, 211, 238, 0.14) 100%
-    );
-  filter: blur(90px);
-  opacity: 0.6;
-  animation: nexus-aurora-drift 24s linear infinite;
-}
-
-.nexus-app-bg::after {
-  content: "";
-  position: fixed;
-  inset: -25vmax;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(circle at 70% 70%, rgba(244, 114, 182, 0.18), transparent 35%),
-    radial-gradient(circle at 20% 60%, rgba(34, 211, 238, 0.16), transparent 35%);
+    conic-gradient(from 0deg at 30% 30%, rgba(250, 204, 21, 0.12), transparent 25%, rgba(139, 92, 246, 0.10) 50%, transparent 75%, rgba(34, 211, 238, 0.10));
   filter: blur(80px);
   opacity: 0.55;
-  animation: nexus-aurora-pulse 14s ease-in-out infinite;
+  animation: nexus-aurora-drift 28s linear infinite;
 }
 
 @keyframes nexus-aurora-drift {
@@ -97,58 +58,46 @@
   100% { transform: translate3d(0, 0, 0) rotate(360deg); }
 }
 
-@keyframes nexus-aurora-pulse {
-  0%, 100% { transform: scale(1); opacity: 0.45; }
-  50%      { transform: scale(1.12); opacity: 0.65; }
-}
-
 /* =========================================================
    Glow blobs for hero sections
    ========================================================= */
 
 .nexus-glow-yellow,
 .nexus-glow-purple,
-.nexus-glow-cyan,
-.nexus-glow-pink {
+.nexus-glow-cyan {
   position: absolute;
   border-radius: 9999px;
-  filter: blur(72px);
+  filter: blur(64px);
   pointer-events: none;
   z-index: 0;
 }
 
 .nexus-glow-yellow {
-  background: radial-gradient(circle, rgba(250, 204, 21, 0.40), transparent 60%);
+  background: radial-gradient(circle, rgba(250, 204, 21, 0.32), transparent 60%);
   box-shadow: var(--shadow-glow-yellow);
 }
 
 .nexus-glow-purple {
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.36), transparent 60%);
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.28), transparent 60%);
   box-shadow: var(--shadow-glow-purple);
 }
 
 .nexus-glow-cyan {
-  background: radial-gradient(circle, rgba(34, 211, 238, 0.30), transparent 60%);
+  background: radial-gradient(circle, rgba(34, 211, 238, 0.22), transparent 60%);
   box-shadow: var(--shadow-glow-cyan);
-}
-
-.nexus-glow-pink {
-  background: radial-gradient(circle, rgba(244, 114, 182, 0.30), transparent 60%);
-  box-shadow: var(--shadow-glow-pink);
 }
 
 .nexus-glow-yellow { animation: nexus-pulse 9s ease-in-out infinite; }
 .nexus-glow-purple { animation: nexus-pulse 11s ease-in-out infinite reverse; }
 .nexus-glow-cyan   { animation: nexus-pulse 13s ease-in-out infinite; }
-.nexus-glow-pink   { animation: nexus-pulse 10s ease-in-out infinite reverse; }
 
 @keyframes nexus-pulse {
   0%, 100% { transform: scale(1); opacity: 0.85; }
-  50%      { transform: scale(1.10); opacity: 1; }
+  50%      { transform: scale(1.08); opacity: 1; }
 }
 
 /* =========================================================
-   Glass cards — frosted with rich gradient edge
+   Glass cards
    ========================================================= */
 
 .nexus-glass {
@@ -157,9 +106,9 @@
   border-radius: 1.5rem;
   box-shadow:
     var(--shadow-soft),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(22px) saturate(160%);
-  -webkit-backdrop-filter: blur(22px) saturate(160%);
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
   position: relative;
   overflow: hidden;
   transition:
@@ -168,27 +117,12 @@
     box-shadow 0.25s ease;
 }
 
-.nexus-glass::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(
-    135deg,
-    rgba(250, 204, 21, 0.05) 0%,
-    transparent 35%,
-    transparent 65%,
-    rgba(139, 92, 246, 0.05) 100%
-  );
-  opacity: 0.8;
-}
-
 .nexus-glass:hover {
   border-color: var(--border-glass-hi);
   transform: translateY(-2px);
   box-shadow:
     var(--shadow-lift),
-    inset 0 1px 0 rgba(255, 255, 255, 0.10);
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .nexus-glass-strong {
@@ -197,9 +131,9 @@
   border-radius: 1.75rem;
   box-shadow:
     var(--shadow-lift),
-    inset 0 1px 0 rgba(255, 255, 255, 0.10);
-  backdrop-filter: blur(28px) saturate(170%);
-  -webkit-backdrop-filter: blur(28px) saturate(170%);
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
   position: relative;
   overflow: hidden;
   transition:
@@ -208,67 +142,20 @@
     box-shadow 0.3s ease;
 }
 
-.nexus-glass-strong::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(
-    135deg,
-    rgba(250, 204, 21, 0.08) 0%,
-    transparent 30%,
-    transparent 70%,
-    rgba(34, 211, 238, 0.08) 100%
-  );
-}
-
 .nexus-glass-strong:hover {
   border-color: var(--border-glass-hi);
   transform: translateY(-3px);
   box-shadow:
-    0 26px 70px rgba(0, 0, 0, 0.60),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    0 26px 70px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10);
 }
 
 .nexus-glass-flat {
   background: var(--surface-glass-2);
   border: 1px solid var(--border-glass);
   border-radius: 1rem;
-  backdrop-filter: blur(14px) saturate(140%);
-  -webkit-backdrop-filter: blur(14px) saturate(140%);
-}
-
-/* =========================================================
-   Gradient border glass — rich colour rim
-   ========================================================= */
-
-.nexus-glass-gradient {
-  position: relative;
-  background: var(--surface-glass);
-  border-radius: 1.5rem;
-  backdrop-filter: blur(22px) saturate(160%);
-  -webkit-backdrop-filter: blur(22px) saturate(160%);
-  box-shadow: var(--shadow-soft);
-}
-
-.nexus-glass-gradient::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  padding: 1px;
-  border-radius: inherit;
-  background: linear-gradient(
-    135deg,
-    rgba(250, 204, 21, 0.55),
-    rgba(139, 92, 246, 0.55),
-    rgba(34, 211, 238, 0.55)
-  );
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-          mask-composite: exclude;
-  pointer-events: none;
+  backdrop-filter: blur(14px) saturate(130%);
+  -webkit-backdrop-filter: blur(14px) saturate(130%);
 }
 
 /* =========================================================
@@ -283,31 +170,29 @@
   padding: 0.75rem 1.5rem;
   font-weight: 600;
   color: #0a0a0d;
-  background: var(--grad-aurora);
-  background-size: 200% 200%;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: linear-gradient(
+    135deg,
+    #facc15 0%,
+    #f59e0b 45%,
+    #8b5cf6 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 0.875rem;
   box-shadow:
-    0 12px 32px rgba(139, 92, 246, 0.28),
-    0 6px 14px rgba(250, 204, 21, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.40);
+    0 12px 32px rgba(139, 92, 246, 0.22),
+    0 6px 14px rgba(250, 204, 21, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease, background-position 0.4s ease;
-  animation: nexus-grad-pan 8s ease-in-out infinite;
-}
-
-@keyframes nexus-grad-pan {
-  0%, 100% { background-position: 0% 50%; }
-  50%      { background-position: 100% 50%; }
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
 }
 
 .nexus-morphic-button:hover:not(:disabled) {
   transform: translateY(-1px);
-  filter: brightness(1.08) saturate(1.1);
+  filter: brightness(1.05);
   box-shadow:
-    0 18px 42px rgba(139, 92, 246, 0.36),
-    0 10px 20px rgba(250, 204, 21, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+    0 16px 40px rgba(139, 92, 246, 0.30),
+    0 8px 18px rgba(250, 204, 21, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.40);
 }
 
 .nexus-morphic-button:active:not(:disabled) {
@@ -331,8 +216,8 @@
   background: var(--surface-glass);
   border: 1px solid var(--border-glass);
   border-radius: 0.75rem;
-  backdrop-filter: blur(10px) saturate(140%);
-  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  backdrop-filter: blur(10px) saturate(130%);
+  -webkit-backdrop-filter: blur(10px) saturate(130%);
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -340,7 +225,6 @@
 .nexus-morphic-button-ghost:hover:not(:disabled) {
   border-color: var(--border-glass-hi);
   background: var(--surface-glass-strong);
-  color: #fde68a;
 }
 
 .nexus-morphic-button-ghost:disabled {
@@ -356,21 +240,19 @@
   padding: 0.75rem 1.5rem;
   font-weight: 600;
   color: #ffffff;
-  background: var(--grad-ember);
-  background-size: 200% 200%;
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: linear-gradient(135deg, #ef4444 0%, #b91c1c 60%, #7f1d1d 100%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 0.875rem;
   box-shadow:
-    0 10px 28px rgba(220, 38, 38, 0.36),
-    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    0 10px 28px rgba(220, 38, 38, 0.30),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
   cursor: pointer;
-  transition: transform 0.2s ease, filter 0.2s ease, background-position 0.4s ease;
-  animation: nexus-grad-pan 8s ease-in-out infinite;
+  transition: transform 0.2s ease, filter 0.2s ease;
 }
 
 .nexus-morphic-button-danger:hover:not(:disabled) {
   transform: translateY(-1px);
-  filter: brightness(1.10);
+  filter: brightness(1.08);
 }
 
 .nexus-morphic-button-danger:disabled {
@@ -379,7 +261,7 @@
 }
 
 /* =========================================================
-   Inputs — frosted focus rings with colour cue
+   Inputs
    ========================================================= */
 
 .nexus-input,
@@ -394,7 +276,7 @@
   outline: none;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.2s ease, background 0.2s ease;
 }
 
 .nexus-input:focus,
@@ -402,7 +284,6 @@
 .nexus-select:focus {
   border-color: var(--border-glass-hi);
   background: var(--surface-glass);
-  box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.10);
 }
 
 .nexus-input::placeholder,
@@ -446,8 +327,6 @@
   border-radius: 0.875rem;
   cursor: pointer;
   transition: all 0.2s ease;
-  position: relative;
-  overflow: hidden;
 }
 
 .nexus-tab:hover {
@@ -458,14 +337,11 @@
 
 .nexus-tab.is-active {
   color: #0a0a0d;
-  background: var(--grad-aurora);
-  background-size: 200% 200%;
-  border-color: rgba(255, 255, 255, 0.30);
+  background: linear-gradient(135deg, #facc15 0%, #f59e0b 60%, #8b5cf6 100%);
+  border-color: rgba(255, 255, 255, 0.25);
   box-shadow:
-    0 10px 28px rgba(250, 204, 21, 0.26),
-    0 6px 16px rgba(139, 92, 246, 0.20),
-    inset 0 1px 0 rgba(255, 255, 255, 0.35);
-  animation: nexus-grad-pan 8s ease-in-out infinite;
+    0 10px 28px rgba(250, 204, 21, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.30);
 }
 
 .nexus-tab-badge {
@@ -480,17 +356,15 @@
   border-radius: 9999px;
   background: rgba(239, 68, 68, 0.92);
   color: #ffffff;
-  box-shadow: 0 0 12px rgba(239, 68, 68, 0.45);
 }
 
 .nexus-tab.is-active .nexus-tab-badge {
   background: rgba(10, 10, 13, 0.85);
   color: var(--color-accent);
-  box-shadow: none;
 }
 
 /* =========================================================
-   Stat tile — colourful gradients
+   Stat tile
    ========================================================= */
 
 .nexus-stat {
@@ -498,41 +372,18 @@
   border: 1px solid var(--border-glass);
   border-radius: 1rem;
   padding: 1.25rem;
-  backdrop-filter: blur(16px) saturate(140%);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
-  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.nexus-stat::before {
-  content: "";
-  position: absolute;
-  top: -40%;
-  right: -40%;
-  width: 200px;
-  height: 200px;
-  border-radius: 9999px;
-  background: radial-gradient(circle, rgba(250, 204, 21, 0.18), transparent 70%);
-  pointer-events: none;
-  filter: blur(28px);
+  backdrop-filter: blur(14px) saturate(130%);
+  -webkit-backdrop-filter: blur(14px) saturate(130%);
+  transition: transform 0.2s ease, border-color 0.2s ease;
 }
 
 .nexus-stat:hover {
-  transform: translateY(-3px);
+  transform: translateY(-2px);
   border-color: var(--border-glass-hi);
-  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.4);
 }
 
-.nexus-stat-stat-yellow::before  { background: radial-gradient(circle, rgba(250, 204, 21, 0.22), transparent 70%); }
-.nexus-stat-stat-purple::before  { background: radial-gradient(circle, rgba(139, 92, 246, 0.24), transparent 70%); }
-.nexus-stat-stat-cyan::before    { background: radial-gradient(circle, rgba(34, 211, 238, 0.22), transparent 70%); }
-.nexus-stat-stat-pink::before    { background: radial-gradient(circle, rgba(244, 114, 182, 0.22), transparent 70%); }
-.nexus-stat-stat-green::before   { background: radial-gradient(circle, rgba(52, 211, 153, 0.22), transparent 70%); }
-.nexus-stat-stat-red::before     { background: radial-gradient(circle, rgba(239, 68, 68, 0.22), transparent 70%); }
-
 /* =========================================================
-   Badges — vivid colour variants
+   Badges
    ========================================================= */
 
 .nexus-badge {
@@ -551,49 +402,37 @@
 }
 
 .nexus-badge-yellow {
-  background: rgba(250, 204, 21, 0.14);
-  border-color: rgba(250, 204, 21, 0.34);
+  background: rgba(250, 204, 21, 0.12);
+  border-color: rgba(250, 204, 21, 0.30);
   color: #fde68a;
-  box-shadow: 0 0 14px rgba(250, 204, 21, 0.18);
 }
 
 .nexus-badge-purple {
-  background: rgba(139, 92, 246, 0.16);
-  border-color: rgba(139, 92, 246, 0.36);
+  background: rgba(139, 92, 246, 0.14);
+  border-color: rgba(139, 92, 246, 0.32);
   color: #ddd6fe;
-  box-shadow: 0 0 14px rgba(139, 92, 246, 0.20);
 }
 
 .nexus-badge-cyan {
-  background: rgba(34, 211, 238, 0.14);
-  border-color: rgba(34, 211, 238, 0.34);
+  background: rgba(34, 211, 238, 0.12);
+  border-color: rgba(34, 211, 238, 0.30);
   color: #a5f3fc;
-  box-shadow: 0 0 14px rgba(34, 211, 238, 0.18);
-}
-
-.nexus-badge-pink {
-  background: rgba(244, 114, 182, 0.14);
-  border-color: rgba(244, 114, 182, 0.34);
-  color: #fbcfe8;
-  box-shadow: 0 0 14px rgba(244, 114, 182, 0.18);
 }
 
 .nexus-badge-red {
-  background: rgba(239, 68, 68, 0.14);
-  border-color: rgba(239, 68, 68, 0.34);
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.32);
   color: #fecaca;
-  box-shadow: 0 0 14px rgba(239, 68, 68, 0.18);
 }
 
 .nexus-badge-green {
-  background: rgba(52, 211, 153, 0.14);
-  border-color: rgba(52, 211, 153, 0.34);
+  background: rgba(52, 211, 153, 0.12);
+  border-color: rgba(52, 211, 153, 0.30);
   color: #bbf7d0;
-  box-shadow: 0 0 14px rgba(52, 211, 153, 0.18);
 }
 
 /* =========================================================
-   Divider — full-spectrum rainbow
+   Divider
    ========================================================= */
 
 .nexus-divider {
@@ -602,9 +441,8 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(250, 204, 21, 0.45) 25%,
-    rgba(139, 92, 246, 0.45) 50%,
-    rgba(34, 211, 238, 0.45) 75%,
+    rgba(250, 204, 21, 0.40) 30%,
+    rgba(139, 92, 246, 0.40) 70%,
     transparent 100%
   );
 }
@@ -614,500 +452,10 @@
    ========================================================= */
 
 .nexus-header {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
   border-bottom: 1px solid var(--border-glass);
-  backdrop-filter: blur(22px) saturate(160%);
-  -webkit-backdrop-filter: blur(22px) saturate(160%);
-}
-
-/* =========================================================
-   Gradient text — colourful headlines
-   ========================================================= */
-
-.nexus-text-aurora {
-  background: var(--grad-aurora);
-  background-size: 200% 200%;
-  -webkit-background-clip: text;
-          background-clip: text;
-  color: transparent;
-  animation: nexus-grad-pan 8s ease-in-out infinite;
-}
-
-.nexus-text-ocean {
-  background: var(--grad-ocean);
-  background-size: 200% 200%;
-  -webkit-background-clip: text;
-          background-clip: text;
-  color: transparent;
-  animation: nexus-grad-pan 8s ease-in-out infinite;
-}
-
-.nexus-text-sunset {
-  background: var(--grad-sunset);
-  background-size: 200% 200%;
-  -webkit-background-clip: text;
-          background-clip: text;
-  color: transparent;
-  animation: nexus-grad-pan 8s ease-in-out infinite;
-}
-
-/* =========================================================
-   Animated chip / pill
-   ========================================================= */
-
-.nexus-chip-gradient {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.4rem 0.9rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  border-radius: 9999px;
-  background: var(--grad-aurora);
-  background-size: 200% 200%;
-  color: #0a0a0d;
-  border: 1px solid rgba(255, 255, 255, 0.30);
-  box-shadow:
-    0 8px 22px rgba(139, 92, 246, 0.30),
-    inset 0 1px 0 rgba(255, 255, 255, 0.40);
-  animation: nexus-grad-pan 8s ease-in-out infinite;
-}
-
-/* =========================================================
-   Progress bar — coloured gradient
-   ========================================================= */
-
-.nexus-progress {
-  height: 0.5rem;
-  border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.10);
-  overflow: hidden;
-  position: relative;
-}
-
-.nexus-progress-bar {
-  height: 100%;
-  background: linear-gradient(90deg, #facc15, #f472b6, #8b5cf6, #22d3ee);
-  background-size: 300% 100%;
-  border-radius: 9999px;
-  transition: width 0.4s ease;
-  animation: nexus-grad-pan-x 6s ease-in-out infinite;
-  box-shadow: 0 0 18px rgba(139, 92, 246, 0.30);
-}
-
-@keyframes nexus-grad-pan-x {
-  0%, 100% { background-position: 0% 50%; }
-  50%      { background-position: 100% 50%; }
-}
-
-/* =========================================================
-   Notification dot — glow pulse
-   ========================================================= */
-
-.nexus-dot-glow {
-  width: 8px;
-  height: 8px;
-  border-radius: 9999px;
-  background: var(--color-accent);
-  box-shadow: 0 0 14px var(--color-accent);
-  animation: nexus-dot-pulse 2s ease-in-out infinite;
-}
-
-@keyframes nexus-dot-pulse {
-  0%, 100% { transform: scale(1); opacity: 0.9; }
-  50%      { transform: scale(1.35); opacity: 1; }
-}
-
-/* =========================================================
-   Row / list-item glass — for table rows & list rows
-   ========================================================= */
-
-.nexus-row {
-  display: block;
-  background: var(--surface-glass-2);
-  border: 1px solid var(--border-glass);
-  border-radius: 1rem;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
-}
-
-.nexus-row:hover {
-  background: var(--surface-glass);
-  border-color: var(--border-glass-hi);
-}
-
-.nexus-row-unread {
-  background: rgba(250, 204, 21, 0.06);
-  border-color: rgba(250, 204, 21, 0.22);
-}
-
-/* =========================================================
-   Status pill — colored frosted pill (replaces bg-red-500/10 etc.)
-   ========================================================= */
-
-.nexus-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.3rem 0.7rem;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  border-radius: 9999px;
-  border: 1px solid var(--border-glass);
-  background: var(--surface-glass-2);
-  color: rgba(255, 255, 255, 0.78);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
-
-.nexus-pill-yellow {
-  background: rgba(250, 204, 21, 0.14);
-  border-color: rgba(250, 204, 21, 0.34);
-  color: #fde68a;
-}
-
-.nexus-pill-red {
-  background: rgba(239, 68, 68, 0.14);
-  border-color: rgba(239, 68, 68, 0.34);
-  color: #fecaca;
-}
-
-.nexus-pill-cyan {
-  background: rgba(34, 211, 238, 0.14);
-  border-color: rgba(34, 211, 238, 0.34);
-  color: #a5f3fc;
-}
-
-.nexus-pill-purple {
-  background: rgba(139, 92, 246, 0.16);
-  border-color: rgba(139, 92, 246, 0.36);
-  color: #ddd6fe;
-}
-
-.nexus-pill-green {
-  background: rgba(52, 211, 153, 0.14);
-  border-color: rgba(52, 211, 153, 0.34);
-  color: #bbf7d0;
-}
-
-.nexus-pill-neutral {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.10);
-  color: rgba(255, 255, 255, 0.55);
-}
-
-/* =========================================================
-   Logout / icon-only glass button
-   ========================================================= */
-
-.nexus-glass-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  font-weight: 600;
-  font-size: 0.875rem;
-  color: #ffffff;
-  background: var(--surface-glass);
-  border: 1px solid var(--border-glass);
-  border-radius: 0.75rem;
-  backdrop-filter: blur(10px) saturate(140%);
-  -webkit-backdrop-filter: blur(10px) saturate(140%);
-  cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
-}
-
-.nexus-glass-button:hover {
-  background: var(--surface-glass-strong);
-  border-color: var(--border-glass-hi);
-  transform: translateY(-1px);
-}
-
-.nexus-glass-button-danger {
-  color: #fecaca;
-  border-color: rgba(239, 68, 68, 0.30);
-}
-
-.nexus-glass-button-danger:hover {
-  background: rgba(239, 68, 68, 0.12);
-  border-color: rgba(239, 68, 68, 0.55);
-  color: #fee2e2;
-}
-
-/* =========================================================
-   Image placeholder — translucent neutral
-   ========================================================= */
-
-.nexus-image-placeholder {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
-  border: 1px solid var(--border-glass);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
-
-/* =========================================================
-   Glass utility surfaces — small chips, dashed empty states,
-   image frames, accent rims & danger cards
-   ========================================================= */
-
-.nexus-glass-chip {
-  background: var(--surface-glass-2);
-  border: 1px solid var(--border-glass);
-  border-radius: 0.75rem;
-  backdrop-filter: blur(10px) saturate(140%);
-  -webkit-backdrop-filter: blur(10px) saturate(140%);
-}
-
-.nexus-glass-dashed {
-  background: var(--surface-glass-2);
-  border: 1px dashed rgba(255, 255, 255, 0.18);
-  border-radius: 1.5rem;
-  backdrop-filter: blur(10px) saturate(140%);
-  -webkit-backdrop-filter: blur(10px) saturate(140%);
-}
-
-.nexus-glass-dashed-yellow {
-  background: var(--surface-glass-2);
-  border: 1px dashed rgba(250, 204, 21, 0.40);
-  border-radius: 1.5rem;
-  backdrop-filter: blur(10px) saturate(140%);
-  -webkit-backdrop-filter: blur(10px) saturate(140%);
-}
-
-.nexus-image-frame {
-  background: var(--surface-glass-2);
-  border: 1px solid var(--border-glass);
-  border-radius: 1rem;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  overflow: hidden;
-}
-
-.nexus-image-frame-yellow {
-  background: var(--surface-glass-2);
-  border: 1px solid rgba(250, 204, 21, 0.35);
-  border-radius: 1rem;
-  box-shadow: 0 0 18px rgba(250, 204, 21, 0.16);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  overflow: hidden;
-}
-
-/* Glass surface with rich yellow accent — for "pending" / attention panels */
-.nexus-glass-yellow {
-  background:
-    linear-gradient(135deg, rgba(250, 204, 21, 0.08), rgba(139, 92, 246, 0.04) 60%, rgba(34, 211, 238, 0.04));
-  border: 1px solid rgba(250, 204, 21, 0.30);
-  border-radius: 1.75rem;
-  backdrop-filter: blur(22px) saturate(160%);
-  -webkit-backdrop-filter: blur(22px) saturate(160%);
-  box-shadow:
-    var(--shadow-soft),
-    inset 0 1px 0 rgba(255, 255, 255, 0.10),
-    0 0 28px rgba(250, 204, 21, 0.14);
-}
-
-/* Glass surface with red / danger accent */
-.nexus-glass-danger {
-  background:
-    linear-gradient(135deg, rgba(239, 68, 68, 0.10), rgba(249, 115, 22, 0.06) 50%, rgba(250, 204, 21, 0.04));
-  border: 1px solid rgba(239, 68, 68, 0.32);
-  border-radius: 1.5rem;
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
-  box-shadow:
-    var(--shadow-soft),
-    0 0 26px rgba(239, 68, 68, 0.16);
-}
-
-/* Hoverable glass row used in lists / menus */
-.nexus-glass-hover {
-  background: var(--surface-glass-2);
-  border: 1px solid var(--border-glass);
-  border-radius: 0.875rem;
-  backdrop-filter: blur(10px) saturate(140%);
-  -webkit-backdrop-filter: blur(10px) saturate(140%);
-  transition:
-    background 0.2s ease,
-    border-color 0.2s ease,
-    box-shadow 0.2s ease,
-    transform 0.2s ease;
-}
-
-.nexus-glass-hover:hover {
-  background: var(--surface-glass);
-  border-color: var(--border-glass-hi);
-  transform: translateY(-1px);
-}
-
-/* Selected / active glass row */
-.nexus-glass-selected {
-  background:
-    linear-gradient(135deg, rgba(250, 204, 21, 0.10), rgba(139, 92, 246, 0.06) 50%, rgba(34, 211, 238, 0.06));
-  border: 1px solid rgba(250, 204, 21, 0.45);
-  border-radius: 0.875rem;
-  box-shadow:
-    0 0 24px rgba(250, 204, 21, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.10);
-  backdrop-filter: blur(14px) saturate(160%);
-  -webkit-backdrop-filter: blur(14px) saturate(160%);
-}
-
-/* Glass pill button (replaces raw border + bg-yellow-400/10 combos) */
-.nexus-glass-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.3rem 0.7rem;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  border-radius: 9999px;
-  background: var(--surface-glass-2);
-  border: 1px solid var(--border-glass);
-  color: rgba(255, 255, 255, 0.78);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
-
-.nexus-glass-pill-yellow {
-  background: rgba(250, 204, 21, 0.14);
-  border-color: rgba(250, 204, 21, 0.40);
-  color: #fde68a;
-  box-shadow: 0 0 14px rgba(250, 204, 21, 0.20);
-}
-
-/* Glow overlay helper — sits inside a glass card to add colour wash */
-.nexus-glass-overlay-aurora {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(135deg, rgba(250, 204, 21, 0.06), rgba(139, 92, 246, 0.04) 50%, rgba(34, 211, 238, 0.04));
-  border-radius: inherit;
-}
-
-.nexus-glass-overlay-red {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.10), rgba(249, 115, 22, 0.06) 50%, rgba(250, 204, 21, 0.04));
-  border-radius: inherit;
-}
-
-/* Modal / dialog surface */
-.nexus-modal {
-  background: rgba(10, 10, 14, 0.78);
-  border: 1px solid var(--border-glass);
-  border-radius: 1.75rem;
-  backdrop-filter: blur(28px) saturate(170%);
-  -webkit-backdrop-filter: blur(28px) saturate(170%);
-  box-shadow:
-    0 30px 80px rgba(0, 0, 0, 0.60),
-    inset 0 1px 0 rgba(255, 255, 255, 0.10);
-}
-
-/* Sidebar / panel glass — slightly deeper frost */
-.nexus-panel {
-  background: var(--surface-glass-strong);
-  border: 1px solid var(--border-glass);
-  border-radius: 1.75rem;
-  backdrop-filter: blur(26px) saturate(165%);
-  -webkit-backdrop-filter: blur(26px) saturate(165%);
-  box-shadow:
-    var(--shadow-lift),
-    inset 0 1px 0 rgba(255, 255, 255, 0.10);
-}
-
-/* Tag / mini-stat block */
-.nexus-mini-stat {
-  background: var(--surface-glass-2);
-  border: 1px solid var(--border-glass);
-  border-radius: 0.875rem;
-  backdrop-filter: blur(10px) saturate(140%);
-  -webkit-backdrop-filter: blur(10px) saturate(140%);
-}
-
-/* Backdrop scrim — for modals and dropdowns */
-.nexus-scrim {
-  position: fixed;
-  inset: 0;
-  background: rgba(8, 8, 12, 0.55);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  z-index: 40;
-}
-
-/* Avatar ring — subtle glass rim around circular images */
-.nexus-avatar-ring {
-  background: var(--surface-glass-2);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 9999px;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  overflow: hidden;
-}
-
-.nexus-avatar-ring-yellow {
-  background: var(--surface-glass-2);
-  border: 1px solid rgba(250, 204, 21, 0.40);
-  border-radius: 9999px;
-  box-shadow: 0 0 14px rgba(250, 204, 21, 0.16);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  overflow: hidden;
-}
-
-/* Inner scroller — frosted glass container with custom scrollbar */
-.nexus-scroller {
-  background: var(--surface-glass-2);
-  border: 1px solid var(--border-glass);
-  border-radius: 1rem;
-  backdrop-filter: blur(10px) saturate(140%);
-  -webkit-backdrop-filter: blur(10px) saturate(140%);
-  overflow: auto;
-}
-
-/* =========================================================
-   Tab — frosted pill variant
-   ========================================================= */
-
-.nexus-tab-pill {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  border-radius: 0.75rem;
-  background: var(--surface-glass-2);
-  border: 1px solid var(--border-glass);
-  color: rgba(255, 255, 255, 0.70);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.nexus-tab-pill:hover {
-  background: var(--surface-glass);
-  border-color: var(--border-glass-hi);
-  color: #ffffff;
-}
-
-.nexus-tab-pill.is-active {
-  background: var(--grad-aurora);
-  background-size: 200% 200%;
-  border-color: rgba(255, 255, 255, 0.30);
-  color: #0a0a0d;
-  box-shadow:
-    0 8px 22px rgba(139, 92, 246, 0.30),
-    inset 0 1px 0 rgba(255, 255, 255, 0.40);
-  animation: nexus-grad-pan 8s ease-in-out infinite;
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
 }
 
 /* =========================================================
@@ -1116,27 +464,13 @@
 
 @media (prefers-reduced-motion: reduce) {
   .nexus-app-bg::before,
-  .nexus-app-bg::after,
   .nexus-glow-yellow,
   .nexus-glow-purple,
-  .nexus-glow-cyan,
-  .nexus-glow-pink,
-  .nexus-morphic-button,
-  .nexus-morphic-button-danger,
-  .nexus-tab.is-active,
-  .nexus-text-aurora,
-  .nexus-text-ocean,
-  .nexus-text-sunset,
-  .nexus-chip-gradient,
-  .nexus-progress-bar,
-  .nexus-dot-glow {
+  .nexus-glow-cyan {
     animation: none;
   }
   .nexus-glass,
   .nexus-glass-strong,
-  .nexus-glass-yellow,
-  .nexus-glass-danger,
-  .nexus-glass-hover,
   .nexus-stat,
   .nexus-morphic-button,
   .nexus-morphic-button-ghost,
