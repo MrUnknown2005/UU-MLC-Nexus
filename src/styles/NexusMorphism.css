@@ -3,25 +3,93 @@
    ========================================================= */
 
 :root {
+  /* Core accents */
   --color-accent: #facc15;          /* primary yellow */
   --color-accent-2: #8b5cf6;        /* secondary purple */
   --color-accent-3: #22d3ee;        /* tertiary cyan */
+  --color-accent-4: #f472b6;        /* quaternary pink */
+  --color-accent-5: #34d399;        /* quinary emerald */
   --color-danger: #f87171;          /* destructive red */
   --color-success: #34d399;         /* positive green */
 
+  /* Surfaces */
   --surface-glass: rgba(255, 255, 255, 0.06);
   --surface-glass-2: rgba(255, 255, 255, 0.035);
   --surface-glass-strong: rgba(255, 255, 255, 0.085);
+  --surface-glass-warm: rgba(250, 204, 21, 0.05);
+  --surface-glass-cool: rgba(139, 92, 246, 0.05);
+
+  /* Borders */
   --border-glass: rgba(255, 255, 255, 0.10);
   --border-glass-hi: rgba(250, 204, 21, 0.32);
   --border-glass-purple: rgba(139, 92, 246, 0.32);
   --border-glass-cyan: rgba(34, 211, 238, 0.28);
+  --border-glass-pink: rgba(244, 114, 182, 0.30);
+  --border-glass-emerald: rgba(52, 211, 153, 0.28);
 
+  /* Shadows & glows */
   --shadow-soft: 0 10px 40px rgba(0, 0, 0, 0.32);
   --shadow-lift: 0 22px 60px rgba(0, 0, 0, 0.45);
   --shadow-glow-yellow: 0 0 60px rgba(250, 204, 21, 0.18);
   --shadow-glow-purple: 0 0 60px rgba(139, 92, 246, 0.20);
-  --shadow-glcdow-cyan: 0 0 60px rgba(34, 211, 238, 0.18);
+  --shadow-glow-cyan: 0 0 60px rgba(34, 211, 238, 0.18);
+  --shadow-glow-pink: 0 0 60px rgba(244, 114, 182, 0.18);
+  --shadow-glow-emerald: 0 0 60px rgba(52, 211, 153, 0.16);
+  --shadow-glow-rainbow:
+    0 0 30px rgba(250, 204, 21, 0.18),
+    0 0 60px rgba(139, 92, 246, 0.16),
+    0 0 90px rgba(34, 211, 238, 0.14);
+
+  /* Signature gradients */
+  --gradient-aurora: linear-gradient(
+    135deg,
+    #facc15 0%,
+    #f59e0b 35%,
+    #8b5cf6 70%,
+    #22d3ee 100%
+  );
+  --gradient-sunset: linear-gradient(
+    135deg,
+    #f472b6 0%,
+    #8b5cf6 50%,
+    #22d3ee 100%
+  );
+  --gradient-ember: linear-gradient(
+    135deg,
+    #facc15 0%,
+    #f97316 50%,
+    #ef4444 100%
+  );
+  --gradient-jewel: linear-gradient(
+    135deg,
+    #34d399 0%,
+    #22d3ee 50%,
+    #8b5cf6 100%
+  );
+  --gradient-divider: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(250, 204, 21, 0.40) 25%,
+    rgba(139, 92, 246, 0.40) 55%,
+    rgba(34, 211, 238, 0.40) 80%,
+    transparent 100%
+  );
+
+  /* Text gradients */
+  --text-gradient-aurora: linear-gradient(
+    90deg,
+    #fde68a 0%,
+    #ddd6fe 45%,
+    #a5f3fc 100%
+  );
+  --text-gradient-sunset: linear-gradient(
+    90deg,
+    #fbcfe8 0%,
+    #ddd6fe 50%,
+    #a5f3fc 100%
+  );
+
+  color-scheme: dark;
 }
 
 /* =========================================================
@@ -34,9 +102,10 @@
     radial-gradient(1200px 800px at 12% -10%, rgba(250, 204, 21, 0.10), transparent 55%),
     radial-gradient(900px 700px at 92% 8%, rgba(139, 92, 246, 0.14), transparent 55%),
     radial-gradient(800px 600px at 80% 95%, rgba(34, 211, 238, 0.10), transparent 55%),
-    radial-gradient(700px 500px at 8% 88%, rgba(250, 204, 21, 0.06), transparent 55%),
+    radial-gradient(700px 500px at 8% 88%, rgba(244, 114, 182, 0.08), transparent 55%),
+    radial-gradient(600px 500px at 50% 50%, rgba(52, 211, 153, 0.06), transparent 60%),
     linear-gradient(180deg, #0a0a0d 0%, #0b0b0d 50%, #0a0a0d 100%);
-  background-attachment: fixed, fixed, fixed, fixed, fixed;
+  background-attachment: fixed, fixed, fixed, fixed, fixed, fixed;
 }
 
 .nexus-app-bg::before {
@@ -46,10 +115,32 @@
   z-index: -1;
   pointer-events: none;
   background:
-    conic-gradient(from 0deg at 30% 30%, rgba(250, 204, 21, 0.12), transparent 25%, rgba(139, 92, 246, 0.10) 50%, transparent 75%, rgba(34, 211, 238, 0.10));
+    conic-gradient(
+      from 0deg at 30% 30%,
+      rgba(250, 204, 21, 0.12) 0deg,
+      transparent 60deg,
+      rgba(244, 114, 182, 0.10) 120deg,
+      transparent 180deg,
+      rgba(139, 92, 246, 0.12) 240deg,
+      transparent 300deg,
+      rgba(34, 211, 238, 0.10) 360deg
+    );
   filter: blur(80px);
-  opacity: 0.55;
+  opacity: 0.6;
   animation: nexus-aurora-drift 28s linear infinite;
+}
+
+.nexus-app-bg::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 3px 3px;
+  opacity: 0.4;
+  mix-blend-mode: overlay;
 }
 
 @keyframes nexus-aurora-drift {
@@ -64,7 +155,9 @@
 
 .nexus-glow-yellow,
 .nexus-glow-purple,
-.nexus-glow-cyan {
+.nexus-glow-cyan,
+.nexus-glow-pink,
+.nexus-glow-emerald {
   position: absolute;
   border-radius: 9999px;
   filter: blur(64px);
@@ -87,13 +180,25 @@
   box-shadow: var(--shadow-glow-cyan);
 }
 
-.nexus-glow-yellow { animation: nexus-pulse 9s ease-in-out infinite; }
-.nexus-glow-purple { animation: nexus-pulse 11s ease-in-out infinite reverse; }
-.nexus-glow-cyan   { animation: nexus-pulse 13s ease-in-out infinite; }
+.nexus-glow-pink {
+  background: radial-gradient(circle, rgba(244, 114, 182, 0.24), transparent 60%);
+  box-shadow: var(--shadow-glow-pink);
+}
+
+.nexus-glow-emerald {
+  background: radial-gradient(circle, rgba(52, 211, 153, 0.22), transparent 60%);
+  box-shadow: var(--shadow-glow-emerald);
+}
+
+.nexus-glow-yellow   { animation: nexus-pulse  9s ease-in-out infinite; }
+.nexus-glow-purple   { animation: nexus-pulse 11s ease-in-out infinite reverse; }
+.nexus-glow-cyan     { animation: nexus-pulse 13s ease-in-out infinite; }
+.nexus-glow-pink     { animation: nexus-pulse 10s ease-in-out infinite reverse; }
+.nexus-glow-emerald  { animation: nexus-pulse 14s ease-in-out infinite; }
 
 @keyframes nexus-pulse {
-  0%, 100% { transform: scale(1); opacity: 0.85; }
-  50%      { transform: scale(1.08); opacity: 1; }
+  0%, 100% { transform: scale(1);    opacity: 0.85; }
+  50%      { transform: scale(1.08); opacity: 1;    }
 }
 
 /* =========================================================
@@ -117,12 +222,40 @@
     box-shadow 0.25s ease;
 }
 
+.nexus-glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(250, 204, 21, 0.20),
+    rgba(139, 92, 246, 0.18) 40%,
+    rgba(34, 211, 238, 0.18) 70%,
+    rgba(244, 114, 182, 0.18)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
 .nexus-glass:hover {
   border-color: var(--border-glass-hi);
   transform: translateY(-2px);
   box-shadow:
     var(--shadow-lift),
+    var(--shadow-glow-yellow),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.nexus-glass:hover::before {
+  opacity: 1;
 }
 
 .nexus-glass-strong {
@@ -131,6 +264,7 @@
   border-radius: 1.75rem;
   box-shadow:
     var(--shadow-lift),
+    var(--shadow-glow-rainbow),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(24px) saturate(150%);
   -webkit-backdrop-filter: blur(24px) saturate(150%);
@@ -147,6 +281,7 @@
   transform: translateY(-3px);
   box-shadow:
     0 26px 70px rgba(0, 0, 0, 0.55),
+    var(--shadow-glow-rainbow),
     inset 0 1px 0 rgba(255, 255, 255, 0.10);
 }
 
@@ -157,6 +292,16 @@
   backdrop-filter: blur(14px) saturate(130%);
   -webkit-backdrop-filter: blur(14px) saturate(130%);
 }
+
+/* Accent-tinted glass variants */
+.nexus-glass-purple { border-color: var(--border-glass-purple); }
+.nexus-glass-purple:hover { box-shadow: var(--shadow-lift), var(--shadow-glow-purple), inset 0 1px 0 rgba(255, 255, 255, 0.08); }
+.nexus-glass-cyan { border-color: var(--border-glass-cyan); }
+.nexus-glass-cyan:hover { box-shadow: var(--shadow-lift), var(--shadow-glow-cyan), inset 0 1px 0 rgba(255, 255, 255, 0.08); }
+.nexus-glass-pink { border-color: var(--border-glass-pink); }
+.nexus-glass-pink:hover { box-shadow: var(--shadow-lift), var(--shadow-glow-pink), inset 0 1px 0 rgba(255, 255, 255, 0.08); }
+.nexus-glass-emerald { border-color: var(--border-glass-emerald); }
+.nexus-glass-emerald:hover { box-shadow: var(--shadow-lift), var(--shadow-glow-emerald), inset 0 1px 0 rgba(255, 255, 255, 0.08); }
 
 /* =========================================================
    Morphic buttons
@@ -170,12 +315,7 @@
   padding: 0.75rem 1.5rem;
   font-weight: 600;
   color: #0a0a0d;
-  background: linear-gradient(
-    135deg,
-    #facc15 0%,
-    #f59e0b 45%,
-    #8b5cf6 100%
-  );
+  background: var(--gradient-aurora);
   border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 0.875rem;
   box-shadow:
@@ -188,10 +328,11 @@
 
 .nexus-morphic-button:hover:not(:disabled) {
   transform: translateY(-1px);
-  filter: brightness(1.05);
+  filter: brightness(1.05) saturate(1.1);
   box-shadow:
     0 16px 40px rgba(139, 92, 246, 0.30),
     0 8px 18px rgba(250, 204, 21, 0.22),
+    0 0 30px rgba(34, 211, 238, 0.18),
     inset 0 1px 0 rgba(255, 255, 255, 0.40);
 }
 
@@ -225,6 +366,7 @@
 .nexus-morphic-button-ghost:hover:not(:disabled) {
   border-color: var(--border-glass-hi);
   background: var(--surface-glass-strong);
+  box-shadow: var(--shadow-glow-yellow);
 }
 
 .nexus-morphic-button-ghost:disabled {
@@ -253,11 +395,99 @@
 .nexus-morphic-button-danger:hover:not(:disabled) {
   transform: translateY(-1px);
   filter: brightness(1.08);
+  box-shadow:
+    0 14px 36px rgba(220, 38, 38, 0.40),
+    0 0 24px rgba(239, 68, 68, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
 }
 
 .nexus-morphic-button-danger:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* New gradient button variants */
+.nexus-morphic-button-sunset {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: var(--gradient-sunset);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 0.875rem;
+  box-shadow:
+    0 10px 28px rgba(244, 114, 182, 0.28),
+    0 6px 14px rgba(139, 92, 246, 0.20),
+    inset 0 1px 0 rgba(255, 255, 255, 0.30);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.nexus-morphic-button-sunset:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+  box-shadow:
+    0 16px 40px rgba(244, 114, 182, 0.35),
+    0 0 24px rgba(139, 92, 246, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.40);
+}
+
+.nexus-morphic-button-jewel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  color: #0a0a0d;
+  background: var(--gradient-jewel);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 0.875rem;
+  box-shadow:
+    0 10px 28px rgba(34, 211, 238, 0.25),
+    0 6px 14px rgba(52, 211, 153, 0.20),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.nexus-morphic-button-jewel:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.06) saturate(1.1);
+  box-shadow:
+    0 16px 40px rgba(34, 211, 238, 0.32),
+    0 0 24px rgba(52, 211, 153, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.40);
+}
+
+.nexus-morphic-button-ember {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: var(--gradient-ember);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 0.875rem;
+  box-shadow:
+    0 10px 28px rgba(249, 115, 22, 0.30),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.nexus-morphic-button-ember:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+  box-shadow:
+    0 16px 40px rgba(249, 115, 22, 0.36),
+    0 0 24px rgba(250, 204, 21, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.40);
 }
 
 /* =========================================================
@@ -276,7 +506,7 @@
   outline: none;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  transition: border-color 0.2s ease, background 0.2s ease;
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
 
 .nexus-input:focus,
@@ -284,6 +514,7 @@
 .nexus-select:focus {
   border-color: var(--border-glass-hi);
   background: var(--surface-glass);
+  box-shadow: var(--shadow-glow-yellow);
 }
 
 .nexus-input::placeholder,
@@ -337,7 +568,7 @@
 
 .nexus-tab.is-active {
   color: #0a0a0d;
-  background: linear-gradient(135deg, #facc15 0%, #f59e0b 60%, #8b5cf6 100%);
+  background: var(--gradient-aurora);
   border-color: rgba(255, 255, 255, 0.25);
   box-shadow:
     0 10px 28px rgba(250, 204, 21, 0.22),
@@ -374,12 +605,13 @@
   padding: 1.25rem;
   backdrop-filter: blur(14px) saturate(130%);
   -webkit-backdrop-filter: blur(14px) saturate(130%);
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .nexus-stat:hover {
   transform: translateY(-2px);
   border-color: var(--border-glass-hi);
+  box-shadow: var(--shadow-glow-yellow);
 }
 
 /* =========================================================
@@ -419,6 +651,12 @@
   color: #a5f3fc;
 }
 
+.nexus-badge-pink {
+  background: rgba(244, 114, 182, 0.12);
+  border-color: rgba(244, 114, 182, 0.32);
+  color: #fbcfe8;
+}
+
 .nexus-badge-red {
   background: rgba(239, 68, 68, 0.12);
   border-color: rgba(239, 68, 68, 0.32);
@@ -431,6 +669,18 @@
   color: #bbf7d0;
 }
 
+.nexus-badge-orange {
+  background: rgba(249, 115, 22, 0.12);
+  border-color: rgba(249, 115, 22, 0.32);
+  color: #fed7aa;
+}
+
+.nexus-badge-aurora {
+  background: var(--gradient-aurora);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #0a0a0d;
+}
+
 /* =========================================================
    Divider
    ========================================================= */
@@ -438,13 +688,7 @@
 .nexus-divider {
   height: 1px;
   border: 0;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(250, 204, 21, 0.40) 30%,
-    rgba(139, 92, 246, 0.40) 70%,
-    transparent 100%
-  );
+  background: var(--gradient-divider);
 }
 
 /* =========================================================
@@ -459,14 +703,70 @@
 }
 
 /* =========================================================
+   Text gradients
+   ========================================================= */
+
+.nexus-text-aurora {
+  background: var(--text-gradient-aurora);
+  -webkit-background-clip: text;
+          background-clip: text;
+  -webkit-text-fill-color: transparent;
+          color: transparent;
+}
+
+.nexus-text-sunset {
+  background: var(--text-gradient-sunset);
+  -webkit-background-clip: text;
+          background-clip: text;
+  -webkit-text-fill-color: transparent;
+          color: transparent;
+}
+
+/* =========================================================
+   Shimmer (iridescent highlight)
+   ========================================================= */
+
+.nexus-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.nexus-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    transparent 0%,
+    transparent 40%,
+    rgba(255, 255, 255, 0.10) 50%,
+    transparent 60%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: nexus-shimmer-sweep 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes nexus-shimmer-sweep {
+  0%   { transform: translateX(-100%); }
+  60%  { transform: translateX(100%);  }
+  100% { transform: translateX(100%);  }
+}
+
+/* =========================================================
    Reduced motion
    ========================================================= */
 
 @media (prefers-reduced-motion: reduce) {
   .nexus-app-bg::before,
+  .nexus-app-bg::after,
   .nexus-glow-yellow,
   .nexus-glow-purple,
-  .nexus-glow-cyan {
+  .nexus-glow-cyan,
+  .nexus-glow-pink,
+  .nexus-glow-emerald,
+  .nexus-shimmer::after {
     animation: none;
   }
   .nexus-glass,
@@ -474,7 +774,10 @@
   .nexus-stat,
   .nexus-morphic-button,
   .nexus-morphic-button-ghost,
-  .nexus-morphic-button-danger {
+  .nexus-morphic-button-danger,
+  .nexus-morphic-button-sunset,
+  .nexus-morphic-button-jewel,
+  .nexus-morphic-button-ember {
     transition: none;
   }
 }
