@@ -35,7 +35,7 @@ function Overview({
 
         <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-400/10 border border-yellow-400/30 text-yellow-300 text-xs font-bold uppercase tracking-wider">
+            <span className="nexus-badge-yellow inline-flex items-center gap-2">
               <span className="nexus-dot-glow" />
               Welcome back
             </span>
@@ -54,7 +54,7 @@ function Overview({
             <SafeImage
               src={profile.avatar_url || logo}
               alt=""
-              className="relative w-16 h-16 rounded-2xl object-cover border-2 border-white/20"
+              className="relative w-16 h-16 rounded-2xl object-cover nexus-image-frame"
             />
           </div>
         </div>
@@ -122,8 +122,8 @@ function Overview({
                   key={member.id}
                   className={`flex items-center justify-between gap-3 rounded-2xl px-4 py-3.5 border transition ${
                     member.id === profile.id
-                      ? "bg-gradient-to-r from-yellow-400/15 to-purple-500/10 border-yellow-400/30 shadow-[0_0_24px_rgba(250,204,21,0.18)]"
-                      : "nexus-glass-flat hover:border-yellow-400/30 hover:bg-white/[0.06]"
+                      ? "nexus-glass-selected"
+                      : "nexus-glass-hover"
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -144,7 +144,7 @@ function Overview({
                     <SafeImage
                       src={member.avatar_url || logo}
                       alt=""
-                      className="w-10 h-10 rounded-full object-cover shrink-0 border border-white/10"
+                      className="w-10 h-10 rounded-full object-cover shrink-0 nexus-avatar-ring"
                     />
 
                     <div className="min-w-0">
@@ -192,7 +192,7 @@ function Overview({
               {latestNews.map((item) => (
                 <article
                   key={item.id}
-                  className="overflow-hidden nexus-glass-flat rounded-2xl hover:border-yellow-400/30 transition"
+                  className="overflow-hidden nexus-glass-flat nexus-glass-hover rounded-2xl"
                 >
                   {item.image_url && (
                     <img
@@ -248,7 +248,7 @@ function Overview({
           </div>
         ) : (
           <div className="grid md:grid-cols-2 gap-4">
-            <div className="rounded-2xl bg-gradient-to-br from-yellow-400/15 to-amber-500/10 border border-yellow-400/30 p-5 backdrop-blur-md shadow-[0_0_30px_rgba(250,204,21,0.18)]">
+            <div className="nexus-stat nexus-stat-stat-yellow nexus-glass-hover rounded-2xl p-5">
               <div className="flex items-center gap-4">
                 <div className="text-4xl">🏆</div>
 
@@ -268,9 +268,9 @@ function Overview({
               </div>
             </div>
 
-            <div className="rounded-2xl nexus-glass-flat border-purple-400/20 p-5">
+            <div className="rounded-2xl nexus-glass-flat nexus-glass-hover p-5">
               <div className="flex items-center gap-4">
-                <div className="text-4xl">🥈</div>
+                <div className="text-4xl">�</div>
 
                 <div className="min-w-0">
                   <p className="text-purple-300 text-xs font-bold uppercase tracking-wider">

@@ -129,7 +129,7 @@ function Points({
 
       {/* Admin history */}
       {canSeeAllPointHistory && (
-        <section className="nexus-glass-strong rounded-3xl p-6 relative overflow-hidden border-yellow-400/20">
+        <section className="nexus-glass-strong nexus-glass-yellow rounded-3xl p-6 relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/[0.04] via-transparent to-purple-500/[0.04] pointer-events-none" />
 
           <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-4">

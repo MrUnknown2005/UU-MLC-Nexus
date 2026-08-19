@@ -2,7 +2,7 @@ function Stat({ title, value, tone = "yellow", icon }) {
   const toneClass = `nexus-stat-stat-${tone}`;
 
   return (
-    <div className={`nexus-stat ${toneClass}`}>
+    <div className={`nexus-stat ${toneClass} nexus-glass-hover`}>
       <div className="relative flex items-start justify-between gap-3">
         <div>
           <p className="text-gray-500 text-xs uppercase tracking-wider font-semibold">

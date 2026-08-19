@@ -25,8 +25,8 @@ function AuthLayout({ title, subtitle, children, onBack }) {
       <div className="nexus-glow-cyan w-[20rem] h-[20rem] top-1/3 right-10" />
 
       <div className="relative w-full max-w-md z-10">
-        <div className="nexus-glass-strong rounded-3xl p-8 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-aurora opacity-[0.04] pointer-events-none" />
+        <div className="nexus-modal p-8 relative overflow-hidden">
+          <div className="absolute inset-0 nexus-glass-overlay-aurora pointer-events-none" />
 
           <div className="relative flex justify-center mb-6">
             <div className="relative">
@@ -144,7 +144,7 @@ function Login({ onBack, onLogin, onSwitch }) {
         </div>
 
         {error && (
-          <div className="nexus-badge-red rounded-xl px-3 py-2 text-center">
+          <div className="nexus-badge-red nexus-glass-danger rounded-xl px-3 py-2 text-center">
             {error}
           </div>
         )}
@@ -293,11 +293,11 @@ function SignUp({ onBack, onSignup, onSwitch }) {
         </button>
 
         {error && (
-          <div className="nexus-badge-red rounded-xl px-3 py-2">{error}</div>
+          <div className="nexus-badge-red nexus-glass-danger rounded-xl px-3 py-2">{error}</div>
         )}
 
         {message && (
-          <div className="nexus-badge-yellow rounded-xl px-3 py-2">{message}</div>
+          <div className="nexus-badge-yellow nexus-glass-yellow rounded-xl px-3 py-2">{message}</div>
         )}
 
         <button

@@ -266,7 +266,7 @@ function Profile({ profile, reloadProfile, onLogAction }) {
         <div className="relative flex flex-col md:flex-row md:items-center gap-6">
           <div className="relative shrink-0">
             <div className="absolute inset-0 rounded-3xl bg-gradient-aurora blur-xl opacity-50" />
-            <div className="relative w-32 h-32 rounded-3xl overflow-hidden border-2 border-yellow-400/40 bg-white/[0.03] backdrop-blur-md">
+            <div className="relative w-32 h-32 rounded-3xl overflow-hidden nexus-image-frame-yellow">
               {avatarUrl ? (
                 <SafeImage
                   src={avatarUrl}
@@ -281,7 +281,7 @@ function Profile({ profile, reloadProfile, onLogAction }) {
             </div>
 
             {editMode && (
-              <label className="absolute -bottom-2 -right-2 w-10 h-10 rounded-xl bg-gradient-aurora text-black flex items-center justify-center cursor-pointer shadow-[0_0_22px_rgba(250,204,21,0.45)] hover:scale-110 transition border border-white/30">
+              <label className="absolute -bottom-2 -right-2 w-10 h-10 rounded-xl nexus-morphic-button cursor-pointer p-0 hover:scale-110">
                 ✎
                 <input
                   type="file"
@@ -295,7 +295,7 @@ function Profile({ profile, reloadProfile, onLogAction }) {
           </div>
 
           <div className="min-w-0 flex-1">
-            <span className="inline-flex px-3 py-1 rounded-full bg-yellow-400/10 border border-yellow-400/30 text-yellow-300 text-[10px] font-black uppercase tracking-[0.25em]">
+            <span className="nexus-badge-yellow text-[10px] tracking-[0.25em]">
               Member Profile
             </span>
 
@@ -504,7 +504,7 @@ function Profile({ profile, reloadProfile, onLogAction }) {
 
             <div className="rounded-2xl nexus-glass-flat p-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl overflow-hidden bg-black/20">
+                <div className="w-12 h-12 rounded-xl overflow-hidden nexus-image-frame">
                   <SafeImage
                     src={avatarUrl || logo}
                     alt=""

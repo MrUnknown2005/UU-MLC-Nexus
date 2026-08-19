@@ -66,11 +66,7 @@ function Directory({ members }) {
             <button
               key={value}
               onClick={() => setFilter(value)}
-              className={`px-4 py-2 rounded-xl text-sm font-semibold transition backdrop-blur-md ${
-                filter === value
-                  ? `bg-gradient-aurora bg-[length:200%_200%] animate-grad-pan text-black shadow-[0_8px_22px_rgba(139,92,246,0.30)]`
-                  : `nexus-glass-flat text-gray-300 hover:bg-white/[0.10] hover:!border-${tone}-400/30`
-              }`}
+              className={`nexus-tab-pill${filter === value ? " is-active" : ""}`}
             >
               {label}
             </button>
@@ -92,7 +88,7 @@ function Directory({ members }) {
                 <SafeImage
                   src={member.avatar_url || logo}
                   alt={member.nickname || member.full_name}
-                  className="relative w-24 h-24 rounded-full object-cover border-2 border-white/20"
+                  className="relative w-24 h-24 rounded-full object-cover nexus-image-frame"
                 />
               </div>
             </div>
@@ -123,7 +119,7 @@ function Directory({ members }) {
       </div>
 
       {filtered.length === 0 && (
-        <div className="text-center py-16 nexus-glass-strong rounded-3xl">
+        <div className="text-center py-16 nexus-glass-strong nexus-glass-dashed rounded-3xl">
           <div className="text-4xl">🔍</div>
           <p className="text-gray-500 mt-4">No members found.</p>
 

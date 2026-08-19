@@ -4,7 +4,7 @@ export function PersonalPointHistory({ history }) {
       {history.map((item) => (
         <div
           key={item.id}
-          className="flex items-center justify-between nexus-glass-flat rounded-2xl p-4 hover:border-yellow-400/30 hover:bg-white/[0.06] transition"
+          className="flex items-center justify-between nexus-glass-hover rounded-2xl p-4"
         >
           <div>
             <p
@@ -42,7 +42,7 @@ export function AdminPointHistory({ history, rankedMembers }) {
       {history.map((item) => (
         <div
           key={item.id}
-          className="nexus-glass-flat rounded-2xl p-5 hover:border-yellow-400/30 transition"
+          className="nexus-glass-hover rounded-2xl p-5"
         >
           <p className="font-semibold">{memberMap[item.member_id]}</p>
 

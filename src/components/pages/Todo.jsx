@@ -352,8 +352,8 @@ function Todo({ profile, isAdmin, onLogAction }) {
         todo.completed
           ? "opacity-70"
           : isOverdue(todo.deadline)
-            ? "border-red-400/30 bg-red-500/[0.04] shadow-[0_0_24px_rgba(239,68,68,0.18)]"
-            : "hover:border-yellow-400/40 hover:-translate-y-0.5 hover:shadow-[0_0_28px_rgba(250,204,21,0.18)]"
+            ? "nexus-glass-danger"
+            : "nexus-glass-hover hover:-translate-y-0.5"
       }`}
     >
       <div className="flex items-start gap-4">
@@ -363,10 +363,10 @@ function Todo({ profile, isAdmin, onLogAction }) {
           aria-label={
             todo.completed ? "Mark task incomplete" : "Mark task complete"
           }
-          className={`mt-1 w-7 h-7 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition ${
+          className={`mt-1 w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition ${
             todo.completed
               ? "bg-gradient-aurora bg-[length:200%_200%] animate-grad-pan border-transparent text-black shadow-[0_0_18px_rgba(250,204,21,0.45)]"
-              : "border-gray-600 hover:border-yellow-400"
+              : "nexus-glass-flat"
           }`}
         >
           {todo.completed ? "✓" : ""}
@@ -409,7 +409,7 @@ function Todo({ profile, isAdmin, onLogAction }) {
             <img
               src={todo.image_url}
               alt=""
-              className="mt-4 w-full max-h-72 object-cover rounded-xl border border-white/10"
+              className="mt-4 w-full max-h-72 object-cover rounded-xl nexus-image-frame"
               loading="lazy"
               onError={(event) => {
                 event.currentTarget.style.display = "none";
@@ -420,10 +420,10 @@ function Todo({ profile, isAdmin, onLogAction }) {
           <div className="flex flex-wrap gap-2 mt-3">
             {todo.deadline && (
               <span
-                className={`text-xs px-3 py-1 rounded-full font-semibold backdrop-blur-md ${
+                className={`nexus-pill ${
                   !todo.completed && isOverdue(todo.deadline)
-                    ? "bg-red-500/10 text-red-300 border border-red-400/20"
-                    : "bg-white/[0.05] text-gray-400 border border-white/10"
+                    ? "nexus-pill-red"
+                    : "nexus-pill-neutral"
                 }`}
               >
                 {isOverdue(todo.deadline) && !todo.completed
@@ -454,7 +454,7 @@ function Todo({ profile, isAdmin, onLogAction }) {
             <button
               type="button"
               onClick={() => deleteTodo(todo)}
-              className="px-3 py-2 rounded-lg bg-red-500/10 text-red-300 border border-red-400/20 hover:bg-red-500/20 text-xs font-semibold transition"
+              className="nexus-morphic-button-danger px-3 py-2 text-xs"
             >
               Delete
             </button>
@@ -502,7 +502,7 @@ function Todo({ profile, isAdmin, onLogAction }) {
               </p>
             </div>
 
-            <div className="rounded-xl bg-yellow-400/10 border border-yellow-400/30 px-4 py-3 backdrop-blur-md">
+            <div className="nexus-stat nexus-stat-stat-yellow rounded-xl px-4 py-3">
               <p className="text-yellow-300 text-[10px] uppercase font-bold">
                 Today
               </p>
@@ -511,7 +511,7 @@ function Todo({ profile, isAdmin, onLogAction }) {
               </p>
             </div>
 
-            <div className="rounded-xl bg-red-500/10 border border-red-400/30 px-4 py-3 backdrop-blur-md">
+            <div className="nexus-stat nexus-stat-stat-red rounded-xl px-4 py-3">
               <p className="text-red-300 text-[10px] uppercase font-bold">
                 Overdue
               </p>
@@ -558,7 +558,7 @@ function Todo({ profile, isAdmin, onLogAction }) {
 
       {/* Admin editor */}
       {isAdmin && showForm && (
-        <section className="nexus-glass-strong rounded-3xl p-6 relative overflow-hidden border-yellow-400/20">
+        <section className="nexus-glass-strong nexus-glass-yellow rounded-3xl p-6 relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/[0.04] via-purple-500/[0.04] to-transparent pointer-events-none" />
 
           <div className="relative flex items-center justify-between mb-5">
@@ -624,7 +624,7 @@ function Todo({ profile, isAdmin, onLogAction }) {
                   <img
                     src={imagePreview}
                     alt="Task preview"
-                    className="w-full max-h-64 object-cover rounded-xl border border-white/10"
+                    className="w-full max-h-64 object-cover rounded-xl nexus-image-frame"
                   />
 
                   <button
@@ -717,7 +717,7 @@ function Todo({ profile, isAdmin, onLogAction }) {
         </div>
 
         {filteredActiveTodos.length === 0 ? (
-          <div className="nexus-glass rounded-2xl border-dashed border-white/10 p-8 text-center">
+          <div className="nexus-glass nexus-glass-dashed rounded-2xl p-8 text-center">
             <div className="text-3xl">✓</div>
 
             <p className="text-gray-500 mt-2">
@@ -734,11 +734,11 @@ function Todo({ profile, isAdmin, onLogAction }) {
       </section>
 
       {/* Completed */}
-      <section className="border-t border-white/10 pt-6">
+      <section className="nexus-divider mt-6 pt-6">
         <button
           type="button"
           onClick={() => setShowCompleted((current) => !current)}
-          className="w-full flex items-center justify-between nexus-glass-flat rounded-2xl px-5 py-4 hover:bg-white/[0.07] transition"
+          className="w-full flex items-center justify-between nexus-glass-flat nexus-glass-hover rounded-2xl px-5 py-4"
         >
           <div className="flex items-center gap-3">
             <span

@@ -10,7 +10,7 @@ function Header({ profile, onLogout }) {
             <img
               src={logo}
               alt="UU MLC Logo"
-              className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border border-yellow-400/30 shrink-0"
+              className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover nexus-avatar-ring-yellow shrink-0"
             />
           </div>
 
@@ -34,7 +34,7 @@ function Header({ profile, onLogout }) {
           )}
           <button
             onClick={onLogout}
-            className="px-4 py-2 rounded-xl border border-white/15 bg-white/[0.04] hover:bg-red-500/10 hover:border-red-400/30 hover:text-red-300 transition backdrop-blur-md text-sm font-semibold"
+            className="nexus-glass-button nexus-glass-button-danger"
           >
             Sign Out
           </button>

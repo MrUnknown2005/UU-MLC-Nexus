@@ -97,7 +97,7 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
                 <button
                   type="button"
                   onClick={() => setNotificationsOpen((value) => !value)}
-                  className="relative w-11 h-11 rounded-xl nexus-glass hover:border-yellow-400/40 transition flex items-center justify-center"
+                  className="relative w-11 h-11 rounded-xl nexus-glass nexus-glass-hover transition flex items-center justify-center"
                   aria-label="Notifications"
                   aria-expanded={notificationsOpen}
                 >
@@ -113,8 +113,8 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
                 </button>
 
                 {notificationsOpen && (
-                  <div className="absolute right-0 top-12 z-50 w-[calc(100vw-1.5rem)] max-w-80 nexus-glass-strong rounded-2xl overflow-hidden">
-                    <div className="flex items-center justify-between gap-3 p-4 border-b border-white/10 bg-gradient-to-br from-white/[0.04] to-transparent">
+                  <div className="absolute right-0 top-12 z-50 w-[calc(100vw-1.5rem)] max-w-80 nexus-modal rounded-2xl overflow-hidden">
+                    <div className="flex items-center justify-between gap-3 p-4 border-b border-white/10 nexus-glass-overlay-aurora">
                       <div>
                         <p className="font-bold nexus-text-aurora">Notifications</p>
                         <p className="text-xs text-gray-500 mt-1">
@@ -149,10 +149,10 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
                             key={notification.id}
                             type="button"
                             onClick={() => openNotification(notification)}
-                            className={`w-full text-left p-4 border-b border-white/5 hover:bg-white/5 transition ${
+                            className={`w-full text-left p-4 transition nexus-row rounded-none border-x-0 first:rounded-t-2xl last:rounded-b-2xl ${
                               notification.read_at
                                 ? ""
-                                : "bg-yellow-400/[0.05]"
+                                : "nexus-row-unread"
                             }`}
                           >
                             <div className="flex items-start gap-3">
@@ -208,8 +208,8 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
           </div>
 
           {unreadNotificationCount > 0 && (
-            <section className="mb-6 nexus-glass-strong rounded-3xl p-5 relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/[0.05] via-transparent to-purple-500/[0.05] pointer-events-none" />
+            <section className="mb-6 nexus-glass-strong nexus-glass-yellow rounded-3xl p-5 relative overflow-hidden">
+              <div className="absolute inset-0 nexus-glass-overlay-aurora pointer-events-none" />
               <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
                   <p className="nexus-text-aurora text-sm font-bold">
@@ -257,7 +257,7 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
             <aside
               className={`${sidebarOpen ? "block" : "hidden"} lg:block w-full lg:w-64 flex-shrink-0`}
             >
-              <div className="lg:sticky lg:top-6 nexus-glass-strong rounded-2xl sm:rounded-3xl p-2 sm:p-3 max-h-[70vh] overflow-y-auto">
+              <div className="lg:sticky lg:top-6 nexus-panel rounded-2xl sm:rounded-3xl p-2 sm:p-3 max-h-[70vh] overflow-y-auto">
                 <NavItem
                   active={tab === "overview"}
                   onClick={() => setTab("overview")}
@@ -337,7 +337,7 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
                 )}
                 <button
                   onClick={onLogout}
-                  className="w-full mt-2 sm:mt-3 px-3 sm:px-4 py-3.5 sm:py-3 rounded-xl sm:rounded-2xl text-left text-sm sm:text-base text-red-300 hover:bg-red-500/10 hover:border-red-400/30 border border-transparent transition"
+                  className="nexus-glass-button nexus-glass-button-danger w-full mt-2 sm:mt-3 px-3 sm:px-4 py-3 sm:py-2.5 justify-start text-sm sm:text-base"
                 >
                   ↪ Sign out
                 </button>

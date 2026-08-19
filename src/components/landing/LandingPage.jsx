@@ -17,7 +17,7 @@ function LandingPage({ onLogin, onJoin }) {
               <img
                 src={logo}
                 alt="UU MLC"
-                className="relative w-12 h-12 object-contain rounded-xl ring-1 ring-white/20"
+                className="relative w-12 h-12 object-contain rounded-xl nexus-image-frame"
               />
             </div>
             <div>
@@ -38,7 +38,7 @@ function LandingPage({ onLogin, onJoin }) {
 
         <main className="grid lg:grid-cols-[1.15fr_0.85fr] gap-10 items-center py-16 md:py-24">
           <section>
-            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-yellow-400/10 border border-yellow-400/30 text-yellow-300 text-sm backdrop-blur-md shadow-[0_0_24px_rgba(250,204,21,0.18)]">
+            <span className="nexus-badge-yellow inline-flex items-center gap-2 px-4 py-1.5">
               <span className="nexus-dot-glow" />
               Interweek • UU MLC
             </span>
@@ -58,7 +58,7 @@ function LandingPage({ onLogin, onJoin }) {
             <div className="flex flex-wrap gap-3 mt-8">
               <button
                 onClick={onJoin}
-                className="px-7 py-3.5 rounded-2xl font-bold text-black bg-gradient-aurora bg-[length:200%_200%] animate-grad-pan shadow-[0_12px_32px_rgba(139,92,246,0.35),0_6px_14px_rgba(250,204,21,0.22)] hover:brightness-110 hover:-translate-y-0.5 transition-all border border-white/25"
+                className="nexus-morphic-button px-7 py-3.5 rounded-2xl hover:brightness-110 hover:-translate-y-0.5"
               >
                 Join the Club →
               </button>
@@ -119,7 +119,7 @@ function LandingPage({ onLogin, onJoin }) {
                 ].map((item) => (
                   <div
                     key={item.label}
-                    className={`rounded-2xl bg-gradient-to-br ${item.grad} border border-white/10 backdrop-blur-md p-5 hover:scale-[1.03] transition-transform`}
+                    className="nexus-glass rounded-2xl p-5 hover:scale-[1.03] transition-transform"
                   >
                     <div className="text-2xl">{item.icon}</div>
                     <p className="font-semibold mt-2 text-white">{item.label}</p>

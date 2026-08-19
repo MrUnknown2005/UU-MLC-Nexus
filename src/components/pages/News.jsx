@@ -226,7 +226,7 @@ function News({ news, profile, reload, onLogAction }) {
               <p className="text-2xl font-black mt-1">{news.length}</p>
             </div>
 
-            <div className="rounded-2xl bg-cyan-400/10 border border-cyan-400/30 backdrop-blur-md px-4 py-3 shadow-[0_0_22px_rgba(34,211,238,0.18)]">
+            <div className="nexus-stat nexus-stat-stat-cyan rounded-2xl px-4 py-3">
               <p className="text-cyan-300 text-xs uppercase font-bold">
                 Showing
               </p>
@@ -299,7 +299,7 @@ function News({ news, profile, reload, onLogAction }) {
                   <img
                     src={imagePreview}
                     alt="News preview"
-                    className="w-full max-h-64 object-cover rounded-xl border border-white/10"
+                    className="w-full max-h-64 object-cover rounded-xl nexus-image-frame"
                   />
 
                   <button
@@ -360,7 +360,7 @@ function News({ news, profile, reload, onLogAction }) {
           </div>
 
           {filteredNews.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-white/10 nexus-glass-flat p-10 text-center">
+            <div className="rounded-2xl nexus-glass-flat nexus-glass-dashed p-10 text-center">
               <div className="text-4xl">📰</div>
 
               <p className="text-gray-500 mt-3">
@@ -385,8 +385,8 @@ function News({ news, profile, reload, onLogAction }) {
                   key={item.id}
                   className={`overflow-hidden nexus-glass-flat rounded-2xl transition hover:-translate-y-0.5 ${
                     editingNews?.id === item.id
-                      ? "border-yellow-400/40 shadow-[0_0_28px_rgba(250,204,21,0.20)]"
-                      : "hover:border-yellow-400/30"
+                      ? "nexus-glass-selected"
+                      : "nexus-glass-hover"
                   }`}
                 >
                   {item.image_url && (
@@ -419,7 +419,7 @@ function News({ news, profile, reload, onLogAction }) {
                         <button
                           type="button"
                           onClick={() => beginEdit(item)}
-                          className="px-3 py-2 rounded-lg nexus-glass-flat text-xs hover:border-yellow-400/30"
+                          className="px-3 py-2 rounded-lg nexus-glass-flat nexus-glass-hover text-xs"
                         >
                           Edit
                         </button>
@@ -428,7 +428,7 @@ function News({ news, profile, reload, onLogAction }) {
                           type="button"
                           onClick={() => deleteNews(item)}
                           disabled={deletingId === item.id}
-                          className="px-3 py-2 rounded-lg bg-red-500/10 text-red-300 border border-red-400/20 text-xs hover:bg-red-500/20 disabled:opacity-50 transition font-semibold"
+                          className="nexus-morphic-button-danger px-3 py-2 text-xs disabled:opacity-50"
                         >
                           {deletingId === item.id ? "Deleting..." : "Delete"}
                         </button>

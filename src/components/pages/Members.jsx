@@ -117,7 +117,7 @@ function Members({
 
           <div className="grid grid-cols-2 gap-3">
 
-            <div className="rounded-2xl bg-yellow-400/10 border border-yellow-400/30 backdrop-blur-md px-4 py-3 min-w-28 shadow-[0_0_22px_rgba(250,204,21,0.18)]">
+            <div className="nexus-stat nexus-stat-stat-yellow rounded-2xl px-4 py-3 min-w-28">
               <p className="text-yellow-300 text-xs uppercase font-bold">
                 Pending
               </p>
@@ -143,7 +143,7 @@ function Members({
 
       {/* Pending requests */}
       {pendingMembers.length > 0 && (
-        <section className="nexus-glass-strong rounded-3xl p-6 relative overflow-hidden border-yellow-400/30">
+        <section className="nexus-glass-strong nexus-glass-yellow rounded-3xl p-6 relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/[0.06] via-transparent to-purple-500/[0.06] pointer-events-none" />
 
           <div className="relative flex items-center justify-between gap-4">
@@ -180,7 +180,7 @@ function Members({
               return (
                 <div
                   key={member.id}
-                  className="rounded-2xl nexus-glass-flat border-yellow-400/20 p-4 hover:border-yellow-400/40 transition"
+                  className="rounded-2xl nexus-glass-flat nexus-glass-hover p-4"
                 >
 
                   <div className="flex items-center gap-3">
@@ -190,7 +190,7 @@ function Members({
                       <SafeImage
                         src={member.avatar_url || logo}
                         alt=""
-                        className="relative w-12 h-12 rounded-full object-cover border border-white/20"
+                        className="relative w-12 h-12 rounded-full object-cover nexus-avatar-ring"
                       />
                     </div>
 
@@ -292,7 +292,7 @@ function Members({
               className={`nexus-glass-strong rounded-3xl p-5 relative overflow-hidden hover:-translate-y-1 transition ${
                 member.role === "guest" &&
                 member.is_active !== false
-                  ? "border-yellow-400/30 shadow-[0_0_24px_rgba(250,204,21,0.18)]"
+                  ? "nexus-glass-yellow"
                   : ""
               }`}
             >
@@ -306,7 +306,7 @@ function Members({
                     <SafeImage
                       src={member.avatar_url || logo}
                       alt=""
-                      className="relative w-12 h-12 rounded-full object-cover border border-white/20"
+                      className="relative w-12 h-12 rounded-full object-cover nexus-avatar-ring"
                     />
                   </div>
 
@@ -468,10 +468,10 @@ function Members({
                         !member.is_active
                       )
                     }
-                    className={`px-3 py-2.5 rounded-xl text-sm font-semibold transition backdrop-blur-md ${
+                    className={`nexus-morphic-button-ghost px-3 py-2.5 text-sm ${
                       member.is_active
-                        ? "bg-red-500/10 text-red-300 border border-red-400/20 hover:bg-red-500/20"
-                        : "bg-green-500/10 text-green-300 border border-green-400/20 hover:bg-green-500/20"
+                        ? "!text-red-300 hover:!bg-red-500/15 hover:!border-red-400/50"
+                        : "!text-green-300 hover:!bg-green-500/15 hover:!border-green-400/50"
                     }`}
                   >
                     {member.is_active
@@ -507,7 +507,7 @@ function Members({
 
       {/* Empty state */}
       {filteredMembers.length === 0 && (
-        <div className="text-center py-14 nexus-glass-strong rounded-3xl">
+        <div className="text-center py-14 nexus-glass-strong nexus-glass-dashed rounded-3xl">
 
           <div className="text-4xl">🔍</div>
           <p className="text-gray-500 mt-3">

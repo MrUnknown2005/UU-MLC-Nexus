@@ -720,6 +720,397 @@
 }
 
 /* =========================================================
+   Row / list-item glass — for table rows & list rows
+   ========================================================= */
+
+.nexus-row {
+  display: block;
+  background: var(--surface-glass-2);
+  border: 1px solid var(--border-glass);
+  border-radius: 1rem;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.nexus-row:hover {
+  background: var(--surface-glass);
+  border-color: var(--border-glass-hi);
+}
+
+.nexus-row-unread {
+  background: rgba(250, 204, 21, 0.06);
+  border-color: rgba(250, 204, 21, 0.22);
+}
+
+/* =========================================================
+   Status pill — colored frosted pill (replaces bg-red-500/10 etc.)
+   ========================================================= */
+
+.nexus-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border-radius: 9999px;
+  border: 1px solid var(--border-glass);
+  background: var(--surface-glass-2);
+  color: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.nexus-pill-yellow {
+  background: rgba(250, 204, 21, 0.14);
+  border-color: rgba(250, 204, 21, 0.34);
+  color: #fde68a;
+}
+
+.nexus-pill-red {
+  background: rgba(239, 68, 68, 0.14);
+  border-color: rgba(239, 68, 68, 0.34);
+  color: #fecaca;
+}
+
+.nexus-pill-cyan {
+  background: rgba(34, 211, 238, 0.14);
+  border-color: rgba(34, 211, 238, 0.34);
+  color: #a5f3fc;
+}
+
+.nexus-pill-purple {
+  background: rgba(139, 92, 246, 0.16);
+  border-color: rgba(139, 92, 246, 0.36);
+  color: #ddd6fe;
+}
+
+.nexus-pill-green {
+  background: rgba(52, 211, 153, 0.14);
+  border-color: rgba(52, 211, 153, 0.34);
+  color: #bbf7d0;
+}
+
+.nexus-pill-neutral {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.10);
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* =========================================================
+   Logout / icon-only glass button
+   ========================================================= */
+
+.nexus-glass-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #ffffff;
+  background: var(--surface-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: 0.75rem;
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.nexus-glass-button:hover {
+  background: var(--surface-glass-strong);
+  border-color: var(--border-glass-hi);
+  transform: translateY(-1px);
+}
+
+.nexus-glass-button-danger {
+  color: #fecaca;
+  border-color: rgba(239, 68, 68, 0.30);
+}
+
+.nexus-glass-button-danger:hover {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.55);
+  color: #fee2e2;
+}
+
+/* =========================================================
+   Image placeholder — translucent neutral
+   ========================================================= */
+
+.nexus-image-placeholder {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+  border: 1px solid var(--border-glass);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* =========================================================
+   Glass utility surfaces — small chips, dashed empty states,
+   image frames, accent rims & danger cards
+   ========================================================= */
+
+.nexus-glass-chip {
+  background: var(--surface-glass-2);
+  border: 1px solid var(--border-glass);
+  border-radius: 0.75rem;
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+}
+
+.nexus-glass-dashed {
+  background: var(--surface-glass-2);
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  border-radius: 1.5rem;
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+}
+
+.nexus-glass-dashed-yellow {
+  background: var(--surface-glass-2);
+  border: 1px dashed rgba(250, 204, 21, 0.40);
+  border-radius: 1.5rem;
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+}
+
+.nexus-image-frame {
+  background: var(--surface-glass-2);
+  border: 1px solid var(--border-glass);
+  border-radius: 1rem;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  overflow: hidden;
+}
+
+.nexus-image-frame-yellow {
+  background: var(--surface-glass-2);
+  border: 1px solid rgba(250, 204, 21, 0.35);
+  border-radius: 1rem;
+  box-shadow: 0 0 18px rgba(250, 204, 21, 0.16);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  overflow: hidden;
+}
+
+/* Glass surface with rich yellow accent — for "pending" / attention panels */
+.nexus-glass-yellow {
+  background:
+    linear-gradient(135deg, rgba(250, 204, 21, 0.08), rgba(139, 92, 246, 0.04) 60%, rgba(34, 211, 238, 0.04));
+  border: 1px solid rgba(250, 204, 21, 0.30);
+  border-radius: 1.75rem;
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  box-shadow:
+    var(--shadow-soft),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    0 0 28px rgba(250, 204, 21, 0.14);
+}
+
+/* Glass surface with red / danger accent */
+.nexus-glass-danger {
+  background:
+    linear-gradient(135deg, rgba(239, 68, 68, 0.10), rgba(249, 115, 22, 0.06) 50%, rgba(250, 204, 21, 0.04));
+  border: 1px solid rgba(239, 68, 68, 0.32);
+  border-radius: 1.5rem;
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  box-shadow:
+    var(--shadow-soft),
+    0 0 26px rgba(239, 68, 68, 0.16);
+}
+
+/* Hoverable glass row used in lists / menus */
+.nexus-glass-hover {
+  background: var(--surface-glass-2);
+  border: 1px solid var(--border-glass);
+  border-radius: 0.875rem;
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.nexus-glass-hover:hover {
+  background: var(--surface-glass);
+  border-color: var(--border-glass-hi);
+  transform: translateY(-1px);
+}
+
+/* Selected / active glass row */
+.nexus-glass-selected {
+  background:
+    linear-gradient(135deg, rgba(250, 204, 21, 0.10), rgba(139, 92, 246, 0.06) 50%, rgba(34, 211, 238, 0.06));
+  border: 1px solid rgba(250, 204, 21, 0.45);
+  border-radius: 0.875rem;
+  box-shadow:
+    0 0 24px rgba(250, 204, 21, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+}
+
+/* Glass pill button (replaces raw border + bg-yellow-400/10 combos) */
+.nexus-glass-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border-radius: 9999px;
+  background: var(--surface-glass-2);
+  border: 1px solid var(--border-glass);
+  color: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.nexus-glass-pill-yellow {
+  background: rgba(250, 204, 21, 0.14);
+  border-color: rgba(250, 204, 21, 0.40);
+  color: #fde68a;
+  box-shadow: 0 0 14px rgba(250, 204, 21, 0.20);
+}
+
+/* Glow overlay helper — sits inside a glass card to add colour wash */
+.nexus-glass-overlay-aurora {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(250, 204, 21, 0.06), rgba(139, 92, 246, 0.04) 50%, rgba(34, 211, 238, 0.04));
+  border-radius: inherit;
+}
+
+.nexus-glass-overlay-red {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.10), rgba(249, 115, 22, 0.06) 50%, rgba(250, 204, 21, 0.04));
+  border-radius: inherit;
+}
+
+/* Modal / dialog surface */
+.nexus-modal {
+  background: rgba(10, 10, 14, 0.78);
+  border: 1px solid var(--border-glass);
+  border-radius: 1.75rem;
+  backdrop-filter: blur(28px) saturate(170%);
+  -webkit-backdrop-filter: blur(28px) saturate(170%);
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.60),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10);
+}
+
+/* Sidebar / panel glass — slightly deeper frost */
+.nexus-panel {
+  background: var(--surface-glass-strong);
+  border: 1px solid var(--border-glass);
+  border-radius: 1.75rem;
+  backdrop-filter: blur(26px) saturate(165%);
+  -webkit-backdrop-filter: blur(26px) saturate(165%);
+  box-shadow:
+    var(--shadow-lift),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10);
+}
+
+/* Tag / mini-stat block */
+.nexus-mini-stat {
+  background: var(--surface-glass-2);
+  border: 1px solid var(--border-glass);
+  border-radius: 0.875rem;
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+}
+
+/* Backdrop scrim — for modals and dropdowns */
+.nexus-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 8, 12, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 40;
+}
+
+/* Avatar ring — subtle glass rim around circular images */
+.nexus-avatar-ring {
+  background: var(--surface-glass-2);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 9999px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  overflow: hidden;
+}
+
+.nexus-avatar-ring-yellow {
+  background: var(--surface-glass-2);
+  border: 1px solid rgba(250, 204, 21, 0.40);
+  border-radius: 9999px;
+  box-shadow: 0 0 14px rgba(250, 204, 21, 0.16);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  overflow: hidden;
+}
+
+/* Inner scroller — frosted glass container with custom scrollbar */
+.nexus-scroller {
+  background: var(--surface-glass-2);
+  border: 1px solid var(--border-glass);
+  border-radius: 1rem;
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  overflow: auto;
+}
+
+/* =========================================================
+   Tab — frosted pill variant
+   ========================================================= */
+
+.nexus-tab-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 0.75rem;
+  background: var(--surface-glass-2);
+  border: 1px solid var(--border-glass);
+  color: rgba(255, 255, 255, 0.70);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nexus-tab-pill:hover {
+  background: var(--surface-glass);
+  border-color: var(--border-glass-hi);
+  color: #ffffff;
+}
+
+.nexus-tab-pill.is-active {
+  background: var(--grad-aurora);
+  background-size: 200% 200%;
+  border-color: rgba(255, 255, 255, 0.30);
+  color: #0a0a0d;
+  box-shadow:
+    0 8px 22px rgba(139, 92, 246, 0.30),
+    inset 0 1px 0 rgba(255, 255, 255, 0.40);
+  animation: nexus-grad-pan 8s ease-in-out infinite;
+}
+
+/* =========================================================
    Reduced motion
    ========================================================= */
 
@@ -743,6 +1134,9 @@
   }
   .nexus-glass,
   .nexus-glass-strong,
+  .nexus-glass-yellow,
+  .nexus-glass-danger,
+  .nexus-glass-hover,
   .nexus-stat,
   .nexus-morphic-button,
   .nexus-morphic-button-ghost,

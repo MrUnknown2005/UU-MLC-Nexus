@@ -285,10 +285,10 @@ function RoleManager({ currentUser, roleDefinitions, onRolesChanged }) {
                 key={role.role_key}
                 type="button"
                 onClick={() => setSelectedRoleKey(role.role_key)}
-                className={`w-full text-left p-4 rounded-2xl border transition backdrop-blur-md ${
+                className={`w-full text-left p-4 rounded-2xl border transition ${
                   selectedRoleKey === role.role_key
-                    ? "bg-gradient-to-r from-yellow-400/15 to-purple-500/10 border-yellow-400/40 shadow-[0_0_24px_rgba(250,204,21,0.18)]"
-                    : "nexus-glass-flat hover:border-yellow-400/30 hover:bg-white/[0.06]"
+                    ? "nexus-glass-selected"
+                    : "nexus-glass-hover"
                 }`}
               >
                 <div className="flex items-center justify-between gap-3">
@@ -380,10 +380,10 @@ function RoleManager({ currentUser, roleDefinitions, onRolesChanged }) {
                       return (
                         <label
                           key={permissionKey}
-                          className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition backdrop-blur-md ${
+                          className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition ${
                             checked
-                              ? "bg-gradient-to-br from-yellow-400/10 to-purple-500/10 border-yellow-400/40 shadow-[0_0_18px_rgba(250,204,21,0.16)]"
-                              : "nexus-glass-flat hover:border-yellow-400/30"
+                              ? "nexus-glass-selected"
+                              : "nexus-glass-hover"
                           } ${selectedRole?.is_system ? "cursor-default" : ""}`}
                         >
                           <input

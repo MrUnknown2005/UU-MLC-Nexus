@@ -34,7 +34,7 @@ function AdminActivity({ activityLog, members = [], isHeadAdmin, onWipe }) {
       value.includes("DELETE") ||
       value.includes("DEACTIVATED")
     ) {
-      return "bg-red-500/10 text-red-300 border-red-400/30";
+      return "nexus-pill nexus-pill-red";
     }
 
     if (
@@ -42,18 +42,18 @@ function AdminActivity({ activityLog, members = [], isHeadAdmin, onWipe }) {
       value.includes("PROMOT") ||
       value.includes("ROLE")
     ) {
-      return "bg-yellow-400/10 text-yellow-300 border-yellow-400/30";
+      return "nexus-pill nexus-pill-yellow";
     }
 
     if (value.includes("TODO") || value.includes("NEWS")) {
-      return "bg-cyan-400/10 text-cyan-300 border-cyan-400/30";
+      return "nexus-pill nexus-pill-cyan";
     }
 
     if (value.includes("PROFILE")) {
-      return "bg-purple-500/10 text-purple-200 border-purple-400/30";
+      return "nexus-pill nexus-pill-purple";
     }
 
-    return "bg-white/[0.04] text-gray-300 border-white/10";
+    return "nexus-pill nexus-pill-neutral";
   };
 
   const filtered = activityLog.filter((item) => {
@@ -196,7 +196,7 @@ function AdminActivity({ activityLog, members = [], isHeadAdmin, onWipe }) {
             return (
               <div
                 key={item.id}
-                className="nexus-glass-flat rounded-2xl p-4 hover:border-yellow-400/30 hover:bg-white/[0.06] transition"
+                className="nexus-glass-flat nexus-glass-hover rounded-2xl p-4"
               >
                 <div className="flex items-start gap-3">
                   <div className="relative shrink-0">
@@ -204,7 +204,7 @@ function AdminActivity({ activityLog, members = [], isHeadAdmin, onWipe }) {
                     <SafeImage
                       src={actor?.avatar_url || logo}
                       alt=""
-                      className="relative w-11 h-11 rounded-full object-cover border border-white/20"
+                      className="relative w-11 h-11 rounded-full object-cover nexus-avatar-ring"
                     />
                   </div>
 

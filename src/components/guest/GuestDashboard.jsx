@@ -36,7 +36,7 @@ function GuestDashboard({ profile, onLogout }) {
             <div className="nexus-glow-purple w-72 h-72 -bottom-20 -left-20" />
 
             <div className="relative">
-              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-yellow-400/10 border border-yellow-400/30 text-yellow-300 text-xs font-bold uppercase tracking-[0.2em] backdrop-blur-md">
+              <span className="nexus-glass-pill-yellow text-[10px] tracking-[0.2em]">
                 <span className="nexus-dot-glow" />
                 Pending
               </span>
@@ -74,7 +74,7 @@ function GuestDashboard({ profile, onLogout }) {
           </section>
 
           <section className="nexus-glass-strong rounded-3xl p-6 relative overflow-hidden">
-            <div className="absolute -top-10 right-10 w-48 h-48 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" />
+            <div className="nexus-glass-overlay-aurora absolute -top-10 right-10 w-48 h-48 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" />
 
             <div className="relative">
               <p className="nexus-text-ocean text-xs font-bold uppercase tracking-wider">
@@ -86,7 +86,7 @@ function GuestDashboard({ profile, onLogout }) {
               </h3>
 
               {news.length === 0 ? (
-                <div className="text-center py-10 nexus-glass-flat rounded-2xl">
+                <div className="text-center py-10 nexus-glass-flat nexus-glass-dashed rounded-2xl">
                   <div className="text-4xl">📰</div>
                   <p className="text-gray-500 mt-3">
                     No news published yet.
@@ -97,7 +97,7 @@ function GuestDashboard({ profile, onLogout }) {
                   {news.map((item) => (
                     <article
                       key={item.id}
-                      className="nexus-glass-flat rounded-2xl p-5 hover:border-yellow-400/30 hover:-translate-y-0.5 transition"
+                      className="nexus-glass-flat nexus-glass-hover rounded-2xl p-5"
                     >
                       <h4 className="font-black text-lg">
                         {item.title}
