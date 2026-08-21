@@ -30,11 +30,8 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
     <>
       <style>{`
         .nexus-mobile-root {
-          overflow-x: hidden;
-          /* Explicitly visible: setting only overflow-x makes some browsers
-             silently compute overflow-y as "auto" too, creating a second,
-             independent scrollbar on this element in addition to the page's. */
-          overflow-y: visible;
+          /* Prevent horizontal spill without creating a nested scroll container. */
+          overflow-x: clip;
         }
 
         .nexus-mobile-root input,
