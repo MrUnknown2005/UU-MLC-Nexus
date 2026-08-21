@@ -1,0 +1,25 @@
+name: Package Project
+
+on:
+  push:
+    branches:
+      - refactor/permission-safety-net
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create project archive
+        run: |
+          zip -r UU-MLC-Nexus.zip . \
+            -x '.git/*' \
+               'node_modules/*' \
+               'dist/*'
+
+      - name: Upload project archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: UU-MLC-Nexus-project
+          path: UU-MLC-Nexus.zip
