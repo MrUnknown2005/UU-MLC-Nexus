@@ -1,3 +1,5 @@
+import { supabase } from "./supabaseClient";
+
 export async function uploadAttachment(file, userId, folder) {
   if (!file) {
     return {

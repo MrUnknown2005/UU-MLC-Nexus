@@ -62,7 +62,7 @@ function Directory({ members }) {
             ["executive", "Executives", "purple"],
             ["administrator", "Administrators", "pink"],
             ["head_admin", "Head Admins", "red"],
-          ].map(([value, label, tone]) => (
+          ].map(([value, label]) => (
             <button
               key={value}
               onClick={() => setFilter(value)}

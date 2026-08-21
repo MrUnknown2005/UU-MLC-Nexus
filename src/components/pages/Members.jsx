@@ -25,7 +25,6 @@ function Members({
   currentUserId,
   currentUserRole,
   canEdit,
-  canManageRoles,
   roleDefinitions,
   onRoleChange,
   onToggleActive,

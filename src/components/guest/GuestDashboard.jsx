@@ -5,11 +5,7 @@ import Header from "../common/Header";
 function GuestDashboard({ profile, onLogout }) {
   const [news, setNews] = useState([]);
 
-  useEffect(() => {
-    loadNews();
-  }, []);
-
-  const loadNews = async () => {
+  async function loadNews() {
     const { data } = await supabase
       .from("news")
       .select("*")
@@ -18,7 +14,13 @@ function GuestDashboard({ profile, onLogout }) {
       });
 
     setNews(data || []);
-  };
+  }
+
+  useEffect(() => {
+    // Intentional fetch-on-mount; loadNews is stable for the component's lifetime.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadNews();
+  }, []);
 
   return (
     <div className="nexus-app-bg min-h-screen text-white">

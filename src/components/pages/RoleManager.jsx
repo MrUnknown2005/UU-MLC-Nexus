@@ -41,6 +41,8 @@ function RoleManager({ currentUser, roleDefinitions, onRolesChanged }) {
   };
 
   useEffect(() => {
+    // Intentional fetch-on-mount; loadRoles is stable for the component's lifetime.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadRoles();
   }, []);
 

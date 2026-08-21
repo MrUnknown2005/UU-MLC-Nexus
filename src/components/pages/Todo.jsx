@@ -58,6 +58,8 @@ function Todo({ profile, isAdmin, onLogAction }) {
   };
 
   useEffect(() => {
+    // Intentional fetch-on-mount, paired with a realtime subscription below.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadTodos();
 
     const channel = supabase

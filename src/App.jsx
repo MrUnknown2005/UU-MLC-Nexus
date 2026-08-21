@@ -32,7 +32,7 @@ export default function App() {
     };
   }, []);
 
-  const loadSession = async () => {
+  async function loadSession() {
     const {
       data: { session: currentSession },
     } = await supabase.auth.getSession();
@@ -75,7 +75,7 @@ export default function App() {
 
     setProfile(data);
     setLoading(false);
-  };
+  }
 
   const logout = async () => {
     await supabase.auth.signOut();
