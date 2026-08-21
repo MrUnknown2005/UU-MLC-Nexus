@@ -257,7 +257,7 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
             <aside
               className={`${sidebarOpen ? "block" : "hidden"} lg:block w-full lg:w-64 flex-shrink-0`}
             >
-              <div className="lg:sticky lg:top-6 nexus-panel rounded-2xl sm:rounded-3xl p-2 sm:p-3 max-h-[70vh] overflow-y-auto">
+              <div className="lg:sticky lg:top-6 nexus-panel rounded-2xl sm:rounded-3xl p-2 sm:p-3">
                 <NavItem
                   active={tab === "overview"}
                   onClick={() => setTab("overview")}
