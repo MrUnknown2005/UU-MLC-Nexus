@@ -1,0 +1,107 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import {
+  LEGACY_ROLE_PERMISSIONS,
+  PERMISSION_CATALOG,
+  PERMISSION_KEYS,
+  ROLE_NAMES,
+} from "../src/constants/roles.js";
+
+const hasPermission = (role, permission) =>
+  (LEGACY_ROLE_PERMISSIONS[role] || []).includes(permission);
+
+const derivedAccess = (role) => {
+  const permissions = LEGACY_ROLE_PERMISSIONS[role] || [];
+  const canManageMembers = permissions.includes("manage_members");
+  const canManageTodos = permissions.includes("manage_todos");
+  const canViewMembers =
+    permissions.includes("view_members") || canManageMembers;
+  const canAwardPoints = permissions.includes("award_points");
+  const canViewPoints =
+    permissions.includes("view_points") || canAwardPoints;
+  const canViewHistory = permissions.includes("view_history");
+  const canManageNews = permissions.includes("manage_news");
+  const canManageRoles = permissions.includes("manage_roles");
+  const isAdmin =
+    permissions.includes("view_admin") ||
+    canViewMembers ||
+    canViewHistory ||
+    canManageNews ||
+    canManageRoles;
+
+  return {
+    permissions,
+    canManageMembers,
+    canManageTodos,
+    canViewMembers,
+    canAwardPoints,
+    canViewPoints,
+    canViewHistory,
+    canManageNews,
+    canManageRoles,
+    isAdmin,
+  };
+};
+
+test("permission catalog contains unique keys", () => {
+  assert.equal(new Set(PERMISSION_KEYS).size, PERMISSION_KEYS.length);
+  assert.equal(PERMISSION_CATALOG.length, PERMISSION_KEYS.length);
+  assert.deepEqual(
+    PERMISSION_CATALOG.map((permission) => permission.key),
+    PERMISSION_KEYS,
+  );
+});
+
+test("guest has no permissions", () => {
+  assert.deepEqual(LEGACY_ROLE_PERMISSIONS.guest, []);
+  assert.equal(derivedAccess("guest").isAdmin, false);
+});
+
+test("member keeps the baseline read-only access", () => {
+  const access = derivedAccess("member");
+
+  assert.equal(hasPermission("member", "view_directory"), true);
+  assert.equal(hasPermission("member", "view_todo"), true);
+  assert.equal(hasPermission("member", "view_points"), true);
+  assert.equal(access.canViewMembers, false);
+  assert.equal(access.canAwardPoints, false);
+  assert.equal(access.canManageMembers, false);
+  assert.equal(access.isAdmin, false);
+});
+
+test("executive has operational permissions but cannot manage members or reset points", () => {
+  const access = derivedAccess("executive");
+
+  assert.equal(access.isAdmin, true);
+  assert.equal(access.canViewMembers, true);
+  assert.equal(access.canManageTodos, true);
+  assert.equal(access.canAwardPoints, true);
+  assert.equal(access.canManageMembers, false);
+  assert.equal(hasPermission("executive", "reset_points"), false);
+  assert.equal(hasPermission("executive", "manage_roles"), false);
+});
+
+test("administrator has management and reset permissions but not role management", () => {
+  const access = derivedAccess("administrator");
+
+  assert.equal(access.isAdmin, true);
+  assert.equal(access.canManageMembers, true);
+  assert.equal(access.canAwardPoints, true);
+  assert.equal(access.canViewHistory, true);
+  assert.equal(access.canManageNews, true);
+  assert.equal(hasPermission("administrator", "reset_points"), true);
+  assert.equal(hasPermission("administrator", "manage_roles"), false);
+});
+
+test("head admin receives the complete permission catalog", () => {
+  assert.deepEqual(LEGACY_ROLE_PERMISSIONS.head_admin, PERMISSION_KEYS);
+  assert.equal(derivedAccess("head_admin").canManageRoles, true);
+  assert.equal(derivedAccess("head_admin").isAdmin, true);
+});
+
+test("role names cover every system role", () => {
+  for (const role of Object.keys(LEGACY_ROLE_PERMISSIONS)) {
+    assert.equal(typeof ROLE_NAMES[role], "string");
+    assert.ok(ROLE_NAMES[role].length > 0);
+  }
+});
