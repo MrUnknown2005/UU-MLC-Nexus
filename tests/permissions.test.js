@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import test from "node:test";
 import {
   LEGACY_ROLE_PERMISSIONS,
@@ -91,6 +93,7 @@ test("administrator has management and reset permissions but not role management
   assert.equal(access.canManageNews, true);
   assert.equal(hasPermission("administrator", "reset_points"), true);
   assert.equal(hasPermission("administrator", "manage_roles"), false);
+  assert.equal(hasPermission("administrator", "view_analytics"), true);
 });
 
 test("head admin receives the complete permission catalog", () => {
@@ -103,5 +106,39 @@ test("role names cover every system role", () => {
   for (const role of Object.keys(LEGACY_ROLE_PERMISSIONS)) {
     assert.equal(typeof ROLE_NAMES[role], "string");
     assert.ok(ROLE_NAMES[role].length > 0);
+  }
+});
+
+test("service layer owns Supabase imports for extracted hooks", () => {
+  const root = resolve(process.cwd());
+  const extractedHooks = [
+    "src/hooks/usePermissions.js",
+    "src/hooks/useAdminAudit.js",
+    "src/hooks/useNotifications.js",
+    "src/hooks/useDashboardData.js",
+  ];
+  const services = [
+    "src/services/permissionService.js",
+    "src/services/adminAuditService.js",
+    "src/services/notificationService.js",
+    "src/services/dashboardService.js",
+  ];
+
+  for (const file of extractedHooks) {
+    const content = readFileSync(resolve(root, file), "utf8");
+    assert.doesNotMatch(
+      content,
+      /from\s+["']\.\.\/lib\/supabaseClient["']/,
+      `${file} should not import Supabase directly`,
+    );
+  }
+
+  for (const file of services) {
+    const content = readFileSync(resolve(root, file), "utf8");
+    assert.match(
+      content,
+      /from\s+["']\.\.\/lib\/supabaseClient["']/,
+      `${file} should own the Supabase data-access import`,
+    );
   }
 });
