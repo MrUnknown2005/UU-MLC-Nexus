@@ -117,12 +117,14 @@ test("service layer owns Supabase imports for extracted hooks", () => {
     "src/hooks/useAdminAudit.js",
     "src/hooks/useNotifications.js",
     "src/hooks/useDashboardData.js",
+    "src/hooks/useMemberActions.js",
   ];
   const services = [
     "src/services/permissionService.js",
     "src/services/adminAuditService.js",
     "src/services/notificationService.js",
     "src/services/dashboardService.js",
+    "src/services/memberService.js",
   ];
 
   for (const file of extractedHooks) {
