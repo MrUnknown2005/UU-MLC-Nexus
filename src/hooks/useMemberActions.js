@@ -1,11 +1,11 @@
 import { getRoleDisplayName } from "../lib/roleHelpers";
 import {
-  awardPoints,
-  deleteAdminActivityLog,
-  deleteAllPointData,
-  deleteMonthlyLeaderboard,
-  resetAllPoints,
-  resetMemberPoints,
+  awardPoints as awardPointsService,
+  deleteAdminActivityLog as deleteAdminActivityLogService,
+  deleteAllPointData as deleteAllPointDataService,
+  deleteMonthlyLeaderboard as deleteMonthlyLeaderboardService,
+  resetAllPoints as resetAllPointsService,
+  resetMemberPoints as resetMemberPointsService,
   updateMemberActive,
   updateMemberRole,
 } from "../services/memberService";
@@ -46,7 +46,7 @@ export function useMemberActions({
     }
 
     const target = members.find((member) => member.id === memberId);
-    const { error } = await awardPoints(memberId, points, reason);
+    const { error } = await awardPointsService(memberId, points, reason);
 
     if (error) {
       alert(error.message);
@@ -156,7 +156,7 @@ export function useMemberActions({
       return false;
     }
 
-    const { error } = await resetAllPoints();
+    const { error } = await resetAllPointsService();
 
     if (error) {
       alert(error.message);
@@ -181,7 +181,7 @@ export function useMemberActions({
     }
 
     const target = members.find((member) => member.id === memberId);
-    const { error } = await resetMemberPoints(memberId);
+    const { error } = await resetMemberPointsService(memberId);
 
     if (error) {
       alert(error.message);
@@ -214,7 +214,7 @@ export function useMemberActions({
       return false;
     }
 
-    const { error } = await deleteAllPointData();
+    const { error } = await deleteAllPointDataService();
 
     if (error) {
       alert(error.message);
@@ -247,7 +247,7 @@ export function useMemberActions({
       return false;
     }
 
-    const { error } = await deleteMonthlyLeaderboard();
+    const { error } = await deleteMonthlyLeaderboardService();
 
     if (error) {
       alert(error.message);
@@ -279,7 +279,7 @@ export function useMemberActions({
       return false;
     }
 
-    const { error } = await deleteAdminActivityLog();
+    const { error } = await deleteAdminActivityLogService();
 
     if (error) {
       alert(error.message);
