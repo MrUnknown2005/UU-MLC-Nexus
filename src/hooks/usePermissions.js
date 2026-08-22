@@ -1,15 +1,10 @@
 import { useEffect, useState } from "react";
-import { supabase } from "../lib/supabaseClient";
+import { loadRoleAccess as loadRoleAccessService } from "../services/permissionService";
 import { LEGACY_ROLE_PERMISSIONS, SYSTEM_ROLE_DEFINITIONS } from "../constants/roles";
 
 /**
- * Loads the signed-in member's permission set and the list of available
- * role definitions, and derives the boolean permission flags the rest of
- * the dashboard reads (canViewMembers, canManageNews, isAdmin, etc.).
- *
- * Falls back to the hard-coded LEGACY_ROLE_PERMISSIONS / SYSTEM_ROLE_DEFINITIONS
- * if the Supabase RPC calls fail, so the app stays usable even if the
- * permission tables are unreachable.
+ * Loads the signed-in member's permission set and role definitions through
+ * the permission service, keeping Supabase access out of the UI hook.
  */
 export function usePermissions(profile) {
   const [permissions, setPermissions] = useState(
@@ -29,6 +24,7 @@ export function usePermissions(profile) {
   const canAwardPoints = hasPermission("award_points");
   const canViewPoints = hasPermission("view_points") || canAwardPoints;
   const canViewHistory = hasPermission("view_history");
+  const canViewAnalytics = hasPermission("view_analytics");
   const canManageNews = hasPermission("manage_news");
   const canManageRoles = hasPermission("manage_roles");
 
@@ -36,17 +32,12 @@ export function usePermissions(profile) {
     hasPermission("view_admin") ||
     canViewMembers ||
     canViewHistory ||
+    canViewAnalytics ||
     canManageNews ||
     canManageRoles;
 
   const loadRoleAccess = async () => {
-    const [permissionResult, roleResult] = await Promise.all([
-      supabase.rpc("get_my_permissions"),
-      supabase
-        .from("role_definitions")
-        .select("role_key, name, description, is_system")
-        .order("name", { ascending: true }),
-    ]);
+    const [permissionResult, roleResult] = await loadRoleAccessService();
 
     if (!permissionResult.error && Array.isArray(permissionResult.data)) {
       setPermissions(permissionResult.data);
@@ -90,6 +81,7 @@ export function usePermissions(profile) {
     canAwardPoints,
     canViewPoints,
     canViewHistory,
+    canViewAnalytics,
     canManageNews,
     canManageRoles,
     isAdmin,

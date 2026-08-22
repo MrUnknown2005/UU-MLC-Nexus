@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
-import { supabase } from "./lib/supabaseClient";
+import {
+  getCurrentProfile,
+  getCurrentSession,
+  signOut,
+  subscribeToAuthState,
+} from "./services/authSessionService";
 import LandingPage from "./components/landing/LandingPage";
 import AuthScreen from "./components/auth/AuthScreen";
 import GuestDashboard from "./components/guest/GuestDashboard";
@@ -18,7 +23,7 @@ export default function App() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+    } = subscribeToAuthState((_event, currentSession) => {
       setSession(currentSession);
 
       if (!currentSession) {
@@ -35,7 +40,7 @@ export default function App() {
   async function loadSession() {
     const {
       data: { session: currentSession },
-    } = await supabase.auth.getSession();
+    } = await getCurrentSession();
 
     if (!currentSession) {
       setSession(null);
@@ -46,11 +51,7 @@ export default function App() {
 
     setSession(currentSession);
 
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", currentSession.user.id)
-      .single();
+    const { data, error } = await getCurrentProfile(currentSession.user.id);
 
     if (error) {
       console.error("Profile load error:", error);
@@ -60,7 +61,7 @@ export default function App() {
     }
 
     if (data.is_active === false) {
-      await supabase.auth.signOut();
+      await signOut();
 
       setSession(null);
       setProfile(null);
@@ -78,7 +79,7 @@ export default function App() {
   }
 
   const logout = async () => {
-    await supabase.auth.signOut();
+    await signOut();
 
     setSession(null);
     setProfile(null);
