@@ -1,6 +1,6 @@
 import { useState } from "react";
 import logo from "../../assets/club-logo.png";
-import { supabase } from "../../lib/supabaseClient";
+import { signInWithPassword, signUp } from "../../services/authService";
 
 function AuthScreen({ initialMode = "login", onAuth, onBack }) {
   const [mode, setMode] = useState(initialMode);
@@ -19,7 +19,6 @@ function AuthScreen({ initialMode = "login", onAuth, onBack }) {
 function AuthLayout({ title, subtitle, children, onBack }) {
   return (
     <div className="nexus-app-bg min-h-screen flex items-center justify-center px-4 py-10 relative">
-      {/* Glow blobs */}
       <div className="nexus-glow-yellow w-[26rem] h-[26rem] -top-20 -left-20" />
       <div className="nexus-glow-purple w-[28rem] h-[28rem] bottom-0 -right-20" />
       <div className="nexus-glow-cyan w-[20rem] h-[20rem] top-1/3 right-10" />
@@ -41,9 +40,7 @@ function AuthLayout({ title, subtitle, children, onBack }) {
 
           <div className="relative text-center mb-8">
             <h1 className="text-3xl font-black nexus-text-aurora">{title}</h1>
-
             <p className="text-gray-400 text-sm mt-2">{subtitle}</p>
-
             <p className="text-[10px] uppercase tracking-[0.3em] text-yellow-300/80 mt-3">
               UU MLC Nexus
             </p>
@@ -74,7 +71,6 @@ function Login({ onBack, onLogin, onSwitch }) {
 
   const submit = async (e) => {
     e.preventDefault();
-
     setError("");
 
     if (!email || !password) {
@@ -84,10 +80,7 @@ function Login({ onBack, onLogin, onSwitch }) {
 
     setLoading(true);
 
-    const { error: loginError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { error: loginError } = await signInWithPassword(email, password);
 
     if (loginError) {
       setError(loginError.message);
@@ -99,17 +92,10 @@ function Login({ onBack, onLogin, onSwitch }) {
   };
 
   return (
-    <AuthLayout
-      onBack={onBack}
-      title="Welcome Back"
-      subtitle="Sign in to UU MLC Nexus"
-    >
+    <AuthLayout onBack={onBack} title="Welcome Back" subtitle="Sign in to UU MLC Nexus">
       <form onSubmit={submit} className="space-y-5">
         <div>
-          <label className="block text-xs uppercase tracking-wider text-gray-400 mb-2">
-            Email
-          </label>
-
+          <label className="block text-xs uppercase tracking-wider text-gray-400 mb-2">Email</label>
           <input
             type="email"
             value={email}
@@ -120,10 +106,7 @@ function Login({ onBack, onLogin, onSwitch }) {
         </div>
 
         <div>
-          <label className="block text-xs uppercase tracking-wider text-gray-400 mb-2">
-            Password
-          </label>
-
+          <label className="block text-xs uppercase tracking-wider text-gray-400 mb-2">Password</label>
           <div className="relative">
             <input
               type={showPassword ? "text" : "password"}
@@ -132,7 +115,6 @@ function Login({ onBack, onLogin, onSwitch }) {
               placeholder="Enter your password"
               className="nexus-input pr-20"
             />
-
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
@@ -144,23 +126,16 @@ function Login({ onBack, onLogin, onSwitch }) {
         </div>
 
         {error && (
-          <div className="nexus-badge-red nexus-glass-danger rounded-xl px-3 py-2 text-center">
-            {error}
-          </div>
+          <div className="nexus-badge-red nexus-glass-danger rounded-xl px-3 py-2 text-center">{error}</div>
         )}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="nexus-morphic-button w-full py-3.5 text-base"
-        >
+        <button type="submit" disabled={loading} className="nexus-morphic-button w-full py-3.5 text-base">
           {loading ? "Signing in..." : "Sign In →"}
         </button>
       </form>
 
       <div className="text-center mt-6">
         <p className="text-gray-500 text-sm">Don't have an account?</p>
-
         <button
           type="button"
           onClick={onSwitch}
@@ -186,7 +161,6 @@ function SignUp({ onBack, onSignup, onSwitch }) {
 
   const submit = async (e) => {
     e.preventDefault();
-
     setError("");
     setMessage("");
 
@@ -212,15 +186,11 @@ function SignUp({ onBack, onSignup, onSwitch }) {
 
     setLoading(true);
 
-    const { data, error: signupError } = await supabase.auth.signUp({
+    const { data, error: signupError } = await signUp({
       email,
       password,
-      options: {
-        data: {
-          full_name: fullName,
-          nickname: nickname || null,
-        },
-      },
+      fullName,
+      nickname,
     });
 
     if (signupError) {
@@ -252,14 +222,12 @@ function SignUp({ onBack, onSignup, onSwitch }) {
           placeholder="Full name"
           className="nexus-input"
         />
-
         <input
           value={nickname}
           onChange={(e) => setNickname(e.target.value)}
           placeholder="Nickname"
           className="nexus-input"
         />
-
         <input
           type="email"
           value={email}
@@ -267,7 +235,6 @@ function SignUp({ onBack, onSignup, onSwitch }) {
           placeholder="Email"
           className="nexus-input"
         />
-
         <input
           type={showPassword ? "text" : "password"}
           value={password}
@@ -275,7 +242,6 @@ function SignUp({ onBack, onSignup, onSwitch }) {
           placeholder="Password"
           className="nexus-input"
         />
-
         <input
           type="password"
           value={confirmPassword}
@@ -283,7 +249,6 @@ function SignUp({ onBack, onSignup, onSwitch }) {
           placeholder="Confirm password"
           className="nexus-input"
         />
-
         <button
           type="button"
           onClick={() => setShowPassword(!showPassword)}
@@ -295,16 +260,11 @@ function SignUp({ onBack, onSignup, onSwitch }) {
         {error && (
           <div className="nexus-badge-red nexus-glass-danger rounded-xl px-3 py-2">{error}</div>
         )}
-
         {message && (
           <div className="nexus-badge-yellow nexus-glass-yellow rounded-xl px-3 py-2">{message}</div>
         )}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="nexus-morphic-button w-full py-3.5 text-base"
-        >
+        <button type="submit" disabled={loading} className="nexus-morphic-button w-full py-3.5 text-base">
           {loading ? "Creating..." : "Create Account →"}
         </button>
       </form>
