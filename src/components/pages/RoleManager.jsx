@@ -1,5 +1,13 @@
 import { useEffect, useState } from "react";
-import { supabase } from "../../lib/supabaseClient";
+import {
+  createRole,
+  countMembersWithRole,
+  deleteCustomRole,
+  loadRolePermissions,
+  loadRolesAndPermissions,
+  replaceRolePermissions,
+  updateRole,
+} from "../../services/roleService";
 import { PERMISSION_CATALOG, SYSTEM_ROLE_DEFINITIONS } from "../../constants/roles";
 
 function RoleManager({ currentUser, roleDefinitions, onRolesChanged }) {
@@ -19,17 +27,7 @@ function RoleManager({ currentUser, roleDefinitions, onRolesChanged }) {
     const [
       { data: roleData, error: roleError },
       { data: permissionData, error: permissionError },
-    ] = await Promise.all([
-      supabase
-        .from("role_definitions")
-        .select("role_key, name, description, is_system")
-        .order("name", { ascending: true }),
-      supabase
-        .from("permissions")
-        .select("permission_key, name, description, category")
-        .order("category", { ascending: true })
-        .order("name", { ascending: true }),
-    ]);
+    ] = await loadRolesAndPermissions();
 
     if (!roleError && roleData?.length) {
       setRoles(roleData);
@@ -65,10 +63,7 @@ function RoleManager({ currentUser, roleDefinitions, onRolesChanged }) {
       setRoleKey(role.role_key || "");
       setDescription(role.description || "");
 
-      const { data, error } = await supabase
-        .from("role_permissions")
-        .select("permission_key")
-        .eq("role_key", selectedRoleKey);
+      const { data, error } = await loadRolePermissions(selectedRoleKey);
 
       if (!error) {
         setSelectedPermissionKeys(
@@ -125,49 +120,31 @@ function RoleManager({ currentUser, roleDefinitions, onRolesChanged }) {
       let finalRoleKey = normalizedKey;
 
       if (selectedRoleKey) {
-        const { error: roleError } = await supabase
-          .from("role_definitions")
-          .update({
-            name: name.trim(),
-            description: description.trim(),
-          })
-          .eq("role_key", selectedRoleKey);
+        const { error: roleError } = await updateRole({
+          roleKey: selectedRoleKey,
+          name: name.trim(),
+          description: description.trim(),
+        });
 
         if (roleError) throw roleError;
         finalRoleKey = selectedRoleKey;
       } else {
-        const { error: roleError } = await supabase
-          .from("role_definitions")
-          .insert({
-            role_key: finalRoleKey,
-            name: name.trim(),
-            description: description.trim(),
-            is_system: false,
-            created_by: currentUser.id,
-          });
+        const { error: roleError } = await createRole({
+          roleKey: finalRoleKey,
+          name: name.trim(),
+          description: description.trim(),
+          createdBy: currentUser.id,
+        });
 
         if (roleError) throw roleError;
       }
 
-      const { error: deleteError } = await supabase
-        .from("role_permissions")
-        .delete()
-        .eq("role_key", finalRoleKey);
+      const { error: permissionError } = await replaceRolePermissions(
+        finalRoleKey,
+        selectedPermissionKeys,
+      );
 
-      if (deleteError) throw deleteError;
-
-      if (selectedPermissionKeys.length > 0) {
-        const rows = selectedPermissionKeys.map((permissionKey) => ({
-          role_key: finalRoleKey,
-          permission_key: permissionKey,
-        }));
-
-        const { error: permissionError } = await supabase
-          .from("role_permissions")
-          .insert(rows);
-
-        if (permissionError) throw permissionError;
-      }
+      if (permissionError) throw permissionError;
 
       setMessage(
         selectedRoleKey
@@ -201,10 +178,9 @@ function RoleManager({ currentUser, roleDefinitions, onRolesChanged }) {
     setMessage("");
 
     try {
-      const { count, error: countError } = await supabase
-        .from("profiles")
-        .select("id", { count: "exact", head: true })
-        .eq("role", selectedRole.role_key);
+      const { count, error: countError } = await countMembersWithRole(
+        selectedRole.role_key,
+      );
 
       if (countError) throw countError;
 
@@ -215,11 +191,7 @@ function RoleManager({ currentUser, roleDefinitions, onRolesChanged }) {
         return;
       }
 
-      const { error } = await supabase
-        .from("role_definitions")
-        .delete()
-        .eq("role_key", selectedRole.role_key)
-        .eq("is_system", false);
+      const { error } = await deleteCustomRole(selectedRole.role_key);
 
       if (error) throw error;
 
