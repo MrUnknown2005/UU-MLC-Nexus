@@ -110,15 +110,16 @@ test("role names cover every system role", () => {
   }
 });
 
-test("service layer owns Supabase imports for extracted hooks", () => {
+test("service layer owns Supabase imports for extracted UI data access", () => {
   const root = resolve(process.cwd());
-  const extractedHooks = [
+  const extractedFiles = [
     "src/hooks/usePermissions.js",
     "src/hooks/useAdminAudit.js",
     "src/hooks/useNotifications.js",
     "src/hooks/useDashboardData.js",
     "src/hooks/useMemberActions.js",
     "src/hooks/useTodoBadges.js",
+    "src/components/pages/News.jsx",
   ];
   const services = [
     "src/services/permissionService.js",
@@ -127,13 +128,14 @@ test("service layer owns Supabase imports for extracted hooks", () => {
     "src/services/dashboardService.js",
     "src/services/memberService.js",
     "src/services/todoService.js",
+    "src/services/newsService.js",
   ];
 
-  for (const file of extractedHooks) {
+  for (const file of extractedFiles) {
     const content = readFileSync(resolve(root, file), "utf8");
     assert.doesNotMatch(
       content,
-      /from\s+["']\.\.\/lib\/supabaseClient["']/,
+      /from\s+["'](?:\.\.\/)+lib\/supabaseClient["']/,
       `${file} should not import Supabase directly`,
     );
   }
