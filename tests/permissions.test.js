@@ -120,6 +120,7 @@ test("service layer owns Supabase imports for extracted UI data access", () => {
     "src/hooks/useMemberActions.js",
     "src/hooks/useTodoBadges.js",
     "src/components/pages/News.jsx",
+    "src/components/pages/RoleManager.jsx",
   ];
   const services = [
     "src/services/permissionService.js",
@@ -129,6 +130,7 @@ test("service layer owns Supabase imports for extracted UI data access", () => {
     "src/services/memberService.js",
     "src/services/todoService.js",
     "src/services/newsService.js",
+    "src/services/roleService.js",
   ];
 
   for (const file of extractedFiles) {
