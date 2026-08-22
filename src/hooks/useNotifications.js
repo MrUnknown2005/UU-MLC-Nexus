@@ -1,23 +1,20 @@
 import { useEffect, useState } from "react";
-import { supabase } from "../lib/supabaseClient";
+import {
+  fetchNotifications,
+  markAllNotificationsRead,
+  markNotificationRead,
+  subscribeToNotifications,
+} from "../services/notificationService";
 
 /**
- * Loads the signed-in member's notifications, keeps them in sync via a
- * realtime subscription, and exposes the actions the notification bell
- * needs (open dropdown, mark one/all read, jump to the tab a notification
- * points at).
+ * UI adapter for notification state. Supabase access lives in the service.
  */
 export function useNotifications({ profile, setTab }) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
 
   const loadNotifications = async () => {
-    const { data, error } = await supabase
-      .from("notifications")
-      .select("*")
-      .eq("user_id", profile.id)
-      .order("created_at", { ascending: false })
-      .limit(50);
+    const { data, error } = await fetchNotifications(profile.id);
 
     if (error) {
       console.error("Notification load error:", error);
@@ -33,36 +30,20 @@ export function useNotifications({ profile, setTab }) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadNotifications();
 
-    const channel = supabase
-      .channel(`notifications-${profile.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "notifications",
-          filter: `user_id=eq.${profile.id}`,
-        },
-        () => loadNotifications(),
-      )
-      .subscribe();
+    const unsubscribe = subscribeToNotifications(profile.id, loadNotifications);
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return unsubscribe;
     // loadNotifications is intentionally omitted: it's redefined each render,
     // and including it would tear down/recreate the realtime subscription unnecessarily.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile.id]);
 
-  const markNotificationRead = async (notificationId) => {
-    const { error } = await supabase.rpc("mark_notification_read", {
-      p_notification_id: notificationId,
-    });
+  const markRead = async (notificationId) => {
+    const { error } = await markNotificationRead(notificationId);
 
     if (error) {
       console.error("Mark notification read error:", error);
-      return;
+      return false;
     }
 
     setNotifications((current) =>
@@ -72,14 +53,16 @@ export function useNotifications({ profile, setTab }) {
           : item,
       ),
     );
+
+    return true;
   };
 
-  const markAllNotificationsRead = async () => {
-    const { error } = await supabase.rpc("mark_all_notifications_read");
+  const markAllRead = async () => {
+    const { error } = await markAllNotificationsRead();
 
     if (error) {
       console.error("Mark all notifications read error:", error);
-      return;
+      return false;
     }
 
     setNotifications((current) =>
@@ -87,11 +70,13 @@ export function useNotifications({ profile, setTab }) {
         item.read_at ? item : { ...item, read_at: new Date().toISOString() },
       ),
     );
+
+    return true;
   };
 
   const openNotification = async (notification) => {
     if (!notification.read_at) {
-      await markNotificationRead(notification.id);
+      await markRead(notification.id);
     }
 
     if (notification.target_tab) {
@@ -110,7 +95,7 @@ export function useNotifications({ profile, setTab }) {
     notificationsOpen,
     setNotificationsOpen,
     unreadNotificationCount,
-    markAllNotificationsRead,
+    markAllNotificationsRead: markAllRead,
     openNotification,
   };
 }
