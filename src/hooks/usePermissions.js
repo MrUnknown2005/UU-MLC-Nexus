@@ -29,6 +29,7 @@ export function usePermissions(profile) {
   const canAwardPoints = hasPermission("award_points");
   const canViewPoints = hasPermission("view_points") || canAwardPoints;
   const canViewHistory = hasPermission("view_history");
+  const canViewAnalytics = hasPermission("view_analytics");
   const canManageNews = hasPermission("manage_news");
   const canManageRoles = hasPermission("manage_roles");
 
@@ -36,6 +37,7 @@ export function usePermissions(profile) {
     hasPermission("view_admin") ||
     canViewMembers ||
     canViewHistory ||
+    canViewAnalytics ||
     canManageNews ||
     canManageRoles;
 
@@ -90,6 +92,7 @@ export function usePermissions(profile) {
     canAwardPoints,
     canViewPoints,
     canViewHistory,
+    canViewAnalytics,
     canManageNews,
     canManageRoles,
     isAdmin,
