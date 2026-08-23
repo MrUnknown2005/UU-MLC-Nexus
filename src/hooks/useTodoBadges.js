@@ -1,32 +1,26 @@
 import { useEffect, useState } from "react";
-import { supabase } from "../lib/supabaseClient";
+import {
+  fetchIncompleteTodosForBadge,
+  subscribeToTodoChanges,
+} from "../services/todoService";
 
 /**
  * Tracks incomplete todos (just enough fields for the sidebar badge) and
- * derives how many are overdue. Stays in sync via a realtime subscription
- * so the badge updates as todos are completed/added elsewhere.
+ * derives how many are overdue. Data access and realtime subscription live
+ * in todoService; this hook owns React state and lifecycle only.
  */
 export function useTodoBadges(profile) {
   const [todosForBadge, setTodosForBadge] = useState([]);
 
   useEffect(() => {
     const loadTodoBadges = async () => {
-      const { data, error } = await supabase
-        .from("todos")
-        .select("id, completed, deadline")
-        .eq("completed", false);
+      const { data, error } = await fetchIncompleteTodosForBadge();
       if (!error) setTodosForBadge(data || []);
     };
+
     loadTodoBadges();
-    const channel = supabase
-      .channel(`todo-badges-${profile.id}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "todos" },
-        loadTodoBadges,
-      )
-      .subscribe();
-    return () => supabase.removeChannel(channel);
+    const unsubscribe = subscribeToTodoChanges(loadTodoBadges);
+    return unsubscribe;
   }, [profile.id]);
 
   const overdueTodoCount = todosForBadge.filter(

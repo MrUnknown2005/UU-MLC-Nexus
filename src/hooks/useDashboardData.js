@@ -1,14 +1,20 @@
 import { useEffect, useState } from "react";
-import { supabase } from "../lib/supabaseClient";
+import {
+  fetchDashboardData,
+  subscribeToActivityChanges,
+  subscribeToProfileChanges,
+} from "../services/dashboardService";
 
 /**
- * Loads the bulk of the dashboard's data: members, personal + full point
- * history, previous month's leaderboard, news, and (for admins) the
- * activity log. Re-fetches whenever the signed-in member's role changes,
- * and stays in sync via realtime subscriptions on profiles and
- * admin_activity_log.
+ * Loads dashboard state through the dashboard service. The hook owns React
+ * state and lifecycle; the service owns Supabase queries and subscriptions.
  */
-export function useDashboardData({ profile, canViewMembers, canViewHistory, isAdmin }) {
+export function useDashboardData({
+  profile,
+  canViewMembers,
+  canViewHistory,
+  isAdmin,
+}) {
   const [members, setMembers] = useState([]);
   const [news, setNews] = useState([]);
   const [pointHistory, setPointHistory] = useState([]);
@@ -17,136 +23,57 @@ export function useDashboardData({ profile, canViewMembers, canViewHistory, isAd
   const [activityLog, setActivityLog] = useState([]);
 
   const loadData = async () => {
-    let memberData = [];
+    const {
+      memberResult,
+      myHistoryResult,
+      fullHistoryResult,
+      monthResult,
+      newsResult,
+      activityResult,
+    } = await fetchDashboardData({
+      profileId: profile.id,
+      canViewMembers,
+      canViewHistory,
+    });
 
-    if (canViewMembers) {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .order("points", {
-          ascending: false,
-        });
-
-      if (!error) {
-        memberData = data || [];
-      } else {
-        console.error("Members error:", error);
-      }
-    } else {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .neq("role", "guest")
-        .eq("is_active", true)
-        .order("points", {
-          ascending: false,
-        });
-
-      if (!error) {
-        memberData = data || [];
-      }
+    if (memberResult.error) {
+      console.error("Members error:", memberResult.error);
     }
+    setMembers(memberResult.data || []);
 
-    setMembers(memberData);
-
-    /*
-      Personal history.
-    */
-    const { data: myHistory, error: myHistoryError } = await supabase
-      .from("point_history")
-      .select("*")
-      .eq("member_id", profile.id)
-      .order("created_at", {
-        ascending: false,
-      });
-
-    if (myHistoryError) {
-      console.error("Personal history error:", myHistoryError);
-
+    if (myHistoryResult.error) {
+      console.error("Personal history error:", myHistoryResult.error);
       setPointHistory([]);
     } else {
-      setPointHistory(myHistory || []);
+      setPointHistory(myHistoryResult.data || []);
     }
 
-    /*
-      Full history for Admins.
-    */
-    if (canViewHistory) {
-      const { data: fullHistory, error: fullHistoryError } = await supabase
-        .from("point_history")
-        .select("*")
-        .order("created_at", {
-          ascending: false,
-        });
-
-      if (fullHistoryError) {
-        console.error("Full point history error:", fullHistoryError);
-
-        setAllPointHistory([]);
-      } else {
-        setAllPointHistory(fullHistory || []);
-      }
-    } else {
+    if (fullHistoryResult.error) {
+      console.error("Full point history error:", fullHistoryResult.error);
       setAllPointHistory([]);
+    } else {
+      setAllPointHistory(fullHistoryResult.data || []);
     }
 
-    /*
-      Previous month.
-    */
-    const { data: monthData, error: monthError } = await supabase
-      .from("monthly_leaderboard")
-      .select("*")
-      .order("month_start", {
-        ascending: false,
-      })
-      .limit(1)
-      .maybeSingle();
-
-    if (monthError) {
-      console.error("Monthly leaderboard error:", monthError);
-
+    if (monthResult.error) {
+      console.error("Monthly leaderboard error:", monthResult.error);
       setPreviousMonth(null);
     } else {
-      setPreviousMonth(monthData || null);
+      setPreviousMonth(monthResult.data || null);
     }
 
-    /*
-      News.
-    */
-    const { data: newsData, error: newsError } = await supabase
-      .from("news")
-      .select("*")
-      .order("created_at", {
-        ascending: false,
-      });
-
-    if (newsError) {
+    if (newsResult.error) {
+      console.error("News error:", newsResult.error);
       setNews([]);
     } else {
-      setNews(newsData || []);
+      setNews(newsResult.data || []);
     }
 
-    /*
-      Admin Activity.
-    */
-    if (canViewHistory) {
-      const { data: activityData, error: activityError } = await supabase
-        .from("admin_activity_log")
-        .select("*")
-        .order("created_at", {
-          ascending: false,
-        })
-        .limit(500);
-
-      if (activityError) {
-        console.error("Activity log error:", activityError);
-
-        setActivityLog([]);
-      } else {
-        setActivityLog(activityData || []);
-      }
-    } else {
+    if (activityResult.error) {
+      console.error("Activity log error:", activityResult.error);
       setActivityLog([]);
+    } else {
+      setActivityLog(activityResult.data || []);
     }
   };
 
@@ -157,65 +84,23 @@ export function useDashboardData({ profile, canViewMembers, canViewHistory, isAd
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile.role]);
 
-  /*
-  =========================================================
-  REAL-TIME PROFILE UPDATES
-  =========================================================
-  */
-
   useEffect(() => {
-    const channel = supabase
-      .channel(`profiles-${profile.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "profiles",
-        },
-        () => {
-          loadData();
-        },
-      )
-      .subscribe();
+    const unsubscribe = subscribeToProfileChanges(profile.id, loadData);
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return unsubscribe;
     // loadData is intentionally omitted: it's redefined each render,
     // and including it would tear down/recreate the realtime subscription unnecessarily.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile.id, profile.role]);
 
-  /*
-  =========================================================
-  REAL-TIME ACTIVITY LOG
-  =========================================================
-  */
-
   useEffect(() => {
     if (!isAdmin) {
-      return;
+      return undefined;
     }
 
-    const channel = supabase
-      .channel(`activity-${profile.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "admin_activity_log",
-        },
-        () => {
-          loadData();
-        },
-      )
-      .subscribe();
+    const unsubscribe = subscribeToActivityChanges(profile.id, loadData);
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return unsubscribe;
     // loadData is intentionally omitted: it's redefined each render,
     // and including it would tear down/recreate the realtime subscription unnecessarily.
     // eslint-disable-next-line react-hooks/exhaustive-deps

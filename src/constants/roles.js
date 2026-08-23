@@ -72,6 +72,12 @@ export const PERMISSION_CATALOG = [
     category: "Admin",
   },
   {
+    key: "view_analytics",
+    name: "View Analytics",
+    description: "View club analytics and reporting data.",
+    category: "Admin",
+  },
+  {
     key: "manage_news",
     name: "Manage News",
     description: "Create, edit, and delete club news.",
@@ -143,6 +149,7 @@ export const LEGACY_ROLE_PERMISSIONS = {
     "award_points",
     "reset_points",
     "view_history",
+    "view_analytics",
     "manage_news",
   ],
   head_admin: PERMISSION_KEYS,

@@ -1,11 +1,19 @@
-import { supabase } from "../lib/supabaseClient";
 import { getRoleDisplayName } from "../lib/roleHelpers";
+import {
+  awardPoints as awardPointsService,
+  deleteAdminActivityLog as deleteAdminActivityLogService,
+  deleteAllPointData as deleteAllPointDataService,
+  deleteMonthlyLeaderboard as deleteMonthlyLeaderboardService,
+  resetAllPoints as resetAllPointsService,
+  resetMemberPoints as resetMemberPointsService,
+  updateMemberActive,
+  updateMemberRole,
+} from "../services/memberService";
 
 /**
- * All the admin actions that mutate members or their points: awarding
- * points, changing roles, activating/deactivating accounts, and the
- * destructive Head-Admin-only resets/wipes. Every action logs to the
- * admin activity log and re-fetches dashboard data on success.
+ * All admin actions that mutate members or their points.
+ * UI permission checks, confirmations, alerts, and state refreshes stay here;
+ * Supabase data access is delegated to memberService.
  */
 export function useMemberActions({
   profile,
@@ -31,12 +39,6 @@ export function useMemberActions({
     return true;
   };
 
-  /*
-  =========================================================
-  POINT ADJUSTMENT
-  =========================================================
-  */
-
   const adjustPoints = async (memberId, points, reason) => {
     if (!canAwardPoints) {
       alert("You do not have permission to award or deduct points.");
@@ -44,16 +46,10 @@ export function useMemberActions({
     }
 
     const target = members.find((member) => member.id === memberId);
-
-    const { error } = await supabase.rpc("award_points", {
-      p_member_id: memberId,
-      p_points: Number(points),
-      p_reason: reason,
-    });
+    const { error } = await awardPointsService(memberId, points, reason);
 
     if (error) {
       alert(error.message);
-
       return false;
     }
 
@@ -69,28 +65,19 @@ export function useMemberActions({
 
     await loadData();
     await reloadProfile();
-
     return true;
   };
-
-  /*
-  =========================================================
-  CHANGE ROLE
-  =========================================================
-  */
 
   const changeRole = async (memberId, newRole) => {
     const target = members.find((member) => member.id === memberId);
 
     if (!target) {
       alert("Member not found.");
-
       return false;
     }
 
     if (!canModifyTarget(target)) {
       alert("You cannot modify a Head Admin account.");
-
       return false;
     }
 
@@ -110,17 +97,10 @@ export function useMemberActions({
     }
 
     const oldRole = target.role;
-
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        role: newRole,
-      })
-      .eq("id", memberId);
+    const { error } = await updateMemberRole(memberId, newRole);
 
     if (error) {
       alert(error.message);
-
       return false;
     }
 
@@ -137,41 +117,26 @@ export function useMemberActions({
     });
 
     await loadData();
-
     return true;
   };
-
-  /*
-  =========================================================
-  ACTIVATE / DEACTIVATE
-  =========================================================
-  */
 
   const toggleMemberActive = async (memberId, isActive) => {
     const target = members.find((member) => member.id === memberId);
 
     if (!target) {
       alert("Member not found.");
-
       return false;
     }
 
     if (!canModifyTarget(target)) {
       alert("You cannot change the status of a Head Admin account.");
-
       return false;
     }
 
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        is_active: isActive,
-      })
-      .eq("id", memberId);
+    const { error } = await updateMemberActive(memberId, isActive);
 
     if (error) {
       alert(error.message);
-
       return false;
     }
 
@@ -182,28 +147,19 @@ export function useMemberActions({
     });
 
     await loadData();
-
     return true;
   };
-
-  /*
-  =========================================================
-  RESET ALL POINTS
-  =========================================================
-  */
 
   const resetAllPoints = async () => {
     if (!hasPermission("reset_points")) {
       alert("You do not have permission to reset points.");
-
       return false;
     }
 
-    const { error } = await supabase.rpc("reset_all_points");
+    const { error } = await resetAllPointsService();
 
     if (error) {
       alert(error.message);
-
       return false;
     }
 
@@ -215,79 +171,53 @@ export function useMemberActions({
 
     await loadData();
     await reloadProfile();
-
     return true;
   };
-
-  /*
-  =========================================================
-  RESET ONE MEMBER
-  =========================================================
-  */
 
   const resetMemberPoints = async (memberId) => {
     if (!hasPermission("reset_points")) {
       alert("You do not have permission to reset points.");
-
       return false;
     }
 
     const target = members.find((member) => member.id === memberId);
-
-    const { error } = await supabase.rpc("reset_member_points", {
-      p_member_id: memberId,
-    });
+    const { error } = await resetMemberPointsService(memberId);
 
     if (error) {
       alert(error.message);
-
       return false;
     }
 
     await logAdminAction({
       action: "MEMBER_POINT_RESET",
       targetUserId: memberId,
-      details: `Reset current points for ${
-        target?.nickname || target?.full_name || "member"
-      }.`,
+      details: `Reset current points for ${target?.nickname || target?.full_name || "member"}.`,
     });
 
     await loadData();
     await reloadProfile();
-
     return true;
   };
-
-  /*
-  =========================================================
-  WIPE ALL POINT DATA
-  =========================================================
-  */
 
   const deleteAllPointData = async () => {
     if (!isHeadAdmin) {
       alert("Only the Head Admin can wipe all point data.");
-
       return false;
     }
 
     if (
       !window.confirm(
         "WARNING: This permanently deletes ALL point history and sets all current member points to 0. Previous-month performance records remain.",
-      )
+      ) ||
+      !window.confirm("FINAL WARNING: Wipe all point data?")
     ) {
       return false;
     }
 
-    if (!window.confirm("FINAL WARNING: Wipe all point data?")) {
-      return false;
-    }
-
-    const { error } = await supabase.rpc("delete_all_point_data");
+    const { error } = await deleteAllPointDataService();
 
     if (error) {
       alert(error.message);
-
       return false;
     }
 
@@ -299,40 +229,28 @@ export function useMemberActions({
 
     await loadData();
     await reloadProfile();
-
     return true;
   };
-
-  /*
-  =========================================================
-  WIPE PREVIOUS MONTH
-  =========================================================
-  */
 
   const deleteMonthlyLeaderboard = async () => {
     if (!isHeadAdmin) {
       alert("Only the Head Admin can wipe previous-month performance records.");
-
       return false;
     }
 
     if (
       !window.confirm(
         "WARNING: This deletes all saved Previous Month Top Performer and Runner Up records. Current points and point history stay unchanged.",
-      )
+      ) ||
+      !window.confirm("FINAL WARNING: Delete all previous-month records?")
     ) {
       return false;
     }
 
-    if (!window.confirm("FINAL WARNING: Delete all previous-month records?")) {
-      return false;
-    }
-
-    const { error } = await supabase.rpc("delete_monthly_leaderboard");
+    const { error } = await deleteMonthlyLeaderboardService();
 
     if (error) {
       alert(error.message);
-
       return false;
     }
 
@@ -343,46 +261,33 @@ export function useMemberActions({
     });
 
     await loadData();
-
     return true;
   };
-
-  /*
-  =========================================================
-  WIPE ADMIN ACTIVITY LOG
-  =========================================================
-  */
 
   const deleteAdminActivityLog = async () => {
     if (!isHeadAdmin) {
       alert("Only the Head Admin can wipe admin activity history.");
-
       return false;
     }
 
     if (
       !window.confirm(
         "WARNING: This permanently deletes the entire Admin Activity History.",
-      )
+      ) ||
+      !window.confirm("FINAL WARNING: Delete all admin activity history?")
     ) {
       return false;
     }
 
-    if (!window.confirm("FINAL WARNING: Delete all admin activity history?")) {
-      return false;
-    }
-
-    const { error } = await supabase.rpc("delete_all_admin_activity_log");
+    const { error } = await deleteAdminActivityLogService();
 
     if (error) {
       alert(error.message);
-
       return false;
     }
 
     // Do not log a wipe of the log itself.
     await loadData();
-
     return true;
   };
 
