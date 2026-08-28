@@ -5,6 +5,7 @@ import {
   signOut,
   subscribeToAuthState,
 } from "./services/authSessionService";
+import "./components/dashboard/DashboardRefined.css";
 import LandingPage from "./components/landing/LandingPage";
 import AuthScreen from "./components/auth/AuthScreen";
 import GuestDashboard from "./components/guest/GuestDashboard";
