@@ -1,75 +1,49 @@
-# UU MLC Nexus Design System
+# UU MLC Nexus — Premium Design System
 
 ## Product character
 
-UU MLC Nexus should feel like a focused university club workspace: modern, technical, confident, and welcoming. The interface should prioritize clarity and task completion over decoration.
+Nexus is a living club operating system: cinematic, technical, confident, warm, and unmistakably UU MLC. It should never read as a generic SaaS dashboard.
 
-## Visual principles
+## Visual identity
 
-1. **Hierarchy before effects** — headings, actions, status, and content must remain clear without relying on glow or gradients.
-2. **One primary action** — each surface should have one visually dominant action; secondary actions stay quieter.
-3. **Controlled color** — yellow is the primary action/accent color. Purple, cyan, pink, and emerald are supporting semantic accents, not competing primary CTAs.
-4. **Glass as structure** — glass panels group information; they should not be used on every nested element.
-5. **Consistent rhythm** — use predictable spacing and aligned content rather than arbitrary gaps.
-6. **States are designed** — loading, empty, error, success, disabled, and focus states are first-class UI states.
-7. **Responsive by default** — important actions and information must remain usable at narrow widths.
+- **Primary identity:** Nexus Gold `#FFD84A`
+- **Hot gold:** Amber `#FFAD00`
+- **Base:** Obsidian `#060606`
+- **Surfaces:** warm graphite glass with restrained highlights
+- **Secondary data accents:** violet and electric blue, used sparingly
+- **Brand mark:** the existing UU MLC club logo is the source of truth and must not be replaced by generated artwork.
 
-## Color roles
+## Type scale
 
-- **Background:** near-black / deep neutral
-- **Primary:** warm yellow for primary actions and important emphasis
-- **Secondary:** violet for identity and selected navigation
-- **Informational:** cyan for informational data
-- **Success:** emerald for successful states
-- **Danger:** red for destructive/error states
-- **Text:** white for primary, cool gray for secondary, muted gray for metadata
+- Display: `clamp(2.5rem, 5vw, 5rem)` with tight tracking
+- Page title: `clamp(2rem, 4vw, 3.5rem)`
+- Section title: `1.25rem–1.75rem`
+- Body: `0.95rem–1rem`
+- Metadata: `0.68rem–0.78rem` with restrained tracking
 
-Avoid introducing a new accent color unless it has a clear semantic role.
+## Motion and interaction
 
-## Typography
+- The application environment has a subtle pointer-reactive spotlight and parallax grid.
+- Ambient orbs move slowly to provide life without distraction.
+- Route content enters with a short opacity/translate/blur transition.
+- Interactive surfaces lift subtly and reveal a gold edge on hover.
+- Active navigation gets a persistent gold rail and soft illumination.
+- Every animated treatment has a `prefers-reduced-motion` fallback.
 
-- Use the existing system/Inter-style sans-serif stack.
-- Headings should use strong weight and tight tracking.
-- Body copy should favor readable line-height over excessive density.
-- Labels and metadata may use uppercase tracking sparingly.
+## Layout principles
 
-## Components
+1. Hierarchy before effects.
+2. Use large breathing room around primary content.
+3. Prefer meaningful visual zones over repetitive card grids.
+4. Gold is reserved for identity, primary actions, focus, points, and important states.
+5. Glass groups information; it should not wrap every nested element.
+6. Every interactive control needs clear hover, focus, active, disabled and loading states where relevant.
+7. Responsive behavior is designed from 320px upward.
 
-### Buttons
+## Engineering guardrails
 
-- Primary: filled yellow treatment.
-- Secondary: glass/outlined treatment.
-- Destructive: reserved for irreversible actions.
-- Every interactive button needs visible hover, focus-visible, disabled, and loading behavior where applicable.
-
-### Forms
-
-- Every input needs an accessible label or equivalent accessible name.
-- Errors should be associated with the relevant field when practical.
-- Never rely on placeholder text as the only label.
-
-### Cards
-
-Use cards to group a meaningful unit of information. Avoid excessive nested cards and decorative containers.
-
-### Navigation
-
-Navigation should communicate the current location clearly and keep destructive/account actions visually separate from primary navigation.
-
-## Accessibility baseline
-
-- Keyboard navigation must remain possible.
-- Interactive elements require a visible `:focus-visible` state.
-- Text and controls must maintain sufficient contrast.
-- Decorative imagery must use empty alt text; informative imagery must have descriptive alt text.
-- Respect `prefers-reduced-motion` for non-essential animation.
-
-## Responsive baseline
-
-- Minimum supported viewport: 320px.
-- Avoid horizontal scrolling for normal application flows.
-- At mobile widths, prioritize primary navigation, primary action, and core content over decorative elements.
-
-## Implementation rule
-
-Prefer existing Nexus utility/component classes before adding one-off styles. New visual primitives should be added to the shared design system when they are reused across multiple surfaces.
+- Visual redesigns must not change authentication, Supabase access, permissions, routing, or business logic unless explicitly required.
+- Preserve the real UU MLC logo.
+- Never let animation block input, scrolling, or keyboard navigation.
+- Keep contrast and focus states accessible.
+- Validate with lint, tests, build, and browser smoke testing before merge.
