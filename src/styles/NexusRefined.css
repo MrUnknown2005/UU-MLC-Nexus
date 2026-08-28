@@ -1,0 +1,200 @@
+/* =========================================================
+   UU MLC Nexus — Refined visual layer
+   Keeps the Aurora identity while reducing visual noise and
+   making hierarchy, surfaces, focus states and responsiveness
+   more consistent.
+   ========================================================= */
+
+:root {
+  --nexus-page: #08080c;
+  --nexus-panel: rgba(16, 16, 23, 0.72);
+  --nexus-panel-strong: rgba(20, 20, 29, 0.86);
+  --nexus-line: rgba(255, 255, 255, 0.09);
+  --nexus-line-strong: rgba(255, 255, 255, 0.16);
+  --nexus-text: rgba(255, 255, 255, 0.94);
+  --nexus-text-muted: rgba(255, 255, 255, 0.62);
+  --nexus-text-subtle: rgba(255, 255, 255, 0.44);
+  --nexus-radius-sm: 10px;
+  --nexus-radius-md: 14px;
+  --nexus-radius-lg: 20px;
+  --nexus-shadow: 0 14px 45px rgba(0, 0, 0, 0.28);
+  --nexus-shadow-hover: 0 22px 60px rgba(0, 0, 0, 0.38);
+}
+
+html {
+  background: var(--nexus-page);
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  color: var(--nexus-text);
+  background-color: var(--nexus-page);
+}
+
+/* Keep the atmosphere behind the interface instead of competing with it. */
+.nexus-app-bg {
+  background:
+    radial-gradient(900px 560px at 8% -12%, rgba(250, 204, 21, 0.07), transparent 62%),
+    radial-gradient(760px 560px at 96% 0%, rgba(139, 92, 246, 0.09), transparent 62%),
+    radial-gradient(720px 540px at 88% 105%, rgba(34, 211, 238, 0.055), transparent 64%),
+    linear-gradient(180deg, #08080c 0%, #0a0a0f 55%, #08080c 100%);
+}
+
+.nexus-app-bg::before {
+  opacity: 0.42;
+  filter: blur(110px);
+  animation-duration: 38s;
+}
+
+.nexus-app-bg::after {
+  opacity: 0.16;
+  background-size: 4px 4px;
+}
+
+/* Surface hierarchy */
+.nexus-glass,
+.nexus-glass-strong,
+.nexus-glass-flat {
+  border-color: var(--nexus-line);
+  box-shadow: var(--nexus-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.045);
+}
+
+.nexus-glass {
+  background: var(--nexus-panel);
+  border-radius: var(--nexus-radius-lg);
+  backdrop-filter: blur(18px) saturate(125%);
+  -webkit-backdrop-filter: blur(18px) saturate(125%);
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.nexus-glass:hover {
+  transform: translateY(-2px);
+  border-color: var(--nexus-line-strong);
+  box-shadow: var(--nexus-shadow-hover), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.nexus-glass-strong {
+  background: var(--nexus-panel-strong);
+  border-radius: var(--nexus-radius-lg);
+  backdrop-filter: blur(22px) saturate(130%);
+  -webkit-backdrop-filter: blur(22px) saturate(130%);
+  box-shadow: var(--nexus-shadow-hover), inset 0 1px 0 rgba(255, 255, 255, 0.055);
+}
+
+.nexus-glass-strong:hover {
+  transform: translateY(-2px);
+  border-color: var(--nexus-line-strong);
+  box-shadow: 0 26px 65px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.065);
+}
+
+.nexus-glass-flat {
+  background: rgba(255, 255, 255, 0.025);
+  border-radius: var(--nexus-radius-md);
+  backdrop-filter: blur(12px) saturate(115%);
+  -webkit-backdrop-filter: blur(12px) saturate(115%);
+}
+
+/* Make interactive cards feel intentional rather than decorative. */
+a.nexus-glass,
+button.nexus-glass,
+[role="button"].nexus-glass {
+  cursor: pointer;
+}
+
+a.nexus-glass:focus-visible,
+button.nexus-glass:focus-visible,
+[role="button"].nexus-glass:focus-visible,
+.nexus-morphic-button:focus-visible {
+  outline: 2px solid #facc15;
+  outline-offset: 3px;
+}
+
+/* Primary action: bright, compact, and readable. */
+.nexus-morphic-button {
+  min-height: 44px;
+  padding: 0.7rem 1.15rem;
+  border-radius: var(--nexus-radius-md);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  box-shadow: 0 10px 26px rgba(139, 92, 246, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.30);
+}
+
+.nexus-morphic-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 34px rgba(139, 92, 246, 0.21), 0 0 20px rgba(250, 204, 21, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.34);
+}
+
+/* Consistent type hierarchy for any screen that opts into the helpers. */
+.nexus-eyebrow {
+  font-size: 0.7rem;
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--nexus-text-subtle);
+}
+
+.nexus-title {
+  color: var(--nexus-text);
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+}
+
+.nexus-muted {
+  color: var(--nexus-text-muted);
+}
+
+.nexus-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.12), transparent);
+}
+
+/* Form controls: quiet by default, obvious on focus. */
+input,
+textarea,
+select {
+  border-radius: var(--nexus-radius-sm);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: rgba(255, 255, 255, 0.36);
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  border-color: rgba(250, 204, 21, 0.48) !important;
+  box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.10);
+}
+
+/* Better mobile ergonomics. */
+@media (max-width: 768px) {
+  .nexus-glass,
+  .nexus-glass-strong {
+    border-radius: 16px;
+    backdrop-filter: blur(14px) saturate(118%);
+    -webkit-backdrop-filter: blur(14px) saturate(118%);
+  }
+
+  .nexus-morphic-button {
+    min-height: 46px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nexus-app-bg::before,
+  .nexus-glow-yellow,
+  .nexus-glow-purple,
+  .nexus-glow-cyan,
+  .nexus-glow-pink,
+  .nexus-glow-emerald {
+    animation: none !important;
+  }
+
+  .nexus-glass,
+  .nexus-glass-strong,
+  .nexus-morphic-button {
+    transition: none !important;
+  }
+}
