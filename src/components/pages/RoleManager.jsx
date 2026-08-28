@@ -19,6 +19,9 @@ function RoleManager({ currentUser, roleDefinitions, onRolesChanged }) {
     if (!permissionError && permissionData?.length) setPermissions(permissionData);
   };
 
+  // This effect intentionally synchronizes initial remote role data into local UI state.
+  // The fetch helper owns the async boundary; the lint exception avoids a false positive on that helper call.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadRoles(); }, []);
 
   const selectedRole = roles.find((role) => role.role_key === selectedRoleKey);
