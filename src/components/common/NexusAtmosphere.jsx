@@ -6,25 +6,26 @@ export default function NexusAtmosphere() {
   useEffect(() => {
     const layer = layerRef.current;
     if (!layer) return undefined;
-
     let frame = 0;
     const handlePointer = (event) => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
         const x = event.clientX / window.innerWidth;
         const y = event.clientY / window.innerHeight;
-        layer.style.setProperty("--mx", `${x * 100}%`);
-        layer.style.setProperty("--my", `${y * 100}%`);
-        layer.style.setProperty("--px", `${(x - 0.5) * 18}px`);
-        layer.style.setProperty("--py", `${(y - 0.5) * 18}px`);
+        const mx = `${x * 100}%`;
+        const my = `${y * 100}%`;
+        const px = `${(x - 0.5) * 18}px`;
+        const py = `${(y - 0.5) * 18}px`;
+        layer.style.setProperty("--nx-mx", mx);
+        layer.style.setProperty("--nx-my", my);
+        layer.style.setProperty("--nx-px", px);
+        layer.style.setProperty("--nx-py", py);
+        document.documentElement.style.setProperty("--nx-mx", mx);
+        document.documentElement.style.setProperty("--nx-my", my);
       });
     };
-
     window.addEventListener("pointermove", handlePointer, { passive: true });
-    return () => {
-      cancelAnimationFrame(frame);
-      window.removeEventListener("pointermove", handlePointer);
-    };
+    return () => { cancelAnimationFrame(frame); window.removeEventListener("pointermove", handlePointer); };
   }, []);
 
   return (
