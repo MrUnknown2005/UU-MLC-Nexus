@@ -1,24 +1,5 @@
-/**
- * The Privacy Policy text for Nexus.
- *
- * Kept as its own component so the provider stays a thin shell and the copy is
- * easy to find and revise. It uses only theme tokens — no new colours or fonts
- * — so it repaints correctly in light and dark like the rest of the product.
- *
- * The highlighted `[TODO: …]` markers are the details the club must fill in
- * before launch: a real contact email, the legal/postal identity, and
- * confirmation of the hosting provider. They are meant to be conspicuous.
- */
-
 const EFFECTIVE_DATE = "31 August 2026";
-
-function Todo({ children }) {
-  return (
-    <span className="rounded-[5px] bg-warn-soft px-1.5 py-0.5 text-[0.75rem] font-semibold text-warn">
-      [TODO: {children}]
-    </span>
-  );
-}
+const CONTACT_EMAIL = "uumlc.nexus@gmail.com";
 
 function Section({ title, children }) {
   return (
@@ -48,226 +29,306 @@ export default function PrivacyContent() {
     <div className="space-y-5">
       <P>
         The United University Machine Learning Club (&ldquo;UU MLC&rdquo;,
-        &ldquo;we&rdquo;, &ldquo;us&rdquo;) runs Nexus, the club&rsquo;s
-        membership and activity platform. This policy explains what personal
-        information Nexus collects, why we collect it, who can see it, and the
-        choices you have.
+        &ldquo;we&rdquo;, &ldquo;us&rdquo;, or &ldquo;our&rdquo;) operates
+        UUMLC Nexus, an internal membership and activity-management platform
+        for UU MLC members and the Executive Committee.
       </P>
 
       <p className="nx-eyebrow">Effective {EFFECTIVE_DATE}</p>
 
       <Section title="1. Who we are">
         <P>
-          The United University Machine Learning Club is responsible for the
-          personal information collected through Nexus. For any question about
-          this policy or your data, contact us at <Todo>contact email</Todo>{" "}
-          <Todo>legal / postal identity</Todo>.
+          UUMLC Nexus is a club project run and maintained by the UU MLC
+          Executive Committee. For privacy, account, or data-related questions
+          and requests, contact us at{" "}
+          <a
+            href={`mailto:${CONTACT_EMAIL}`}
+            className="font-semibold text-ink underline underline-offset-2"
+          >
+            {CONTACT_EMAIL}
+          </a>
+          .
         </P>
       </Section>
 
       <Section title="2. What we collect">
-        <P>Information you give us when you join and use the club:</P>
+        <P>When you create and use a Nexus account, we may collect:</P>
         <List>
           <li>
-            Your <strong className="text-ink">full name</strong>, an optional{" "}
-            <strong className="text-ink">nickname</strong>, and your{" "}
-            <strong className="text-ink">email address</strong>.
+            Your <strong className="text-ink">full name</strong>.
           </li>
           <li>
-            A <strong className="text-ink">password</strong> you set at sign-up.
-            It is stored and checked by our authentication provider in hashed
-            form — we never see or store your actual password.
+            An optional <strong className="text-ink">nickname</strong>.
           </li>
           <li>
-            An optional short <strong className="text-ink">bio</strong> and an
-            optional <strong className="text-ink">profile picture</strong> you
-            choose to upload.
+            Your <strong className="text-ink">email address</strong>.
+          </li>
+          <li>
+            A <strong className="text-ink">password</strong> used for account
+            authentication. Password authentication is handled by Supabase
+            Auth; UU MLC does not receive your password in plain text.
           </li>
         </List>
-        <P>Information created as you take part in the club:</P>
-        <List>
-          <li>
-            Your <strong className="text-ink">club points</strong> and the
-            history of point changes.
-          </li>
-          <li>
-            <strong className="text-ink">Tasks</strong> you create or complete
-            and <strong className="text-ink">news posts</strong> you publish (if
-            you are an editor).
-          </li>
-          <li>
-            For administrators, an{" "}
-            <strong className="text-ink">activity log</strong> that records
-            administrative actions — for example role changes and point
-            adjustments — together with the account that performed them.
-          </li>
-        </List>
-        <P>
-          We ask only for what the club needs to run its membership,
-          recognition and activity features. Please don&rsquo;t put sensitive
-          personal information into free-text fields such as your bio.
-        </P>
-      </Section>
 
-      <Section title="3. Why we use it, and our legal basis">
-        <List>
-          <li>To create and run your account and show the right view for your role.</li>
-          <li>
-            To operate club features: the member directory, points and
-            leaderboards, tasks, and news.
-          </li>
-          <li>
-            To let administrators approve members, manage roles, and keep the
-            club running.
-          </li>
-          <li>To keep the platform secure and investigate misuse.</li>
-        </List>
-        <P>
-          We process this information to provide a service you asked to join,
-          and on the basis of the consent you give when you create an account
-          and agree to this policy. You can withdraw consent at any time by
-          asking us to delete your account (see &ldquo;Your rights&rdquo;).
-        </P>
-      </Section>
-
-      <Section title="4. Who can see your information">
-        <P>
-          Nexus is an internal tool for club members, not a public website.
-        </P>
+        <P>Information you may add or change on your profile includes:</P>
         <List>
           <li>
-            Other signed-in members can see your profile (name or nickname,
-            picture and bio), your points and rank, and the news or activity you
-            contribute to the club.
+            A <strong className="text-ink">profile picture</strong>.
           </li>
           <li>
-            Administrators can see and manage member accounts and the
-            administrative activity log.
+            An optional <strong className="text-ink">biography</strong>.
           </li>
           <li>
-            We share data with the service providers that make Nexus work (see
-            the next section). We do not sell or rent your personal information,
-            and we do not share it for advertising.
+            Your <strong className="text-ink">full name</strong> and optional{" "}
+            <strong className="text-ink">nickname</strong>.
           </li>
         </List>
       </Section>
 
-      <Section title="5. Service providers">
+      <Section title="3. How names are displayed">
+        <P>
+          Your full name is the default name displayed in Nexus. If you choose
+          a nickname, Nexus may use that nickname as your displayed name
+          instead, according to the profile settings of the platform.
+        </P>
+      </Section>
+
+      <Section title="4. Information created through club activities">
+        <P>
+          Nexus may store information created through your participation in UU
+          MLC, including:
+        </P>
         <List>
+          <li>Your club points and point history.</li>
+          <li>Point awards or adjustments made through the club system.</li>
+          <li>Tasks assigned to you and whether you completed them.</li>
+          <li>Achievements awarded to you by the club.</li>
           <li>
-            <strong className="text-ink">Supabase</strong> provides our
-            authentication, database and file storage. Your account, profile,
-            activity data and uploaded picture are stored on Supabase&rsquo;s
-            infrastructure on our behalf.
+            News or other club content you are authorized to create or publish.
           </li>
           <li>
-            Our <strong className="text-ink">web hosting provider</strong>{" "}
-            serves the Nexus application to your browser.
+            Administrative activity records associated with actions performed
+            by authorized administrators or executives.
           </li>
         </List>
         <P>
-          These providers process data on our instructions.{" "}
-          <Todo>
-            confirm the hosting provider, and where data is stored if members
-            are outside its region
-          </Todo>
+          Members can complete tasks, while task creation and news publishing
+          are restricted to administrators or other members who have the
+          required permissions.
         </P>
       </Section>
 
-      <Section title="6. What we do not do">
+      <Section title="5. Why we use your information">
         <List>
-          <li>We do not sell or rent your personal data.</li>
+          <li>To create and maintain your Nexus account.</li>
+          <li>To authenticate you and keep your account secure.</li>
+          <li>To manage UU MLC membership and member roles.</li>
           <li>
-            We do not show third-party advertising or use advertising or
-            cross-site tracking cookies.
+            To provide club features such as the member directory, points,
+            rankings, tasks, achievements, and news.
           </li>
-          <li>We do not use third-party analytics.</li>
+          <li>To manage authorized administrative functions.</li>
+          <li>To investigate misuse, abuse, or security issues.</li>
+        </List>
+        <P>
+          We use member information for operating and managing the UU MLC
+          club platform. We do not collect member information for advertising
+          or commercial data-brokering purposes.
+        </P>
+      </Section>
+
+      <Section title="6. Who can see your information">
+        <P>
+          Nexus is an internal club platform. Members can view other members
+          through the directory.
+        </P>
+        <List>
           <li>
-            We do not use artificial intelligence, machine learning, or
-            automated decision-making to process your personal data. Despite the
-            club&rsquo;s name, Nexus is an ordinary membership tool — it does not
-            run AI on your information or make automated decisions about you.
+            A member&apos;s displayed name, profile picture, biography, club
+            role, points, and ranking may be visible to signed-in members.
+          </li>
+          <li>
+            If you choose a nickname for display, it may be shown instead of
+            your full name.
+          </li>
+          <li>
+            Your email address and password are not displayed in the member
+            directory.
+          </li>
+          <li>
+            Administrators and executives may have additional management
+            permissions for club operations, but they do not receive extra
+            directory visibility into member profiles merely because of their
+            role.
+          </li>
+          <li>
+            Authorized administrators may access administrative records and
+            point-management information needed to perform their duties.
           </li>
         </List>
       </Section>
 
-      <Section title="7. How long we keep it, and deleting your data">
+      <Section title="7. Service providers and where data is stored">
         <List>
           <li>
-            You can edit or clear most of your profile information at any time
-            from your profile page.
+            <strong className="text-ink">Render</strong> hosts and serves the
+            Nexus web application.
           </li>
           <li>
-            To close your account, ask an administrator to remove your
-            membership.
+            <strong className="text-ink">Supabase</strong> provides services
+            including authentication, database infrastructure, and file
+            storage for Nexus.
+          </li>
+        </List>
+        <P>
+          Our Supabase project is hosted in <strong className="text-ink">
+            Singapore
+          </strong>
+          . Your information may therefore be processed or stored using
+          infrastructure located outside Bangladesh.
+        </P>
+      </Section>
+
+      <Section title="8. What we do not do">
+        <List>
+          <li>We do not sell or rent your personal information.</li>
+          <li>
+            We do not use your information for third-party advertising.
           </li>
           <li>
-            To have your uploaded picture and personal information erased,
-            contact us at <Todo>contact email</Todo> and we will remove them.
+            We do not use advertising or cross-site tracking cookies.
           </li>
           <li>
-            Some contributions — such as published news or points history — may
-            remain as part of the club&rsquo;s records after an account is
-            closed; tell us if you need those removed and we will handle it.
+            We do not use third-party analytics for member profiling.
+          </li>
+          <li>
+            Nexus does not use artificial intelligence or machine-learning
+            systems to make decisions about members.
           </li>
         </List>
       </Section>
 
-      <Section title="8. Your rights">
+      <Section title="9. Cookies and browser storage">
         <P>
-          Depending on where you live, you may have the right to access,
-          correct, export, or delete your personal information, and to withdraw
-          consent. You can do most of this directly in Nexus, or by contacting
-          us at <Todo>contact email</Todo>. We will respond within a reasonable
-          time.
-        </P>
-      </Section>
-
-      <Section title="9. Eligibility">
-        <P>
-          Nexus is intended for university students and club members. It is not
-          directed at children under 16, and you must be at least 16 (or the age
-          of digital consent where you live) to create an account.
-        </P>
-      </Section>
-
-      <Section title="10. Cookies and local storage">
-        <P>
-          Nexus does not use advertising or cross-site tracking cookies. It
-          keeps a few things in your browser so the app works:
+          Nexus does not use advertising or cross-site tracking cookies. The
+          application may use browser storage or similar technical mechanisms
+          required for normal operation, including:
         </P>
         <List>
-          <li>your authentication session, so you stay signed in;</li>
+          <li>your authentication session;</li>
           <li>
-            <code className="rounded bg-well px-1 py-0.5 text-[0.75rem]">
-              uu-mlc-theme
-            </code>{" "}
-            — your light / dark / system appearance choice;
+            your light, dark, or system theme preference;
           </li>
           <li>
-            <code className="rounded bg-well px-1 py-0.5 text-[0.75rem]">
-              uu-mlc-active-tab
-            </code>{" "}
-            — the section you last had open, so Nexus reopens there.
+            the application section you last had open, so Nexus can restore
+            your previous location in the app.
           </li>
         </List>
         <P>
-          Clearing your browser&rsquo;s site data removes these; clearing the
-          session signs you out.
+          Clearing your browser&apos;s site data may remove these items and
+          may sign you out of Nexus.
         </P>
       </Section>
 
-      <Section title="11. Changes to this policy">
+      <Section title="10. Data security">
         <P>
-          We may update this policy as Nexus changes. We will revise the
-          effective date above, and announce significant changes in the app.
+          We use reasonable technical and organizational measures to protect
+          member information against unauthorized access, alteration, misuse,
+          loss, or disclosure. Nexus uses role-based permissions to restrict
+          administrative functions.
+        </P>
+        <P>
+          No internet-based system can be guaranteed to be completely secure.
+          If a security incident affects personal information, UU MLC will
+          investigate and take reasonable steps to contain and address the
+          incident and make any notifications required by applicable law.
         </P>
       </Section>
 
-      <Section title="12. Contact">
+      <Section title="11. Account deletion and data removal">
         <P>
-          Questions or requests about your data: <Todo>contact email</Todo>,
-          United University Machine Learning Club, <Todo>postal / entity</Todo>.
+          Members may request that their Nexus account and associated personal
+          information be deleted.
+        </P>
+        <List>
+          <li>
+            Requests can be made by email or through another reasonable contact
+            channel with the UU MLC Executive Committee.
+          </li>
+          <li>
+            The Executive Committee may first confirm that the member
+            intentionally wants to leave the club and delete the account.
+          </li>
+          <li>
+            Once confirmed, deletion is normally processed within{" "}
+            <strong className="text-ink">1–7 days</strong>, depending on the
+            member&apos;s off-boarding circumstances.
+          </li>
+          <li>
+            After deletion is completed, the member&apos;s authentication
+            account and associated profile information are removed from the
+            active Nexus system.
+          </li>
+          <li>
+            UU MLC does not intentionally retain a member&apos;s active Nexus
+            profile after a completed deletion request, except where retention
+            is required by applicable law.
+          </li>
+        </List>
+      </Section>
+
+      <Section title="12. Your rights">
+        <P>
+          Subject to applicable law, you may have the right to access, correct,
+          update, or request deletion of your personal information. You may
+          also have the right to ask how your information is being used and to
+          raise a privacy-related concern.
+        </P>
+        <P>
+          To make a privacy or account-data request, contact the UU MLC
+          Executive Committee at{" "}
+          <a
+            href={`mailto:${CONTACT_EMAIL}`}
+            className="font-semibold text-ink underline underline-offset-2"
+          >
+            {CONTACT_EMAIL}
+          </a>
+          . We will review legitimate requests and respond within a reasonable
+          period, subject to applicable law and necessary verification.
+        </P>
+      </Section>
+
+      <Section title="13. Eligibility">
+        <P>
+          Nexus is intended for UU MLC university members and club participants.
+          The platform is designed for an adult university-member audience.
+        </P>
+      </Section>
+
+      <Section title="14. Changes to this policy">
+        <P>
+          We may update this Privacy Policy when Nexus, UU MLC&apos;s practices,
+          or applicable legal requirements change. Significant changes may be
+          announced through Nexus or other appropriate UU MLC communication
+          channels. The effective date above will be updated when the policy
+          changes.
+        </P>
+      </Section>
+
+      <Section title="15. Contact">
+        <P>
+          For privacy questions, account-deletion requests, correction
+          requests, or other data-related matters, contact:
+        </P>
+        <P>
+          <strong className="text-ink">UU MLC Executive Committee</strong>
+          <br />
+          <a
+            href={`mailto:${CONTACT_EMAIL}`}
+            className="font-semibold text-ink underline underline-offset-2"
+          >
+            {CONTACT_EMAIL}
+          </a>
         </P>
       </Section>
     </div>
