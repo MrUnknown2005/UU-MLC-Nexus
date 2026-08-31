@@ -28,7 +28,7 @@ export default function PrivacyContent() {
   return (
     <div className="space-y-5">
       <P>
-        The United University Machine Learning Club (&ldquo;UU MLC&rdquo;,
+        The Uttara University Machine Learning Club (&ldquo;UU MLC&rdquo;,
         &ldquo;we&rdquo;, &ldquo;us&rdquo;, or &ldquo;our&rdquo;) operates
         UUMLC Nexus, an internal membership and activity-management platform
         for UU MLC members and the Executive Committee.
