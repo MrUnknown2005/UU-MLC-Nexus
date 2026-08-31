@@ -2,12 +2,72 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
+    <title>UU MLC Nexus — United University Machine Learning Club</title>
+    <meta
+      name="description"
+      content="The internal workspace of the United University Machine Learning Club: member directory, task board, points leaderboard, announcements and club administration."
+    />
+    <meta name="application-name" content="UU MLC Nexus" />
+    <meta name="apple-mobile-web-app-title" content="Nexus" />
+
+    <!--
+      Two theme-colors so the browser chrome matches the page in both themes.
+      The values are the literal --bg tokens from src/styles/tokens.css; if you
+      change one there, change it here too — this file cannot read a variable.
+    -->
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0c0b09" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#faf8f4" />
+    <meta name="color-scheme" content="dark light" />
+
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>uu-mlc-nexus</title>
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="UU MLC Nexus" />
+    <meta property="og:title" content="UU MLC Nexus" />
+    <meta
+      property="og:description"
+      content="Member directory, task board, points leaderboard and announcements for the United University Machine Learning Club."
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="UU MLC Nexus" />
+    <meta
+      name="twitter:description"
+      content="Member directory, task board, points leaderboard and announcements for the United University Machine Learning Club."
+    />
+
+    <!-- Type is the native system stack (see --font-sans in tokens.css):
+         no webfont download, no third-party request, one family throughout. -->
+
+    <script>
+      /*
+        Applies the saved theme before the first paint.
+        Without this, a member who pinned light mode gets one dark frame on
+        every load — the flash is small, and unmistakably broken-looking.
+        Deliberately not a module: those are deferred, which would be too late.
+      */
+      (function () {
+        try {
+          var saved = localStorage.getItem("uu-mlc-theme");
+          if (saved === "light" || saved === "dark") {
+            document.documentElement.setAttribute("data-theme", saved);
+          }
+        } catch (error) {
+          /* Private mode or blocked storage: fall back to the OS preference. */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <p style="padding: 2rem; font-family: system-ui, sans-serif">
+        UU MLC Nexus needs JavaScript enabled to sign you in and load your
+        workspace.
+      </p>
+    </noscript>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

@@ -1,4 +1,5 @@
 import { getRoleDisplayName } from "../lib/roleHelpers";
+import { useToast } from "../components/ui/toast-context.js";
 import {
   awardPoints as awardPointsService,
   deleteAdminActivityLog as deleteAdminActivityLogService,
@@ -11,9 +12,23 @@ import {
 } from "../services/memberService";
 
 /**
- * All admin actions that mutate members or their points.
- * UI permission checks, confirmations, alerts, and state refreshes stay here;
- * Supabase data access is delegated to memberService.
+ * Every admin action that mutates a member or their points.
+ *
+ * Two things moved out of this file.
+ *
+ * Confirmation is now the page's job. This hook used to stack two
+ * `window.confirm` dialogs in front of each destructive action, which trains
+ * people to click through both without reading either — and it meant the
+ * warning text could not name what was actually about to be deleted. The pages
+ * ask instead, with a typed phrase and an itemised list of consequences.
+ *
+ * Reporting stays here, because this is the layer that knows why something
+ * failed, but it goes through the toast system rather than `alert()`. A blocking
+ * modal for "the server said no" interrupts the person to tell them nothing
+ * happened; a toast says the same thing without taking the keyboard hostage.
+ *
+ * Each action still returns a boolean, so callers can decide what to say on
+ * success — the outcome the member cares about is theirs to phrase.
  */
 export function useMemberActions({
   profile,
@@ -27,31 +42,50 @@ export function useMemberActions({
   loadData,
   reloadProfile,
 }) {
-  const canModifyTarget = (target) => {
-    if (!canManageMembers || target?.id === profile.id) {
-      return false;
+  const { toast } = useToast();
+
+  /** The server refused. Its own message is more useful than anything generic. */
+  const reportFailure = (error, fallback) => {
+    toast.error(fallback, {
+      description: error?.message || "The server rejected the change.",
+    });
+    return false;
+  };
+
+  const reportDenied = (description) => {
+    toast.error("Not allowed", { description });
+    return false;
+  };
+
+  /**
+   * Guards that mirror the database's own rules: nobody edits themselves
+   * through the admin surface, and only the head admin touches a head admin.
+   */
+  const blockedReason = (target) => {
+    if (!canManageMembers) {
+      return "You do not have permission to manage members.";
+    }
+
+    if (target?.id === profile.id) {
+      return "You cannot change your own account from here. Use your profile page.";
     }
 
     if (target?.role === "head_admin" && !isHeadAdmin) {
-      return false;
+      return "Head admin accounts can only be changed by the head admin.";
     }
 
-    return true;
+    return "";
   };
 
   const adjustPoints = async (memberId, points, reason) => {
     if (!canAwardPoints) {
-      alert("You do not have permission to award or deduct points.");
-      return false;
+      return reportDenied("You do not have permission to award or deduct points.");
     }
 
     const target = members.find((member) => member.id === memberId);
     const { error } = await awardPointsService(memberId, points, reason);
 
-    if (error) {
-      alert(error.message);
-      return false;
-    }
+    if (error) return reportFailure(error, "Could not record the adjustment");
 
     await logAdminAction({
       action: "POINT_ADJUSTMENT",
@@ -72,37 +106,24 @@ export function useMemberActions({
     const target = members.find((member) => member.id === memberId);
 
     if (!target) {
-      alert("Member not found.");
-      return false;
+      return reportDenied("That member is no longer in the list. Refresh and try again.");
     }
 
-    if (!canModifyTarget(target)) {
-      alert("You cannot modify a Head Admin account.");
-      return false;
-    }
-
-    if (!canManageMembers) {
-      alert("You do not have permission to manage members.");
-      return false;
-    }
+    const blocked = blockedReason(target);
+    if (blocked) return reportDenied(blocked);
 
     if (newRole === "head_admin" && !isHeadAdmin) {
-      alert("Only the Head Admin can assign the Head Admin role.");
-      return false;
+      return reportDenied("Only the head admin can assign the head admin role.");
     }
 
     if (!roleDefinitions.some((role) => role.role_key === newRole)) {
-      alert("That role is not available.");
-      return false;
+      return reportDenied("That role no longer exists.");
     }
 
     const oldRole = target.role;
     const { error } = await updateMemberRole(memberId, newRole);
 
-    if (error) {
-      alert(error.message);
-      return false;
-    }
+    if (error) return reportFailure(error, "Could not change the role");
 
     await logAdminAction({
       action:
@@ -124,20 +145,19 @@ export function useMemberActions({
     const target = members.find((member) => member.id === memberId);
 
     if (!target) {
-      alert("Member not found.");
-      return false;
+      return reportDenied("That member is no longer in the list. Refresh and try again.");
     }
 
-    if (!canModifyTarget(target)) {
-      alert("You cannot change the status of a Head Admin account.");
-      return false;
-    }
+    const blocked = blockedReason(target);
+    if (blocked) return reportDenied(blocked);
 
     const { error } = await updateMemberActive(memberId, isActive);
 
     if (error) {
-      alert(error.message);
-      return false;
+      return reportFailure(
+        error,
+        isActive ? "Could not reactivate the account" : "Could not deactivate the account",
+      );
     }
 
     await logAdminAction({
@@ -152,16 +172,12 @@ export function useMemberActions({
 
   const resetAllPoints = async () => {
     if (!hasPermission("reset_points")) {
-      alert("You do not have permission to reset points.");
-      return false;
+      return reportDenied("You do not have permission to reset points.");
     }
 
     const { error } = await resetAllPointsService();
 
-    if (error) {
-      alert(error.message);
-      return false;
-    }
+    if (error) return reportFailure(error, "Could not reset the leaderboard");
 
     await logAdminAction({
       action: "MONTHLY_POINT_RESET",
@@ -176,17 +192,13 @@ export function useMemberActions({
 
   const resetMemberPoints = async (memberId) => {
     if (!hasPermission("reset_points")) {
-      alert("You do not have permission to reset points.");
-      return false;
+      return reportDenied("You do not have permission to reset points.");
     }
 
     const target = members.find((member) => member.id === memberId);
     const { error } = await resetMemberPointsService(memberId);
 
-    if (error) {
-      alert(error.message);
-      return false;
-    }
+    if (error) return reportFailure(error, "Could not reset that member");
 
     await logAdminAction({
       action: "MEMBER_POINT_RESET",
@@ -201,25 +213,12 @@ export function useMemberActions({
 
   const deleteAllPointData = async () => {
     if (!isHeadAdmin) {
-      alert("Only the Head Admin can wipe all point data.");
-      return false;
-    }
-
-    if (
-      !window.confirm(
-        "WARNING: This permanently deletes ALL point history and sets all current member points to 0. Previous-month performance records remain.",
-      ) ||
-      !window.confirm("FINAL WARNING: Wipe all point data?")
-    ) {
-      return false;
+      return reportDenied("Only the head admin can wipe all point data.");
     }
 
     const { error } = await deleteAllPointDataService();
 
-    if (error) {
-      alert(error.message);
-      return false;
-    }
+    if (error) return reportFailure(error, "Could not delete the point data");
 
     await logAdminAction({
       action: "WIPE_ALL_POINT_DATA",
@@ -234,25 +233,14 @@ export function useMemberActions({
 
   const deleteMonthlyLeaderboard = async () => {
     if (!isHeadAdmin) {
-      alert("Only the Head Admin can wipe previous-month performance records.");
-      return false;
-    }
-
-    if (
-      !window.confirm(
-        "WARNING: This deletes all saved Previous Month Top Performer and Runner Up records. Current points and point history stay unchanged.",
-      ) ||
-      !window.confirm("FINAL WARNING: Delete all previous-month records?")
-    ) {
-      return false;
+      return reportDenied(
+        "Only the head admin can delete archived monthly records.",
+      );
     }
 
     const { error } = await deleteMonthlyLeaderboardService();
 
-    if (error) {
-      alert(error.message);
-      return false;
-    }
+    if (error) return reportFailure(error, "Could not delete the archive");
 
     await logAdminAction({
       action: "WIPE_PREVIOUS_MONTH",
@@ -266,27 +254,15 @@ export function useMemberActions({
 
   const deleteAdminActivityLog = async () => {
     if (!isHeadAdmin) {
-      alert("Only the Head Admin can wipe admin activity history.");
-      return false;
-    }
-
-    if (
-      !window.confirm(
-        "WARNING: This permanently deletes the entire Admin Activity History.",
-      ) ||
-      !window.confirm("FINAL WARNING: Delete all admin activity history?")
-    ) {
-      return false;
+      return reportDenied("Only the head admin can wipe the activity log.");
     }
 
     const { error } = await deleteAdminActivityLogService();
 
-    if (error) {
-      alert(error.message);
-      return false;
-    }
+    if (error) return reportFailure(error, "Could not delete the activity log");
 
-    // Do not log a wipe of the log itself.
+    // Deliberately not logged: the first entry in a freshly wiped audit trail
+    // should not be a record of the wipe covering its own tracks.
     await loadData();
     return true;
   };

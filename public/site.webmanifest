@@ -1,0 +1,17 @@
+{
+  "name": "UU MLC Nexus",
+  "short_name": "Nexus",
+  "description": "Workspace of the United University Machine Learning Club.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0c0b09",
+  "theme_color": "#0c0b09",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any"
+    }
+  ]
+}

@@ -1,10 +1,46 @@
-import { useState } from "react";
-import { PersonalPointHistory, AdminPointHistory } from "../common/PointHistory";
+import { useMemo, useState } from "react";
+import { Badge } from "../ui/Badge.jsx";
+import { Button } from "../ui/Button.jsx";
+import { EmptyState } from "../ui/EmptyState.jsx";
+import { Icon } from "../ui/Icon.jsx";
+import { Panel } from "../ui/Panel.jsx";
+import { Select } from "../ui/Select.jsx";
+import { TextArea } from "../ui/TextArea.jsx";
+import { TextInput } from "../ui/TextInput.jsx";
+import { useConfirm } from "../ui/confirm-context.js";
+import { useToast } from "../ui/toast-context.js";
+import {
+  AdminPointHistory,
+  PersonalPointHistory,
+} from "../common/PointHistory";
+import {
+  countLabel,
+  displayName,
+  formatDelta,
+  formatNumber,
+} from "../../lib/format.js";
+import { cn } from "../../lib/cn.js";
+
+/**
+ * Points: award, review, audit.
+ *
+ * The award form used to validate with three `alert()` calls and reported
+ * success by clearing itself. Now every field says what is wrong beside itself,
+ * and the form shows the member's resulting total before you commit — an award
+ * is a number someone else has to live with, so it should never be a surprise.
+ *
+ * The two head-admin wipes previously sat behind `window.confirm`, which is one
+ * mistyped keystroke away from destroying the club's whole point history. They
+ * now require the phrase to be typed out.
+ */
+const QUICK_AMOUNTS = [5, 10, 25, 50, -5, -10];
+
+const MAX_REASON = 240;
 
 function Points({
-  members,
-  history,
-  allHistory,
+  members = [],
+  history = [],
+  allHistory = [],
   onAdjust,
   canAwardPoints,
   canSeeAllPointHistory,
@@ -12,86 +48,341 @@ function Points({
   onDeleteAllPointData,
   onDeleteMonthlyLeaderboard,
 }) {
+  const { toast } = useToast();
+  const confirm = useConfirm();
+
   const [memberId, setMemberId] = useState("");
   const [points, setPoints] = useState("");
   const [reason, setReason] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [touched, setTouched] = useState(false);
   const [showAllHistory, setShowAllHistory] = useState(false);
+  const [busy, setBusy] = useState("");
 
-  const submit = async (e) => {
-    e.preventDefault();
-    if (!memberId || !points || !reason.trim()) {
-      alert("Fill in all fields.");
-      return;
-    }
-    const numericPoints = Number(points);
-    if (!Number.isInteger(numericPoints) || numericPoints === 0) {
-      alert("Enter a whole number other than zero.");
-      return;
-    }
-    const success = await onAdjust(memberId, numericPoints, reason.trim());
-    if (success) {
-      setMemberId("");
-      setPoints("");
-      setReason("");
-    }
+  const selected = useMemo(
+    () => members.find((member) => member.id === memberId) ?? null,
+    [members, memberId]
+  );
+
+  const numeric = Number(points);
+  const numericValid =
+    points.trim() !== "" && Number.isInteger(numeric) && numeric !== 0;
+
+  const errors = {
+    memberId: !memberId ? "Choose who this affects." : "",
+    points: !points.trim()
+      ? "Enter an amount."
+      : !Number.isInteger(numeric)
+        ? "Whole numbers only."
+        : numeric === 0
+          ? "Zero would not change anything."
+          : "",
+    reason: !reason.trim() ? "Say why — this is recorded permanently." : "",
   };
 
-  const confirmAction = async (message, action, successMessage) => {
-    if (!window.confirm(message)) return;
+  const valid = !errors.memberId && !errors.points && !errors.reason;
+
+  const projected = selected
+    ? Number(selected.points ?? 0) + (numericValid ? numeric : 0)
+    : null;
+
+  const submit = async (event) => {
+    event.preventDefault();
+    setTouched(true);
+
+    if (!valid) return;
+
+    setSubmitting(true);
+    const success = await onAdjust(memberId, numeric, reason.trim());
+    setSubmitting(false);
+
+    // A failure has already been reported with the server's own reason by the
+    // action layer, so there is nothing to add here — keep the form filled in
+    // so the adjustment can be retried without retyping it.
+    if (!success) return;
+
+    toast.success(
+      `${formatDelta(numeric)} for ${displayName(selected)}`,
+      { description: reason.trim() }
+    );
+
+    setMemberId("");
+    setPoints("");
+    setReason("");
+    setTouched(false);
+  };
+
+  const runWipe = async (key, { doneMessage, ...options }, action) => {
+    if (!(await confirm(options))) return;
+
+    setBusy(key);
     const success = await action();
-    if (success) alert(successMessage);
+    setBusy("");
+
+    if (success) toast.success(doneMessage);
   };
+
+  const memberOptions = useMemo(
+    () =>
+      members.map((member) => ({
+        value: member.id,
+        label: `${displayName(member)} — ${formatNumber(member.points ?? 0)}`,
+      })),
+    [members]
+  );
 
   return (
-    <div className="space-y-6">
-      <section className="nexus-glass-strong rounded-3xl p-6 md:p-7 relative overflow-hidden">
-        <div className="nexus-glow-yellow w-72 h-72 -top-24 -right-24" />
-        <div className="nexus-glow-purple w-72 h-72 -bottom-24 -left-24" />
-        <div className="relative">
-          <p className="nexus-eyebrow nexus-text-aurora">Points center</p>
-          <h2 className="nexus-title text-3xl md:text-4xl font-black mt-1">Points & <span className="nexus-text-ocean">Activity</span></h2>
-          <p className="nexus-muted mt-2 max-w-2xl">Track personal progress, make controlled adjustments, and review the club-wide point audit.</p>
-        </div>
-      </section>
-
-      <div className="grid xl:grid-cols-[0.9fr_1.1fr] gap-5 items-start">
+    <div className="space-y-5">
+      <div
+        className={cn(
+          "grid items-start gap-5",
+          canAwardPoints && "xl:grid-cols-[0.85fr_1.15fr]"
+        )}
+      >
         {canAwardPoints && (
-          <section className="nexus-glass-strong rounded-3xl p-6 relative overflow-hidden">
-            <div className="relative flex items-end justify-between gap-4 mb-5">
-              <div><p className="nexus-eyebrow nexus-text-aurora">Point adjustment</p><h3 className="nexus-title text-2xl font-black mt-1">Award or Deduct</h3></div>
-              <span className="nexus-badge-yellow">Admin</span>
-            </div>
-            <div className="rounded-2xl nexus-glass-flat border border-yellow-400/10 p-4 mb-4 text-sm text-gray-400">
-              Use positive values to award points and negative values to deduct them. Every adjustment should have a clear reason.
-            </div>
-            <form onSubmit={submit} className="space-y-3">
-              <label className="block"><span className="nexus-eyebrow block mb-2">Member</span><select value={memberId} onChange={(e) => setMemberId(e.target.value)} className="nexus-select"><option value="">Select member</option>{members.map((member) => <option key={member.id} value={member.id}>{member.nickname || member.full_name}</option>)}</select></label>
-              <label className="block"><span className="nexus-eyebrow block mb-2">Points</span><input type="number" step="1" value={points} onChange={(e) => setPoints(e.target.value)} placeholder="10 or -5" className="nexus-input" /></label>
-              <label className="block"><span className="nexus-eyebrow block mb-2">Reason</span><textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Why are these points being adjusted?" rows="4" className="nexus-textarea" /></label>
-              <button type="submit" disabled={!memberId || !points || !reason.trim()} className="nexus-morphic-button w-full py-3.5 disabled:opacity-40 disabled:cursor-not-allowed">Save Point Adjustment</button>
+          <Panel
+            icon="sparkles"
+            eyebrow="Adjustment"
+            title="Award or deduct"
+            description="Positive to award, negative to deduct."
+            actions={<Badge tone="brand">Recorded</Badge>}
+          >
+            <form onSubmit={submit} noValidate className="space-y-4">
+              <Select
+                label="Member"
+                required
+                placeholder="Select a member"
+                value={memberId}
+                options={memberOptions}
+                error={touched ? errors.memberId : ""}
+                onChange={(event) => setMemberId(event.target.value)}
+              />
+
+              <div>
+                <TextInput
+                  label="Points"
+                  required
+                  type="number"
+                  step="1"
+                  inputMode="numeric"
+                  placeholder="10, or -5 to deduct"
+                  value={points}
+                  error={touched ? errors.points : ""}
+                  onChange={(event) => setPoints(event.target.value)}
+                />
+
+                {/* Six taps instead of a keyboard for the amounts that come up
+                    over and over at an event. */}
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {QUICK_AMOUNTS.map((amount) => (
+                    <button
+                      key={amount}
+                      type="button"
+                      className="nx-chip"
+                      data-active={numeric === amount && points.trim() !== ""}
+                      onClick={() => setPoints(String(amount))}
+                    >
+                      {formatDelta(amount)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <TextArea
+                label="Reason"
+                required
+                rows={3}
+                maxLength={MAX_REASON}
+                value={reason}
+                error={touched ? errors.reason : ""}
+                placeholder="Ran the Friday workshop, placed 2nd in the datathon…"
+                hint="Members see this in their history."
+                onChange={(event) => setReason(event.target.value)}
+              />
+
+              {/* The consequence, spelled out before the button is pressed. */}
+              {selected && numericValid && (
+                <div className="nx-well flex items-center gap-3 p-3.5">
+                  <Icon
+                    name={numeric > 0 ? "trending-up" : "arrow-down"}
+                    size={17}
+                    className={numeric > 0 ? "text-success" : "text-danger"}
+                  />
+                  <p className="text-[0.8125rem] text-ink-muted">
+                    <span className="font-semibold text-ink">
+                      {displayName(selected)}
+                    </span>{" "}
+                    goes from{" "}
+                    <span className="nx-num tabular-nums">
+                      {formatNumber(selected.points ?? 0)}
+                    </span>{" "}
+                    to{" "}
+                    <span className="nx-num font-semibold text-ink tabular-nums">
+                      {formatNumber(projected)}
+                    </span>
+                  </p>
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                variant="primary"
+                fullWidth
+                icon="check"
+                loading={submitting}
+                disabled={touched && !valid}
+              >
+                Save adjustment
+              </Button>
             </form>
-          </section>
+          </Panel>
         )}
 
-        <section className={`nexus-glass-strong rounded-3xl p-6 relative overflow-hidden ${canAwardPoints ? "" : "xl:col-span-2"}`}>
-          <div className="absolute -top-10 -left-10 w-48 h-48 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" />
-          <div className="relative flex items-end justify-between gap-4 mb-5"><div><p className="nexus-eyebrow nexus-text-ocean">Personal activity</p><h3 className="nexus-title text-2xl font-black mt-1">My Point History</h3></div><span className="nexus-badge-cyan">{history.length} records</span></div>
-          {history.length === 0 ? <div className="nexus-glass-flat rounded-2xl p-6 text-center nexus-muted">No point activity yet.</div> : <PersonalPointHistory history={history} />}
-        </section>
+        <Panel
+          pad="md"
+          icon="history"
+          eyebrow="Your activity"
+          title="Point history"
+          description={
+            history.length > 0 ? countLabel(history.length, "record") : undefined
+          }
+        >
+          <PersonalPointHistory history={history} />
+        </Panel>
       </div>
 
       {canSeeAllPointHistory && (
-        <section className="nexus-glass-strong rounded-3xl p-6 md:p-7 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/[0.04] via-transparent to-purple-500/[0.04] pointer-events-none" />
-          <div className="relative flex flex-col lg:flex-row lg:items-end lg:justify-between gap-5">
-            <div><p className="nexus-eyebrow nexus-text-aurora">Audit trail</p><h3 className="nexus-title text-2xl md:text-3xl font-black mt-1">Point Audit History</h3><p className="nexus-muted text-sm mt-1">Complete transaction history for authorized administrators.</p></div>
-            <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={() => setShowAllHistory((current) => !current)} className="nexus-morphic-button-ghost px-4 py-2.5">{showAllHistory ? "Hide History" : "View All History"}</button>
-              {isHeadAdmin && <><button type="button" onClick={() => confirmAction("Wipe all points and point history? This cannot be undone.", onDeleteAllPointData, "All points and point history were wiped.")} className="nexus-morphic-button-danger px-4 py-2.5">Wipe All Data</button><button type="button" onClick={() => confirmAction("Wipe previous-month performance records? This cannot be undone.", onDeleteMonthlyLeaderboard, "Previous-month performance records were wiped.")} className="nexus-morphic-button-danger px-4 py-2.5">Wipe Previous Month</button></>}
+        <Panel
+          pad="md"
+          icon="shield-check"
+          eyebrow="Audit trail"
+          title="Club-wide point history"
+          description="Every adjustment, who it affected and why."
+          actions={
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={showAllHistory ? "chevron-up" : "chevron-down"}
+              onClick={() => setShowAllHistory((open) => !open)}
+              aria-expanded={showAllHistory}
+            >
+              {showAllHistory ? "Hide" : `Show ${formatNumber(allHistory.length)}`}
+            </Button>
+          }
+        >
+          {showAllHistory ? (
+            <AdminPointHistory history={allHistory} rankedMembers={members} />
+          ) : (
+            <p className="text-[0.8125rem] text-ink-muted">
+              {allHistory.length === 0
+                ? "No adjustments have been recorded yet."
+                : `${countLabel(allHistory.length, "adjustment")} on record. Kept collapsed so the page opens on what you came for.`}
+            </p>
+          )}
+        </Panel>
+      )}
+
+      {/* ---------- Destructive, head-admin only ---------- */}
+      {canSeeAllPointHistory && isHeadAdmin && (
+        <Panel
+          icon="alert-triangle"
+          eyebrow="Head admin only"
+          title="Permanent deletion"
+          description="These remove history rather than reset it. There is no undo and no backup."
+          className="border-danger-line"
+          bodyClassName="grid gap-3 md:grid-cols-2"
+        >
+          <div className="nx-well flex flex-col gap-3 p-4">
+            <div>
+              <h4 className="text-[0.875rem] font-semibold">
+                Wipe all point data
+              </h4>
+              <p className="mt-1 text-[0.8125rem] text-ink-muted">
+                Sets every member to zero and deletes the entire adjustment
+                ledger, for everyone, for all time.
+              </p>
             </div>
+
+            <Button
+              variant="danger"
+              size="sm"
+              icon="trash"
+              className="self-start"
+              loading={busy === "all"}
+              onClick={() =>
+                runWipe(
+                  "all",
+                  {
+                    title: "Wipe all points and point history?",
+                    tone: "danger",
+                    confirmLabel: "Wipe everything",
+                    requireText: "WIPE ALL POINTS",
+                    doneMessage: "All point data was deleted",
+                    description:
+                      "This is the club's entire record of who earned what. It cannot be recovered.",
+                    consequences: [
+                      "Every member's point total becomes 0",
+                      "Every award and deduction ever recorded is deleted",
+                      "Members lose their personal point history",
+                    ],
+                  },
+                  onDeleteAllPointData
+                )
+              }
+            >
+              Wipe all point data
+            </Button>
           </div>
-          {showAllHistory && <div className="relative mt-6">{allHistory.length === 0 ? <div className="nexus-glass-flat rounded-2xl p-6 text-center nexus-muted">No point history exists.</div> : <AdminPointHistory history={allHistory} rankedMembers={members} />}</div>}
-        </section>
+
+          <div className="nx-well flex flex-col gap-3 p-4">
+            <div>
+              <h4 className="text-[0.875rem] font-semibold">
+                Wipe archived months
+              </h4>
+              <p className="mt-1 text-[0.8125rem] text-ink-muted">
+                Deletes the saved monthly standouts. Current points are not
+                touched.
+              </p>
+            </div>
+
+            <Button
+              variant="danger"
+              size="sm"
+              icon="trash"
+              className="self-start"
+              loading={busy === "monthly"}
+              onClick={() =>
+                runWipe(
+                  "monthly",
+                  {
+                    title: "Delete archived monthly winners?",
+                    tone: "danger",
+                    confirmLabel: "Delete archive",
+                    requireText: "DELETE ARCHIVE",
+                    doneMessage: "Archived monthly records were deleted",
+                    description:
+                      "The monthly standouts shown on the overview come from this archive.",
+                    consequences: [
+                      "Every archived month's top two is deleted",
+                      "Current point totals are unaffected",
+                    ],
+                  },
+                  onDeleteMonthlyLeaderboard
+                )
+              }
+            >
+              Wipe archived months
+            </Button>
+          </div>
+        </Panel>
+      )}
+
+      {!canAwardPoints && history.length === 0 && (
+        <EmptyState
+          icon="trophy"
+          title="Nothing here yet"
+          description="Points are awarded by executives for taking part in club activities. Yours will show up on this page."
+        />
       )}
     </div>
   );

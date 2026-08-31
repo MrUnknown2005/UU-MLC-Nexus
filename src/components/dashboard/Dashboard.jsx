@@ -1,6 +1,12 @@
+import { useEffect, useMemo, useState } from "react";
 import useDashboardController from "../../hooks/useDashboardController";
-import Header from "../common/Header";
-import NavItem from "../common/NavItem";
+import { CommandPalette } from "../ui/CommandPalette.jsx";
+import { Sheet } from "../ui/Sheet.jsx";
+import { useHotkey } from "../../hooks/useHotkey.js";
+import { humanizeToken } from "../../lib/format.js";
+import TopBar from "./TopBar.jsx";
+import { SideNav, SideNavList } from "./SideNav.jsx";
+import { documentTitleFor, visibleNavItems } from "./navigation.js";
 import Overview from "../pages/Overview";
 import Profile from "../pages/Profile";
 import Directory from "../pages/Directory";
@@ -12,6 +18,14 @@ import AdminActivity from "../pages/AdminActivity";
 import RoleManager from "../pages/RoleManager";
 import News from "../pages/News";
 
+/**
+ * The application shell.
+ *
+ * All state lives in `useDashboardController`; this file owns layout, the
+ * command palette's contents, and which page is mounted. The previous version
+ * also carried an injected `<style>` block of mobile patches — those are now
+ * element defaults in `styles/base.css`, where they belong.
+ */
 export default function Dashboard({ profile, onLogout, reloadProfile }) {
   const {
     tab, setTab, sidebarOpen, setSidebarOpen, notificationsOpen, setNotificationsOpen,
@@ -25,433 +39,286 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
     loadRoleAccess, canManageTodos,
   } = useDashboardController({ profile, reloadProfile, onLogout });
 
+  const [paletteOpen, setPaletteOpen] = useState(false);
+
+  const canOpenMembers = canViewMembers || canManageMembers;
+
+  const navItems = useMemo(
+    () =>
+      visibleNavItems({
+        members: canOpenMembers,
+        points: canViewPoints,
+        activity: canViewHistory,
+        news: canManageNews,
+        roles: canManageRoles,
+      }),
+    [
+      canOpenMembers,
+      canViewPoints,
+      canViewHistory,
+      canManageNews,
+      canManageRoles,
+    ]
+  );
+
+  const badges = {
+    overdue: overdueTodoCount,
+    pending: canManageMembers ? pendingMemberCount : 0,
+    news: recentNewsCount,
+  };
+
+  // Derived rather than corrected: if a permission is revoked while a member is
+  // sitting on the tab it gated, the fallback happens in this render, not in an
+  // effect one frame later.
+  const activeItem = navItems.find((item) => item.id === tab) ?? navItems[0];
+  const activeTab = activeItem?.id ?? "overview";
+
+  // The tab is the closest thing this app has to a URL, so it belongs in the
+  // title — it is what a member sees in a crowded row of browser tabs.
+  useEffect(() => {
+    document.title = documentTitleFor(activeTab);
+  }, [activeTab]);
+
+  useHotkey("mod+k", () => setPaletteOpen((open) => !open), {
+    allowInInput: true,
+  });
+
+  // `roleDefinitions` rows are `{ role_key, name, description, is_system }`, so
+  // a custom role shows its real name rather than a snake_case key.
+  const roleLabel = useMemo(() => {
+    const match = roleDefinitions?.find((role) => role.role_key === profile.role);
+    return match?.name ?? humanizeToken(profile.role);
+  }, [roleDefinitions, profile.role]);
+
+  const commandGroups = useMemo(
+    () => [
+      {
+        label: "Go to",
+        items: navItems.map((item) => ({
+          id: `nav-${item.id}`,
+          label: item.label,
+          icon: item.icon,
+          keywords: item.keywords,
+          hint: item.id === activeTab ? "current" : undefined,
+          run: () => setTab(item.id),
+        })),
+      },
+      {
+        label: "Actions",
+        items: [
+          {
+            id: "action-refresh",
+            label: "Refresh club data",
+            icon: "refresh",
+            keywords: "reload sync fetch update",
+            run: () => loadData(),
+          },
+          {
+            id: "action-notifications",
+            label: "Open notifications",
+            icon: "bell",
+            keywords: "alerts unread bell",
+            hint:
+              unreadNotificationCount > 0
+                ? `${unreadNotificationCount} unread`
+                : undefined,
+            run: () => setNotificationsOpen(true),
+          },
+          ...(unreadNotificationCount > 0
+            ? [
+                {
+                  id: "action-mark-read",
+                  label: "Mark all notifications read",
+                  icon: "check-circle",
+                  keywords: "clear dismiss unread",
+                  run: () => markAllNotificationsRead(),
+                },
+              ]
+            : []),
+          {
+            id: "action-logout",
+            label: "Sign out",
+            icon: "log-out",
+            keywords: "logout leave exit quit",
+            run: () => onLogout(),
+          },
+        ],
+      },
+    ],
+    [
+      navItems,
+      activeTab,
+      setTab,
+      loadData,
+      setNotificationsOpen,
+      unreadNotificationCount,
+      markAllNotificationsRead,
+      onLogout,
+    ]
+  );
 
   return (
-    <>
-      <style>{`
-        .nexus-mobile-root {
-          /* Prevent horizontal spill without creating a nested scroll container. */
-          overflow-x: clip;
-        }
+    <div className="min-h-dvh bg-canvas">
+      <a
+        href="#nexus-main"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[80] focus:rounded-control focus:bg-brand focus:px-3 focus:py-2 focus:text-[0.8125rem] focus:font-semibold focus:text-brand-ink"
+      >
+        Skip to content
+      </a>
 
-        .nexus-mobile-root input,
-        .nexus-mobile-root textarea,
-        .nexus-mobile-root select,
-        .nexus-mobile-root button {
-          max-width: 100%;
-        }
+      {/* Desktop rail — fixed so long pages never scroll the navigation away. */}
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[var(--rail-w)] border-r border-line bg-surface lg:block">
+        <SideNav
+          items={navItems}
+          tab={activeTab}
+          onSelect={setTab}
+          badges={badges}
+          profile={profile}
+          roleLabel={roleLabel}
+        />
+      </aside>
 
-        .nexus-mobile-root img {
-          max-width: 100%;
-        }
+      <Sheet
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        side="left"
+        title="UU MLC Nexus"
+        eyebrow="Navigate"
+      >
+        <SideNavList
+          items={navItems}
+          tab={activeTab}
+          onSelect={setTab}
+          badges={badges}
+        />
+      </Sheet>
 
-        @media (max-width: 640px) {
-          .nexus-mobile-root section,
-          .nexus-mobile-root article {
-            min-width: 0;
-          }
+      <div className="lg:pl-[var(--rail-w)]">
+        <TopBar
+          title={activeItem?.title ?? "Overview"}
+          profile={profile}
+          roleLabel={roleLabel}
+          onOpenMenu={() => setSidebarOpen(true)}
+          onOpenPalette={() => setPaletteOpen(true)}
+          onSelectTab={setTab}
+          onLogout={onLogout}
+          notifications={notifications}
+          notificationsOpen={notificationsOpen}
+          setNotificationsOpen={setNotificationsOpen}
+          unreadCount={unreadNotificationCount}
+          onMarkAllRead={markAllNotificationsRead}
+          onOpenNotification={openNotification}
+        />
 
-          .nexus-mobile-root h1,
-          .nexus-mobile-root h2,
-          .nexus-mobile-root h3,
-          .nexus-mobile-root h4,
-          .nexus-mobile-root p {
-            overflow-wrap: anywhere;
-          }
+        <main
+          id="nexus-main"
+          className="nx-backdrop mx-auto min-h-[calc(100dvh-var(--topbar-h))] w-full max-w-[var(--shell-max)] px-3 py-5 sm:px-5 sm:py-7"
+        >
+          {/* Keyed so switching tabs replays the entrance animation and resets
+              any per-page state instead of leaking it across sections. */}
+          <div key={activeTab} className="nx-rise">
+            {activeTab === "overview" && (
+              <Overview
+                profile={profile}
+                rankedMembers={rankedMembers}
+                news={news}
+                currentRank={currentRank}
+                pointHistory={pointHistory}
+                previousMonth={previousMonth}
+              />
+            )}
 
-          .nexus-mobile-root button,
-          .nexus-mobile-root select,
-          .nexus-mobile-root input,
-          .nexus-mobile-root textarea {
-            min-height: 44px;
-          }
+            {activeTab === "profile" && (
+              <Profile
+                profile={profile}
+                reloadProfile={reloadProfile}
+                onLogAction={logAdminAction}
+              />
+            )}
 
-          .nexus-mobile-root input[type="file"] {
-            min-height: auto;
-          }
-        }
-      `}</style>
+            {activeTab === "directory" && (
+              <Directory members={rankedMembers} currentUserId={profile.id} />
+            )}
 
-      <div className="nexus-mobile-root nexus-app-bg min-h-screen text-white">
-        {/* Decorative glow blobs */}
-        <div className="nexus-glow-yellow w-[26rem] h-[26rem] -top-32 -left-32" />
-        <div className="nexus-glow-purple w-[28rem] h-[28rem] top-1/3 -right-40" />
-        <div className="nexus-glow-cyan w-[22rem] h-[22rem] bottom-0 left-10" />
-        <div className="nexus-glow-pink w-[18rem] h-[18rem] top-1/4 right-1/3" />
+            {activeTab === "todo" && (
+              <Todo
+                profile={profile}
+                isAdmin={isAdmin || canManageTodos}
+                onLogAction={logAdminAction}
+              />
+            )}
 
-        <Header profile={profile} onLogout={onLogout} />
+            {activeTab === "members" && canOpenMembers && (
+              <Members
+                members={members}
+                currentUserId={profile.id}
+                currentUserRole={profile.role}
+                canEdit={canManageMembers}
+                canManageRoles={canManageRoles}
+                roleDefinitions={roleDefinitions}
+                onRoleChange={changeRole}
+                onToggleActive={toggleMemberActive}
+              />
+            )}
 
-        <div className="relative max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-8 z-10">
-          <div className="mb-5 sm:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-              <p className="text-yellow-300 text-xs uppercase tracking-[0.3em]">
-                Workspace
-              </p>
-              <h1 className="text-xl sm:text-2xl md:text-4xl font-black mt-1">
-                <span className="nexus-text-aurora">UU MLC</span>{" "}
-                <span className="nexus-text-ocean">Nexus</span>
-              </h1>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setNotificationsOpen((value) => !value)}
-                  className="relative w-11 h-11 rounded-xl nexus-glass nexus-glass-hover transition flex items-center justify-center"
-                  aria-label="Notifications"
-                  aria-expanded={notificationsOpen}
-                >
-                  <span className="text-lg">🔔</span>
-
-                  {unreadNotificationCount > 0 && (
-                    <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-gradient-to-br from-red-500 to-pink-500 text-white text-[10px] font-bold flex items-center justify-center shadow-[0_0_12px_rgba(239,68,68,0.6)]">
-                      {unreadNotificationCount > 99
-                        ? "99+"
-                        : unreadNotificationCount}
-                    </span>
-                  )}
-                </button>
-
-                {notificationsOpen && (
-                  <div className="absolute right-0 top-12 z-50 w-[calc(100vw-1.5rem)] max-w-80 nexus-modal rounded-2xl overflow-hidden">
-                    <div className="flex items-center justify-between gap-3 p-4 border-b border-white/10 nexus-glass-overlay-aurora">
-                      <div>
-                        <p className="font-bold nexus-text-aurora">Notifications</p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {unreadNotificationCount > 0
-                            ? `${unreadNotificationCount} unread`
-                            : "You're all caught up"}
-                        </p>
-                      </div>
-
-                      {unreadNotificationCount > 0 && (
-                        <button
-                          type="button"
-                          onClick={markAllNotificationsRead}
-                          className="text-xs text-yellow-300 hover:text-yellow-200 font-semibold"
-                        >
-                          Mark all read
-                        </button>
-                      )}
-                    </div>
-
-                    {notifications.length === 0 ? (
-                      <div className="p-8 text-center">
-                        <div className="text-3xl">🔔</div>
-                        <p className="text-gray-400 mt-3">
-                          No notifications yet.
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="max-h-[28rem] overflow-y-auto">
-                        {notifications.map((notification) => (
-                          <button
-                            key={notification.id}
-                            type="button"
-                            onClick={() => openNotification(notification)}
-                            className={`w-full text-left p-4 transition nexus-row rounded-none border-x-0 first:rounded-t-2xl last:rounded-b-2xl ${
-                              notification.read_at
-                                ? ""
-                                : "nexus-row-unread"
-                            }`}
-                          >
-                            <div className="flex items-start gap-3">
-                              <span className="text-lg">
-                                {notification.type === "news"
-                                  ? "📰"
-                                  : notification.type === "todo"
-                                    ? "✓"
-                                    : notification.type === "points"
-                                      ? "🏆"
-                                      : notification.type === "member"
-                                        ? "👥"
-                                        : "🔔"}
-                              </span>
-
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-start justify-between gap-3">
-                                  <p className="text-sm font-semibold">
-                                    {notification.title}
-                                  </p>
-
-                                  {!notification.read_at && (
-                                    <span className="nexus-dot-glow shrink-0 mt-1.5" />
-                                  )}
-                                </div>
-
-                                <p className="text-xs text-gray-400 mt-1 leading-relaxed">
-                                  {notification.message}
-                                </p>
-
-                                <p className="text-[11px] text-gray-600 mt-2">
-                                  {new Date(
-                                    notification.created_at,
-                                  ).toLocaleString()}
-                                </p>
-                              </div>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <button
-                onClick={() => setSidebarOpen((value) => !value)}
-                className="lg:hidden nexus-morphic-button-ghost px-4 py-3"
-              >
-                ☰ Menu
-              </button>
-            </div>
-          </div>
-
-          {unreadNotificationCount > 0 && (
-            <section className="mb-6 nexus-glass-strong nexus-glass-yellow rounded-3xl p-5 relative overflow-hidden">
-              <div className="absolute inset-0 nexus-glass-overlay-aurora pointer-events-none" />
-              <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                  <p className="nexus-text-aurora text-sm font-bold">
-                    {unreadNotificationCount}{" "}
-                    {unreadNotificationCount === 1
-                      ? "item needs"
-                      : "items need"}{" "}
-                    your attention
-                  </p>
-
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {pendingMemberCount > 0 && (
-                      <button
-                        onClick={() => setTab("members")}
-                        className="nexus-morphic-button-ghost text-xs"
-                      >
-                        👥 {pendingMemberCount} pending
-                      </button>
-                    )}
-
-                    {overdueTodoCount > 0 && (
-                      <button
-                        onClick={() => setTab("todo")}
-                        className="nexus-morphic-button-ghost text-xs hover:!text-red-300 hover:!border-red-400/30"
-                      >
-                        ✓ {overdueTodoCount} overdue
-                      </button>
-                    )}
-
-                    {recentNewsCount > 0 && (
-                      <button
-                        onClick={() => setTab("news")}
-                        className="nexus-morphic-button-ghost text-xs hover:!text-cyan-200 hover:!border-cyan-400/30"
-                      >
-                        📰 {recentNewsCount} recent
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </section>
-          )}
-
-          <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 items-stretch lg:items-start">
-            <aside
-              className={`${sidebarOpen ? "block" : "hidden"} lg:block w-full lg:w-64 flex-shrink-0`}
-            >
-              <div className="lg:sticky lg:top-6 nexus-panel rounded-2xl sm:rounded-3xl p-2 sm:p-3">
-                <NavItem
-                  active={tab === "overview"}
-                  onClick={() => setTab("overview")}
-                  icon="⌂"
-                >
-                  Overview
-                </NavItem>
-                <NavItem
-                  active={tab === "profile"}
-                  onClick={() => setTab("profile")}
-                  icon="◉"
-                >
-                  Profile
-                </NavItem>
-                <NavItem
-                  active={tab === "directory"}
-                  onClick={() => setTab("directory")}
-                  icon="👥"
-                >
-                  Directory
-                </NavItem>
-                <NavItem
-                  active={tab === "todo"}
-                  onClick={() => setTab("todo")}
-                  icon="✓"
-                  badge={overdueTodoCount}
-                >
-                  To-Do
-                </NavItem>
-                {(canViewMembers || canManageMembers) && (
-                  <NavItem
-                    active={tab === "members"}
-                    onClick={() => setTab("members")}
-                    icon="♟"
-                    badge={canManageMembers ? pendingMemberCount : 0}
-                  >
-                    Members
-                  </NavItem>
-                )}
-                {canViewPoints && (
-                  <NavItem
-                    active={tab === "points"}
-                    onClick={() => setTab("points")}
-                    icon="🏆"
-                  >
-                    Points
-                  </NavItem>
-                )}
-
-                {canViewHistory && (
-                  <NavItem
-                    active={tab === "activity"}
-                    onClick={() => setTab("activity")}
-                    icon="▤"
-                  >
-                    History
-                  </NavItem>
-                )}
-                {canManageNews && (
-                  <NavItem
-                    active={tab === "news"}
-                    onClick={() => setTab("news")}
-                    icon="📰"
-                    badge={recentNewsCount}
-                  >
-                    News
-                  </NavItem>
-                )}
-                {canManageRoles && (
-                  <NavItem
-                    active={tab === "roles"}
-                    onClick={() => setTab("roles")}
-                    icon="⚙"
-                  >
-                    Roles & Permissions
-                  </NavItem>
-                )}
-                <button
-                  onClick={onLogout}
-                  className="nexus-glass-button nexus-glass-button-danger w-full mt-2 sm:mt-3 px-3 sm:px-4 py-3 sm:py-2.5 justify-start text-sm sm:text-base"
-                >
-                  ↪ Sign out
-                </button>
-              </div>
-            </aside>
-
-            <main className="min-w-0 flex-1">
-              {/* Overview */}
-              {tab === "overview" && (
-                <Overview
-                  profile={profile}
-                  rankedMembers={rankedMembers}
-                  news={news}
-                  currentRank={currentRank}
-                  pointHistory={pointHistory}
-                  previousMonth={previousMonth}
-                />
-              )}
-
-              {/* Profile */}
-              {tab === "profile" && (
-                <Profile
-                  profile={profile}
-                  reloadProfile={reloadProfile}
-                  onLogAction={logAdminAction}
-                />
-              )}
-
-              {/* Directory */}
-              {tab === "directory" && <Directory members={rankedMembers} />}
-
-              {/* To-Do */}
-              {tab === "todo" && (
-                <Todo
-                  profile={profile}
-                  isAdmin={isAdmin || canManageTodos}
-                  onLogAction={logAdminAction}
-                />
-              )}
-
-              {/* Members */}
-              {tab === "members" && (canViewMembers || canManageMembers) && (
-                <Members
-                  members={members}
-                  currentUserId={profile.id}
-                  currentUserRole={profile.role}
-                  canEdit={canManageMembers}
-                  canManageRoles={canManageRoles}
-                  roleDefinitions={roleDefinitions}
-                  onRoleChange={changeRole}
-                  onToggleActive={toggleMemberActive}
-                />
-              )}
-
-              {/* Points */}
-              {tab === "points" && canViewPoints && (
-                <>
-                  <Points
-                    members={rankedMembers}
-                    history={pointHistory}
-                    allHistory={allPointHistory}
-                    onAdjust={adjustPoints}
-                    canAwardPoints={canAwardPoints}
-                    canSeeAllPointHistory={canViewHistory}
-                    isHeadAdmin={isHeadAdmin}
-                    onDeleteAllPointData={deleteAllPointData}
-                    onDeleteMonthlyLeaderboard={deleteMonthlyLeaderboard}
-                  />
-
-                  {hasPermission("reset_points") && (
-                    <div className="mt-8">
-                      <PointReset
-                        members={rankedMembers}
-                        onResetAll={resetAllPoints}
-                        onResetMember={resetMemberPoints}
-                      />
-                    </div>
-                  )}
-                </>
-              )}
-
-              {/* Admin activity */}
-              {tab === "activity" && canViewHistory && (
-                <AdminActivity
-                  activityLog={activityLog}
-                  members={members}
+            {activeTab === "points" && canViewPoints && (
+              <div className="space-y-7">
+                <Points
+                  members={rankedMembers}
+                  history={pointHistory}
+                  allHistory={allPointHistory}
+                  onAdjust={adjustPoints}
+                  canAwardPoints={canAwardPoints}
+                  canSeeAllPointHistory={canViewHistory}
                   isHeadAdmin={isHeadAdmin}
-                  onWipe={deleteAdminActivityLog}
+                  onDeleteAllPointData={deleteAllPointData}
+                  onDeleteMonthlyLeaderboard={deleteMonthlyLeaderboard}
                 />
-              )}
 
-              {/* Roles & Permissions */}
-              {tab === "roles" && canManageRoles && (
-                <RoleManager
-                  currentUser={profile}
-                  roleDefinitions={roleDefinitions}
-                  onRolesChanged={loadRoleAccess}
-                />
-              )}
+                {hasPermission("reset_points") && (
+                  <PointReset
+                    members={rankedMembers}
+                    onResetAll={resetAllPoints}
+                    onResetMember={resetMemberPoints}
+                  />
+                )}
+              </div>
+            )}
 
-              {/* News */}
-              {tab === "news" && canManageNews && (
-                <News
-                  news={news}
-                  profile={profile}
-                  reload={loadData}
-                  onLogAction={logAdminAction}
-                />
-              )}
-            </main>
+            {activeTab === "activity" && canViewHistory && (
+              <AdminActivity
+                activityLog={activityLog}
+                members={members}
+                isHeadAdmin={isHeadAdmin}
+                onWipe={deleteAdminActivityLog}
+              />
+            )}
+
+            {activeTab === "news" && canManageNews && (
+              <News
+                news={news}
+                profile={profile}
+                reload={loadData}
+                onLogAction={logAdminAction}
+              />
+            )}
+
+            {activeTab === "roles" && canManageRoles && (
+              <RoleManager
+                currentUser={profile}
+                roleDefinitions={roleDefinitions}
+                onRolesChanged={loadRoleAccess}
+              />
+            )}
           </div>
-        </div>
+        </main>
       </div>
-    </>
+
+      <CommandPalette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        groups={commandGroups}
+      />
+    </div>
   );
 }

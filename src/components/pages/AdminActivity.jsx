@@ -1,267 +1,410 @@
-import { useState } from "react";
-import logo from "../../assets/club-logo.png";
-import { ROLE_NAMES } from "../../constants/roles";
-import SafeImage from "../common/SafeImage";
+import { useMemo, useState } from "react";
+import { Avatar } from "../ui/Avatar.jsx";
+import { Badge } from "../ui/Badge.jsx";
+import { Button } from "../ui/Button.jsx";
+import { EmptyState } from "../ui/EmptyState.jsx";
+import { Icon } from "../ui/Icon.jsx";
+import { Panel } from "../ui/Panel.jsx";
+import { SearchInput } from "../ui/SearchInput.jsx";
+import { Select } from "../ui/Select.jsx";
+import { useConfirm } from "../ui/confirm-context.js";
+import { useToast } from "../ui/toast-context.js";
+import { useNow } from "../../hooks/useNow.js";
+import { roleLabel } from "../../lib/roles.js";
+import { cn } from "../../lib/cn.js";
+import {
+  countLabel,
+  displayName,
+  formatDate,
+  formatDateTime,
+  formatNumber,
+  formatRelative,
+  humanizeToken,
+} from "../../lib/format.js";
 
-function AdminActivity({ activityLog, members = [], isHeadAdmin, onWipe }) {
-  const [search, setSearch] = useState("");
+/**
+ * The audit trail.
+ *
+ * An audit log is read two ways: scanning for "what happened recently" and
+ * hunting for "who did that specific thing". So it is grouped by day for the
+ * first and filtered three ways for the second, with the filters showing how
+ * many entries they matched rather than leaving you to count.
+ *
+ * The old version tinted the action pill five colours by keyword sniffing on the
+ * action string. The tint now means one thing only — destructive, elevating,
+ * routine — because that is the distinction someone auditing actually needs.
+ */
 
-  const [actionFilter, setActionFilter] = useState("all");
+/** Tone by consequence, not by subject area. */
+function actionTone(action) {
+  const value = String(action || "");
 
-  const [actorFilter, setActorFilter] = useState("all");
+  if (/WIPE|DELETE|DEACTIVATED|REMOVE/.test(value)) return "danger";
+  if (/ROLE|PROMOT|PERMISSION/.test(value)) return "violet";
+  if (/RESET/.test(value)) return "warn";
+  if (/POINT/.test(value)) return "brand";
+  if (/REACTIVATED|CREATE|ADD/.test(value)) return "success";
 
-  const getMember = (id) => members.find((member) => member.id === id);
+  return "neutral";
+}
 
-  const actionTypes = [
-    ...new Set(activityLog.map((item) => item.action).filter(Boolean)),
-  ];
+function actionIcon(action) {
+  const value = String(action || "");
 
-  const actorIds = [
-    ...new Set(activityLog.map((item) => item.admin_id).filter(Boolean)),
-  ];
+  if (/WIPE|DELETE|REMOVE/.test(value)) return "trash";
+  if (/DEACTIVATED/.test(value)) return "user-x";
+  if (/REACTIVATED/.test(value)) return "user-check";
+  if (/ROLE|PROMOT|PERMISSION/.test(value)) return "shield-check";
+  if (/RESET/.test(value)) return "refresh";
+  if (/POINT/.test(value)) return "trophy";
+  if (/NEWS/.test(value)) return "newspaper";
+  if (/TODO|TASK/.test(value)) return "tasks";
+  if (/PROFILE/.test(value)) return "user";
 
-  const actionLabel = (action) =>
-    String(action || "UNKNOWN")
-      .replaceAll("_", " ")
-      .toLowerCase()
-      .replace(/\b\w/g, (letter) => letter.toUpperCase());
+  return "history";
+}
 
-  const actionTone = (action) => {
-    const value = String(action || "");
+/** Local calendar day, so "Today" means today where the reader is sitting. */
+function dayKey(value) {
+  const date = value ? new Date(value) : null;
+  if (!date || Number.isNaN(date.getTime())) return "unknown";
+  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+}
 
-    if (
-      value.includes("WIPE") ||
-      value.includes("DELETE") ||
-      value.includes("DEACTIVATED")
-    ) {
-      return "nexus-pill nexus-pill-red";
-    }
+function dayLabel(value, now) {
+  if (!value) return "Undated";
 
-    if (
-      value.includes("POINT") ||
-      value.includes("PROMOT") ||
-      value.includes("ROLE")
-    ) {
-      return "nexus-pill nexus-pill-yellow";
-    }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Undated";
 
-    if (value.includes("TODO") || value.includes("NEWS")) {
-      return "nexus-pill nexus-pill-cyan";
-    }
+  if (dayKey(value) === dayKey(now)) return "Today";
+  if (dayKey(value) === dayKey(now - 86_400_000)) return "Yesterday";
 
-    if (value.includes("PROFILE")) {
-      return "nexus-pill nexus-pill-purple";
-    }
+  return formatDate(value);
+}
 
-    return "nexus-pill nexus-pill-neutral";
-  };
-
-  const filtered = activityLog.filter((item) => {
-    const actor = getMember(item.admin_id);
-
-    const target = getMember(item.target_user_id);
-
-    const actorName = actor?.nickname || actor?.full_name || "Unknown admin";
-
-    const targetName =
-      target?.nickname || target?.full_name || "Unknown member";
-
-    const searchable = [
-      actorName,
-      targetName,
-      item.action,
-      item.details,
-      item.created_at,
-    ]
-      .join(" ")
-      .toLowerCase();
-
-    const matchesSearch =
-      !search.trim() || searchable.includes(search.trim().toLowerCase());
-
-    const matchesAction =
-      actionFilter === "all" || item.action === actionFilter;
-
-    const matchesActor = actorFilter === "all" || item.admin_id === actorFilter;
-
-    return matchesSearch && matchesAction && matchesActor;
-  });
+function Entry({ item, actor, target, now }) {
+  const tone = actionTone(item.action);
 
   return (
-    <section className="nexus-glass-strong rounded-3xl p-6 relative overflow-hidden">
-      <div className="nexus-glow-purple w-72 h-72 -top-20 -right-20" />
+    <li className="relative flex gap-3 pl-1">
+      {/* The rail: an audit trail reads as a sequence, so it looks like one. */}
+      <span
+        aria-hidden="true"
+        className="absolute top-11 bottom-0 left-[1.4375rem] w-px bg-line"
+      />
 
-      <div className="relative flex flex-col xl:flex-row xl:items-start xl:justify-between gap-4">
-        <div>
-          <p className="nexus-text-aurora text-xs font-bold uppercase tracking-wider">
-            Accountability
-          </p>
-
-          <h2 className="text-2xl font-black mt-1">
-            Admin Activity{" "}
-            <span className="nexus-text-ocean">History</span>
-          </h2>
-
-          <p className="text-gray-500 text-sm mt-1">
-            See who did what, who it affected, and exactly when it happened.
-          </p>
-        </div>
-
-        {isHeadAdmin && (
-          <button
-            onClick={onWipe}
-            className="nexus-morphic-button-danger px-5 py-3"
-          >
-            Wipe Activity History
-          </button>
-        )}
-      </div>
-
-      <div className="grid lg:grid-cols-[2fr_1fr_1fr] gap-3 mt-6">
-        <input
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search actor, target, action, or details..."
-          className="nexus-input text-sm"
+      <span className="relative shrink-0">
+        <Avatar
+          size="sm"
+          src={actor?.avatar_url}
+          name={actor ? displayName(actor) : "Unknown"}
+          seed={item.admin_id ?? item.id}
         />
-
-        <select
-          value={actionFilter}
-          onChange={(event) => setActionFilter(event.target.value)}
-          className="nexus-select text-sm"
+        <span
+          className={cn(
+            "absolute -right-1 -bottom-1 grid h-[1.125rem] w-[1.125rem] place-items-center rounded-full border border-surface",
+            tone === "danger" && "bg-danger text-white",
+            tone === "violet" && "bg-violet text-white",
+            tone === "warn" && "bg-warn text-white",
+            tone === "brand" && "bg-brand text-brand-ink",
+            tone === "success" && "bg-success text-white",
+            tone === "neutral" && "bg-surface-3 text-ink-muted"
+          )}
         >
-          <option value="all">All actions</option>
-
-          {actionTypes.map((action) => (
-            <option key={action} value={action}>
-              {actionLabel(action)}
-            </option>
-          ))}
-        </select>
-
-        <select
-          value={actorFilter}
-          onChange={(event) => setActorFilter(event.target.value)}
-          className="nexus-select text-sm"
-        >
-          <option value="all">All actors</option>
-
-          {actorIds.map((id) => {
-            const actor = getMember(id);
-
-            return (
-              <option key={id} value={id}>
-                {actor?.nickname || actor?.full_name || "Unknown admin"}
-              </option>
-            );
-          })}
-        </select>
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-3 mt-4 text-xs text-gray-500">
-        <span>
-          Showing <span className="text-yellow-300 font-bold">{filtered.length}</span> of {activityLog.length} activities
+          <Icon name={actionIcon(item.action)} size={10} strokeWidth={2.5} />
         </span>
+      </span>
 
-        {(search || actionFilter !== "all" || actorFilter !== "all") && (
-          <button
-            onClick={() => {
-              setSearch("");
-              setActionFilter("all");
-              setActorFilter("all");
-            }}
-            className="text-yellow-300 hover:text-yellow-200 font-bold"
+      <div className="nx-card min-w-0 flex-1 p-3.5">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="text-[0.8125rem] font-semibold">
+            {actor ? displayName(actor) : "Unknown admin"}
+          </span>
+
+          {actor?.role && (
+            <span className="text-[0.6875rem] text-ink-subtle">
+              {roleLabel(actor.role)}
+            </span>
+          )}
+
+          <Badge tone={tone} size="sm">
+            {humanizeToken(item.action || "unknown")}
+          </Badge>
+        </div>
+
+        {target && (
+          <p className="mt-2 flex items-center gap-1.5 text-[0.8125rem] text-ink-muted">
+            <Icon name="arrow-right" size={13} className="shrink-0" />
+            <span className="font-medium text-ink">{displayName(target)}</span>
+          </p>
+        )}
+
+        {item.details && (
+          <p className="mt-1.5 text-[0.8125rem] leading-relaxed whitespace-pre-wrap text-ink-muted">
+            {item.details}
+          </p>
+        )}
+
+        {item.created_at && (
+          <time
+            dateTime={item.created_at}
+            title={formatDateTime(item.created_at)}
+            className="mt-2.5 block text-[0.6875rem] text-ink-subtle"
           >
-            Clear filters
-          </button>
+            {formatRelative(item.created_at, now)}
+          </time>
         )}
       </div>
+    </li>
+  );
+}
 
-      {filtered.length === 0 ? (
-        <div className="text-gray-500 text-center py-12">
-          No matching administrative activity found.
-        </div>
-      ) : (
-        <div className="space-y-3 mt-5">
-          {filtered.map((item) => {
-            const actor = getMember(item.admin_id);
+function AdminActivity({ activityLog = [], members = [], isHeadAdmin, onWipe }) {
+  const { toast } = useToast();
+  const confirm = useConfirm();
+  const now = useNow();
 
-            const target = getMember(item.target_user_id);
+  const [search, setSearch] = useState("");
+  const [action, setAction] = useState("all");
+  const [actor, setActor] = useState("all");
+  const [wiping, setWiping] = useState(false);
 
-            const actorName =
-              actor?.nickname || actor?.full_name || "Unknown admin";
+  // One lookup table instead of a `.find()` per row per render: the log is the
+  // longest list in the app and every entry resolves two members.
+  const byId = useMemo(
+    () => new Map(members.map((member) => [member.id, member])),
+    [members]
+  );
 
-            const targetName = target?.nickname || target?.full_name || null;
+  const actionOptions = useMemo(() => {
+    const counts = new Map();
 
-            return (
-              <div
-                key={item.id}
-                className="nexus-glass-flat nexus-glass-hover rounded-2xl p-4"
+    for (const item of activityLog) {
+      if (!item.action) continue;
+      counts.set(item.action, (counts.get(item.action) ?? 0) + 1);
+    }
+
+    return [
+      { value: "all", label: `All actions (${activityLog.length})` },
+      ...[...counts.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .map(([value, count]) => ({
+          value,
+          label: `${humanizeToken(value)} (${count})`,
+        })),
+    ];
+  }, [activityLog]);
+
+  const actorOptions = useMemo(() => {
+    const counts = new Map();
+
+    for (const item of activityLog) {
+      if (!item.admin_id) continue;
+      counts.set(item.admin_id, (counts.get(item.admin_id) ?? 0) + 1);
+    }
+
+    return [
+      { value: "all", label: "Everyone" },
+      ...[...counts.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .map(([id, count]) => ({
+          value: id,
+          label: `${byId.get(id) ? displayName(byId.get(id)) : "Unknown admin"} (${count})`,
+        })),
+    ];
+  }, [activityLog, byId]);
+
+  const filtered = useMemo(() => {
+    const needle = search.trim().toLowerCase();
+
+    return activityLog.filter((item) => {
+      if (action !== "all" && item.action !== action) return false;
+      if (actor !== "all" && item.admin_id !== actor) return false;
+      if (!needle) return true;
+
+      const actorRecord = byId.get(item.admin_id);
+      const targetRecord = byId.get(item.target_user_id);
+
+      return [
+        actorRecord ? displayName(actorRecord) : "",
+        targetRecord ? displayName(targetRecord) : "",
+        item.action ? humanizeToken(item.action) : "",
+        item.details ?? "",
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(needle);
+    });
+  }, [activityLog, action, actor, search, byId]);
+
+  // Grouped by day so the list reads as a history rather than a flat dump.
+  const days = useMemo(() => {
+    const groups = new Map();
+
+    for (const item of filtered) {
+      const key = dayKey(item.created_at);
+      const list = groups.get(key) ?? { label: dayLabel(item.created_at, now), items: [] };
+      list.items.push(item);
+      groups.set(key, list);
+    }
+
+    return [...groups.values()];
+  }, [filtered, now]);
+
+  const todayCount = useMemo(
+    () =>
+      activityLog.filter((item) => dayKey(item.created_at) === dayKey(now))
+        .length,
+    [activityLog, now]
+  );
+
+  const filtering = Boolean(search.trim()) || action !== "all" || actor !== "all";
+
+  const clearFilters = () => {
+    setSearch("");
+    setAction("all");
+    setActor("all");
+  };
+
+  const wipe = async () => {
+    const ok = await confirm({
+      title: "Delete the entire activity log?",
+      tone: "danger",
+      confirmLabel: "Delete the log",
+      requireText: "DELETE THE AUDIT LOG",
+      description:
+        "This is the club's only record of what administrators have done. Deleting it cannot be undone, and the deletion itself is not recorded.",
+      consequences: [
+        `All ${countLabel(activityLog.length, "entry", "entries")} are permanently deleted`,
+        "Points, members, tasks and news are not affected",
+        "New actions from this point on start a fresh log",
+      ],
+    });
+
+    if (!ok) return;
+
+    setWiping(true);
+    const success = await onWipe();
+    setWiping(false);
+
+    if (success) toast.success("The activity log was deleted");
+  };
+
+  return (
+    <div className="space-y-5">
+      <Panel
+        icon="shield-check"
+        eyebrow="Accountability"
+        title="Admin activity"
+        description="Who did what, to whom, and exactly when."
+        actions={
+          <>
+            <Badge tone="neutral" icon="history">
+              {countLabel(activityLog.length, "entry", "entries")}
+            </Badge>
+            {todayCount > 0 && (
+              <Badge tone="brand" dot>
+                {formatNumber(todayCount)} today
+              </Badge>
+            )}
+            {isHeadAdmin && (
+              <Button
+                variant="danger"
+                size="sm"
+                icon="trash"
+                loading={wiping}
+                onClick={wipe}
               >
-                <div className="flex items-start gap-3">
-                  <div className="relative shrink-0">
-                    <div className="absolute inset-0 rounded-full bg-gradient-aurora blur-sm opacity-50" />
-                    <SafeImage
-                      src={actor?.avatar_url || logo}
-                      alt=""
-                      className="relative w-11 h-11 rounded-full object-cover nexus-avatar-ring"
-                    />
-                  </div>
+                Wipe log
+              </Button>
+            )}
+          </>
+        }
+        bodyClassName="space-y-3"
+      >
+        <div className="grid gap-3 lg:grid-cols-[2fr_1fr_1fr]">
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            label="Search the log"
+            placeholder="Name, action or details…"
+            resultCount={search.trim() ? filtered.length : undefined}
+          />
 
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-bold text-white">
-                        {actorName}
-                      </span>
+          <Select
+            label="Action"
+            value={action}
+            options={actionOptions}
+            onChange={(event) => setAction(event.target.value)}
+          />
 
-                      <span className="text-gray-500">→</span>
+          <Select
+            label="Administrator"
+            value={actor}
+            options={actorOptions}
+            onChange={(event) => setActor(event.target.value)}
+          />
+        </div>
 
-                      <span
-                        className={`px-2.5 py-1 rounded-lg border text-xs font-bold ${actionTone(
-                          item.action,
-                        )}`}
-                      >
-                        {actionLabel(item.action)}
-                      </span>
+        {filtering && (
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-3">
+            <p className="text-[0.8125rem] text-ink-muted">
+              {filtered.length === 0
+                ? "No entries match these filters."
+                : `${countLabel(filtered.length, "entry", "entries")} of ${formatNumber(activityLog.length)}.`}
+            </p>
+            <Button size="xs" variant="ghost" icon="close" onClick={clearFilters}>
+              Clear filters
+            </Button>
+          </div>
+        )}
+      </Panel>
 
-                      {actor?.role && (
-                        <span className="px-2 py-1 rounded-lg nexus-glass-flat text-gray-400 text-xs font-semibold">
-                          {ROLE_NAMES[actor.role] || actor.role}
-                        </span>
-                      )}
-                    </div>
+      {activityLog.length === 0 ? (
+        <EmptyState
+          icon="shield"
+          title="Nothing recorded yet"
+          description="Administrative actions — role changes, point awards, deactivations — are written here as they happen."
+        />
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          icon="search"
+          title="No matching activity"
+          description="Try a different search term, or clear the filters to see the whole log."
+          action={
+            <Button variant="secondary" icon="close" onClick={clearFilters}>
+              Clear filters
+            </Button>
+          }
+        />
+      ) : (
+        <div className="space-y-5">
+          {days.map((day) => (
+            <section key={day.label}>
+              <h3 className="nx-eyebrow sticky top-[var(--topbar-h)] z-10 -mx-1 mb-3 bg-canvas/90 px-1 py-1.5 backdrop-blur">
+                {day.label}
+                <span className="ml-2 font-normal text-ink-subtle normal-case">
+                  {countLabel(day.items.length, "entry", "entries")}
+                </span>
+              </h3>
 
-                    {targetName && (
-                      <p className="text-sm text-gray-300 mt-2">
-                        Target:{" "}
-                        <span className="font-bold text-white">
-                          {targetName}
-                        </span>
-                      </p>
-                    )}
-
-                    {item.details && (
-                      <p className="text-sm text-gray-400 mt-1 whitespace-pre-wrap">
-                        {item.details}
-                      </p>
-                    )}
-
-                    <p className="text-xs text-gray-500 mt-3">
-                      {item.created_at
-                        ? new Date(item.created_at).toLocaleString(undefined, {
-                            dateStyle: "medium",
-                            timeStyle: "short",
-                          })
-                        : "Unknown time"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+              <ul className="space-y-3">
+                {day.items.map((item) => (
+                  <Entry
+                    key={item.id}
+                    item={item}
+                    actor={byId.get(item.admin_id)}
+                    target={byId.get(item.target_user_id)}
+                    now={now}
+                  />
+                ))}
+              </ul>
+            </section>
+          ))}
         </div>
       )}
-    </section>
+    </div>
   );
 }
 

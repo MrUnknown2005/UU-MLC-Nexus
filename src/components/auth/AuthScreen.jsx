@@ -1,285 +1,428 @@
 import { useState } from "react";
-import logo from "../../assets/club-logo.png";
-import { signInWithPassword, signUp } from "../../services/authService";
+import AuthLayout from "./AuthLayout.jsx";
+import { Button } from "../ui/Button.jsx";
+import { Icon } from "../ui/Icon.jsx";
+import { TextInput, PasswordInput } from "../ui/TextInput.jsx";
+import { useToast } from "../ui/toast-context.js";
+import {
+  requestPasswordReset,
+  signInWithPassword,
+  signUp,
+} from "../../services/authService";
 
-function AuthScreen({ initialMode = "login", onAuth, onBack }) {
+/**
+ * Sign in / sign up / forgot password.
+ *
+ * All three are one component tree so switching between them keeps the email
+ * a member has already typed — the old build threw it away on every switch.
+ */
+export default function AuthScreen({ initialMode = "login", onAuth, onBack }) {
   const [mode, setMode] = useState(initialMode);
+  const [email, setEmail] = useState("");
 
-  const toggleMode = () => {
-    setMode((current) => (current === "login" ? "signup" : "login"));
-  };
+  const shared = { email, setEmail, onBack, setMode };
 
-  return mode === "login" ? (
-    <Login onBack={onBack} onLogin={onAuth} onSwitch={toggleMode} />
-  ) : (
-    <SignUp onBack={onBack} onSignup={onAuth} onSwitch={toggleMode} />
-  );
+  if (mode === "signup") return <SignUp {...shared} onSignup={onAuth} />;
+  if (mode === "forgot") return <ForgotPassword {...shared} />;
+  return <SignIn {...shared} onSignIn={onAuth} />;
 }
 
-function AuthLayout({ title, subtitle, children, onBack }) {
+function Notice({ tone = "danger", children }) {
+  if (!children) return null;
+
+  const isError = tone === "danger";
+
   return (
-    <div className="nexus-app-bg min-h-screen flex items-center justify-center px-4 py-10 relative">
-      <div className="nexus-glow-yellow w-[26rem] h-[26rem] -top-20 -left-20" />
-      <div className="nexus-glow-purple w-[28rem] h-[28rem] bottom-0 -right-20" />
-      <div className="nexus-glow-cyan w-[20rem] h-[20rem] top-1/3 right-10" />
-
-      <div className="relative w-full max-w-md z-10">
-        <div className="nexus-modal p-8 relative overflow-hidden">
-          <div className="absolute inset-0 nexus-glass-overlay-aurora pointer-events-none" />
-
-          <div className="relative flex justify-center mb-6">
-            <div className="relative">
-              <div className="absolute inset-0 rounded-full bg-gradient-aurora blur-2xl opacity-50" />
-              <img
-                src={logo}
-                alt="UU MLC"
-                className="relative w-24 h-24 object-contain drop-shadow-[0_0_24px_rgba(139,92,246,0.5)]"
-              />
-            </div>
-          </div>
-
-          <div className="relative text-center mb-8">
-            <h1 className="text-3xl font-black nexus-text-aurora">{title}</h1>
-            <p className="text-gray-400 text-sm mt-2">{subtitle}</p>
-            <p className="text-[10px] uppercase tracking-[0.3em] text-yellow-300/80 mt-3">
-              UU MLC Nexus
-            </p>
-          </div>
-
-          {onBack && (
-            <button
-              onClick={onBack}
-              className="relative mb-4 text-sm text-gray-500 hover:text-yellow-300 transition"
-            >
-              ← Back to home
-            </button>
-          )}
-
-          <div className="relative">{children}</div>
-        </div>
-      </div>
+    <div
+      role={isError ? "alert" : "status"}
+      className={
+        isError
+          ? "flex items-start gap-2 rounded-control border border-danger-line bg-danger-soft px-3 py-2.5 text-[0.8125rem] text-danger"
+          : "flex items-start gap-2 rounded-control border border-success-line bg-success-soft px-3 py-2.5 text-[0.8125rem] text-success"
+      }
+    >
+      <Icon
+        name={isError ? "alert-triangle" : "check-circle"}
+        size={15}
+        className="mt-px shrink-0"
+      />
+      <span>{children}</span>
     </div>
   );
 }
 
-function Login({ onBack, onLogin, onSwitch }) {
-  const [email, setEmail] = useState("");
+function SignIn({ email, setEmail, setMode, onBack, onSignIn }) {
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [busy, setBusy] = useState(false);
 
-  const submit = async (e) => {
-    e.preventDefault();
+  const submit = async (event) => {
+    event.preventDefault();
     setError("");
 
-    if (!email || !password) {
-      setError("Please enter your email and password.");
+    if (!email.trim() || !password) {
+      setError("Enter your email and password.");
       return;
     }
 
-    setLoading(true);
+    setBusy(true);
 
-    const { error: loginError } = await signInWithPassword(email, password);
+    const { error: signInError } = await signInWithPassword(
+      email.trim(),
+      password
+    );
 
-    if (loginError) {
-      setError(loginError.message);
-    } else {
-      await onLogin();
-    }
-
-    setLoading(false);
-  };
-
-  return (
-    <AuthLayout onBack={onBack} title="Welcome Back" subtitle="Sign in to UU MLC Nexus">
-      <form onSubmit={submit} className="space-y-5">
-        <div>
-          <label className="block text-xs uppercase tracking-wider text-gray-400 mb-2">Email</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
-            className="nexus-input"
-          />
-        </div>
-
-        <div>
-          <label className="block text-xs uppercase tracking-wider text-gray-400 mb-2">Password</label>
-          <div className="relative">
-            <input
-              type={showPassword ? "text" : "password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              className="nexus-input pr-20"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-yellow-300 text-xs font-semibold hover:text-yellow-200 transition"
-            >
-              {showPassword ? "Hide" : "Show"}
-            </button>
-          </div>
-        </div>
-
-        {error && (
-          <div className="nexus-badge-red nexus-glass-danger rounded-xl px-3 py-2 text-center">{error}</div>
-        )}
-
-        <button type="submit" disabled={loading} className="nexus-morphic-button w-full py-3.5 text-base">
-          {loading ? "Signing in..." : "Sign In →"}
-        </button>
-      </form>
-
-      <div className="text-center mt-6">
-        <p className="text-gray-500 text-sm">Don't have an account?</p>
-        <button
-          type="button"
-          onClick={onSwitch}
-          className="nexus-text-aurora font-bold text-sm mt-1 hover:brightness-110 transition"
-        >
-          Create an account
-        </button>
-      </div>
-    </AuthLayout>
-  );
-}
-
-function SignUp({ onBack, onSignup, onSwitch }) {
-  const [fullName, setFullName] = useState("");
-  const [nickname, setNickname] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const submit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setMessage("");
-
-    if (!fullName.trim()) {
-      setError("Please enter your full name.");
+    if (signInError) {
+      // Supabase returns this for both a wrong password and an unknown email,
+      // and it stays vague on purpose — telling an attacker which one it was
+      // confirms whether an address has an account here.
+      setError(
+        signInError.message === "Invalid login credentials"
+          ? "That email and password don't match an account."
+          : signInError.message
+      );
+      setBusy(false);
       return;
     }
 
-    if (!email || !password) {
-      setError("Please fill in all required fields.");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
-
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
-      return;
-    }
-
-    setLoading(true);
-
-    const { data, error: signupError } = await signUp({
-      email,
-      password,
-      fullName,
-      nickname,
-    });
-
-    if (signupError) {
-      setError(signupError.message);
-      setLoading(false);
-      return;
-    }
-
-    if (data.session) {
-      await onSignup();
-    } else {
-      setMessage("Account created. Check your email to confirm your account.");
-    }
-
-    setLoading(false);
+    await onSignIn();
+    setBusy(false);
   };
 
   return (
     <AuthLayout
       onBack={onBack}
-      title="Create Account"
-      subtitle="Join Uttara University Machine Learning Club"
+      title="Welcome back"
+      subtitle="Sign in to pick up where the club left off."
+      footer={
+        <p className="text-center text-[0.8125rem] text-ink-muted">
+          New to the club?{" "}
+          <button
+            type="button"
+            onClick={() => setMode("signup")}
+            className="font-semibold text-brand-text underline decoration-brand-line underline-offset-2 hover:decoration-brand"
+          >
+            Create an account
+          </button>
+        </p>
+      }
     >
-      <form onSubmit={submit} className="space-y-4">
-        <input
-          type="text"
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-          placeholder="Full name"
-          className="nexus-input"
-        />
-        <input
-          value={nickname}
-          onChange={(e) => setNickname(e.target.value)}
-          placeholder="Nickname"
-          className="nexus-input"
-        />
-        <input
+      <form onSubmit={submit} className="space-y-4" noValidate>
+        <TextInput
+          label="Email"
           type="email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="Email"
-          className="nexus-input"
+          onChange={(event) => setEmail(event.target.value)}
+          placeholder="you@example.com"
+          autoComplete="email"
+          icon="mail"
+          required
         />
-        <input
-          type={showPassword ? "text" : "password"}
+
+        <PasswordInput
+          label="Password"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Password"
-          className="nexus-input"
+          onChange={(event) => setPassword(event.target.value)}
+          placeholder="Your password"
+          required
         />
-        <input
-          type="password"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          placeholder="Confirm password"
-          className="nexus-input"
-        />
-        <button
-          type="button"
-          onClick={() => setShowPassword(!showPassword)}
-          className="text-yellow-300 text-xs font-semibold hover:text-yellow-200 transition"
+
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={() => setMode("forgot")}
+            className="text-[0.8125rem] text-ink-muted underline decoration-line-strong underline-offset-2 hover:text-ink"
+          >
+            Forgot your password?
+          </button>
+        </div>
+
+        <Notice>{error}</Notice>
+
+        <Button
+          type="submit"
+          variant="primary"
+          size="lg"
+          fullWidth
+          loading={busy}
+          iconRight="arrow-right"
         >
-          {showPassword ? "Hide password" : "Show password"}
-        </button>
-
-        {error && (
-          <div className="nexus-badge-red nexus-glass-danger rounded-xl px-3 py-2">{error}</div>
-        )}
-        {message && (
-          <div className="nexus-badge-yellow nexus-glass-yellow rounded-xl px-3 py-2">{message}</div>
-        )}
-
-        <button type="submit" disabled={loading} className="nexus-morphic-button w-full py-3.5 text-base">
-          {loading ? "Creating..." : "Create Account →"}
-        </button>
+          Sign in
+        </Button>
       </form>
-
-      <div className="text-center mt-6">
-        <button
-          type="button"
-          onClick={onSwitch}
-          className="nexus-text-aurora font-bold text-sm hover:brightness-110 transition"
-        >
-          Back to Sign In
-        </button>
-      </div>
     </AuthLayout>
   );
 }
 
-export default AuthScreen;
+function SignUp({ email, setEmail, setMode, onBack, onSignup }) {
+  const [fullName, setFullName] = useState("");
+  const [nickname, setNickname] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [error, setError] = useState("");
+  const [sent, setSent] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const { toast } = useToast();
+
+  const submit = async (event) => {
+    event.preventDefault();
+    setError("");
+
+    if (!fullName.trim()) {
+      setError("Enter your full name so members can find you in the directory.");
+      return;
+    }
+    if (!email.trim() || !password) {
+      setError("Email and password are both required.");
+      return;
+    }
+    if (password.length < 8) {
+      setError("Use at least 8 characters for your password.");
+      return;
+    }
+    if (password !== confirm) {
+      setError("Those two passwords don't match.");
+      return;
+    }
+
+    setBusy(true);
+
+    const { data, error: signUpError } = await signUp({
+      email: email.trim(),
+      password,
+      fullName: fullName.trim(),
+      nickname: nickname.trim(),
+    });
+
+    if (signUpError) {
+      setError(signUpError.message);
+      setBusy(false);
+      return;
+    }
+
+    if (data.session) {
+      toast.success("Account created", {
+        description: "An administrator will approve your membership shortly.",
+      });
+      await onSignup();
+    } else {
+      setSent(true);
+    }
+
+    setBusy(false);
+  };
+
+  if (sent) {
+    return (
+      <AuthLayout
+        title="Check your inbox"
+        subtitle={`We sent a confirmation link to ${email.trim()}.`}
+        footer={
+          <p className="text-center text-[0.8125rem] text-ink-muted">
+            Wrong address?{" "}
+            <button
+              type="button"
+              onClick={() => setSent(false)}
+              className="font-semibold text-brand-text underline decoration-brand-line underline-offset-2 hover:decoration-brand"
+            >
+              Go back and fix it
+            </button>
+          </p>
+        }
+      >
+        <div className="nx-well px-4 py-5">
+          <ol className="space-y-3 text-[0.8125rem] text-ink-muted">
+            <Step n={1}>Open the email and click the confirmation link.</Step>
+            <Step n={2}>Come back here and sign in.</Step>
+            <Step n={3}>
+              An administrator approves your membership — until then you'll see a
+              limited guest view.
+            </Step>
+          </ol>
+        </div>
+
+        <Button
+          className="mt-5"
+          variant="secondary"
+          fullWidth
+          onClick={() => setMode("login")}
+        >
+          Go to sign in
+        </Button>
+      </AuthLayout>
+    );
+  }
+
+  return (
+    <AuthLayout
+      onBack={onBack}
+      title="Create your account"
+      subtitle="Join the United University Machine Learning Club."
+      footer={
+        <p className="text-center text-[0.8125rem] text-ink-muted">
+          Already a member?{" "}
+          <button
+            type="button"
+            onClick={() => setMode("login")}
+            className="font-semibold text-brand-text underline decoration-brand-line underline-offset-2 hover:decoration-brand"
+          >
+            Sign in instead
+          </button>
+        </p>
+      }
+    >
+      <form onSubmit={submit} className="space-y-4" noValidate>
+        <TextInput
+          label="Full name"
+          value={fullName}
+          onChange={(event) => setFullName(event.target.value)}
+          placeholder="Your name as it should appear"
+          autoComplete="name"
+          icon="user"
+          required
+        />
+
+        <TextInput
+          label="Nickname"
+          value={nickname}
+          onChange={(event) => setNickname(event.target.value)}
+          placeholder="What people actually call you"
+          autoComplete="nickname"
+          optional
+          hint="Shown instead of your full name across the app."
+        />
+
+        <TextInput
+          label="Email"
+          type="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          placeholder="you@example.com"
+          autoComplete="email"
+          icon="mail"
+          required
+        />
+
+        <PasswordInput
+          label="Password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          placeholder="At least 8 characters"
+          autoComplete="new-password"
+          required
+        />
+
+        <PasswordInput
+          label="Confirm password"
+          value={confirm}
+          onChange={(event) => setConfirm(event.target.value)}
+          placeholder="Type it once more"
+          autoComplete="new-password"
+          error={
+            confirm && confirm !== password ? "Doesn't match." : undefined
+          }
+          required
+        />
+
+        <Notice>{error}</Notice>
+
+        <Button
+          type="submit"
+          variant="primary"
+          size="lg"
+          fullWidth
+          loading={busy}
+          iconRight="arrow-right"
+        >
+          Create account
+        </Button>
+      </form>
+    </AuthLayout>
+  );
+}
+
+function ForgotPassword({ email, setEmail, setMode }) {
+  const [error, setError] = useState("");
+  const [sent, setSent] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (event) => {
+    event.preventDefault();
+    setError("");
+
+    if (!email.trim()) {
+      setError("Enter the email you signed up with.");
+      return;
+    }
+
+    setBusy(true);
+
+    const { error: resetError } = await requestPasswordReset(email.trim());
+
+    if (resetError) {
+      setError(resetError.message);
+      setBusy(false);
+      return;
+    }
+
+    setSent(true);
+    setBusy(false);
+  };
+
+  return (
+    <AuthLayout
+      onBack={() => setMode("login")}
+      title="Reset your password"
+      subtitle="We'll email you a link that signs you in once so you can set a new one."
+    >
+      <form onSubmit={submit} className="space-y-4" noValidate>
+        <TextInput
+          label="Email"
+          type="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          placeholder="you@example.com"
+          autoComplete="email"
+          icon="mail"
+          disabled={sent}
+          required
+        />
+
+        <Notice>{error}</Notice>
+
+        {sent ? (
+          <Notice tone="success">
+            If an account exists for that address, the link is on its way. It
+            expires in one hour.
+          </Notice>
+        ) : (
+          <Button
+            type="submit"
+            variant="primary"
+            size="lg"
+            fullWidth
+            loading={busy}
+            icon="send"
+          >
+            Send reset link
+          </Button>
+        )}
+
+        <Button variant="ghost" fullWidth onClick={() => setMode("login")}>
+          Back to sign in
+        </Button>
+      </form>
+    </AuthLayout>
+  );
+}
+
+function Step({ n, children }) {
+  return (
+    <li className="flex gap-2.5">
+      <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-brand-soft font-display text-[0.625rem] font-bold text-brand-text">
+        {n}
+      </span>
+      <span className="leading-relaxed">{children}</span>
+    </li>
+  );
+}

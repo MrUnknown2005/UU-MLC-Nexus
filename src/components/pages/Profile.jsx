@@ -1,24 +1,50 @@
 import { useEffect, useState } from "react";
-import logo from "../../assets/club-logo.png";
 import { supabase } from "../../lib/supabaseClient";
-import { ROLE_NAMES } from "../../constants/roles";
-import SafeImage from "../common/SafeImage";
+import { Avatar } from "../ui/Avatar.jsx";
+import { Badge } from "../ui/Badge.jsx";
+import { Button } from "../ui/Button.jsx";
+import { FileButton } from "../ui/FileButton.jsx";
+import { Icon } from "../ui/Icon.jsx";
+import { Panel } from "../ui/Panel.jsx";
+import { StatCard } from "../ui/StatCard.jsx";
+import { TextArea } from "../ui/TextArea.jsx";
+import { TextInput } from "../ui/TextInput.jsx";
+import { useToast } from "../ui/toast-context.js";
+import { roleLabel } from "../../lib/roles.js";
+import { formatDate, formatNumber, ordinal } from "../../lib/format.js";
 
+/**
+ * Your own profile — the one page where a member edits their own record.
+ *
+ * The view/edit split is kept, because reading your profile and rewriting it are
+ * different jobs, but the editor is now a real form: labelled fields instead of
+ * placeholder-only inputs, a submit button that reports progress, and an error
+ * that stays on screen next to the thing that failed.
+ *
+ * Feedback used to be a single `message` string doing four jobs at once — upload
+ * validation, upload failure, save failure and save success all rendered in the
+ * same yellow pill, which meant "Upload failed" looked exactly like "Profile
+ * saved successfully." Outcomes now go to toasts, and only a save failure stays
+ * pinned in the form, where a retry is.
+ *
+ * The avatar pipeline is unchanged and deliberately so: upload to a fixed path,
+ * cache-bust the public URL, write it to the profile, then sweep any older files
+ * left in the member's folder. The cache-bust matters — the path never changes,
+ * so without it the browser keeps showing last week's face.
+ */
 function Profile({ profile, reloadProfile, onLogAction }) {
+  const { toast } = useToast();
+
   const [fullName, setFullName] = useState(profile.full_name || "");
-
   const [nickname, setNickname] = useState(profile.nickname || "");
-
   const [bio, setBio] = useState(profile.bio || "");
-
   const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url || "");
 
   const [saving, setSaving] = useState(false);
-
-  const [message, setMessage] = useState("");
-
+  const [error, setError] = useState("");
   const [editMode, setEditMode] = useState(false);
 
+  const [statsLoading, setStatsLoading] = useState(true);
   const [profileStats, setProfileStats] = useState({
     rank: null,
     totalMembers: 0,
@@ -34,17 +60,17 @@ function Profile({ profile, reloadProfile, onLogAction }) {
     }
 
     if (!file.type.startsWith("image/")) {
-      setMessage("Please choose an image file.");
+      toast.error("Please choose an image file.");
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      setMessage("Image must be smaller than 5 MB.");
+      toast.error("Image must be smaller than 5 MB.");
       return;
     }
 
     setSaving(true);
-    setMessage("");
+    setError("");
 
     try {
       const filePath = `${profile.id}/avatar`;
@@ -60,7 +86,7 @@ function Profile({ profile, reloadProfile, onLogAction }) {
       if (uploadError) {
         console.error("Avatar upload error:", uploadError);
 
-        setMessage(`Upload failed: ${uploadError.message}`);
+        toast.error("Upload failed", { description: uploadError.message });
         return;
       }
 
@@ -69,10 +95,12 @@ function Profile({ profile, reloadProfile, onLogAction }) {
       } = supabase.storage.from("avatars").getPublicUrl(filePath);
 
       if (!publicUrl) {
-        setMessage("The image uploaded, but no public URL was returned.");
+        toast.error("The image uploaded, but no public URL was returned.");
         return;
       }
 
+      // The storage path is fixed, so the URL is identical every time. Without a
+      // cache-buster the browser would keep serving the previous picture.
       const finalUrl = `${publicUrl}?v=${Date.now()}`;
 
       const { error: profileError } = await supabase
@@ -85,14 +113,17 @@ function Profile({ profile, reloadProfile, onLogAction }) {
       if (profileError) {
         console.error("Avatar profile update error:", profileError);
 
-        setMessage(
-          `Image uploaded, but profile update failed: ${profileError.message}`,
-        );
+        toast.error("Image uploaded, but the profile update failed", {
+          description: profileError.message,
+        });
         return;
       }
 
       setAvatarUrl(finalUrl);
 
+      // Sweep anything left over from older uploads that used a different name.
+      // A failure here is logged and swallowed on purpose: the new picture is
+      // already live, and an orphaned file is not the member's problem.
       const { data: oldFiles, error: listError } = await supabase.storage
         .from("avatars")
         .list(profile.id);
@@ -115,7 +146,7 @@ function Profile({ profile, reloadProfile, onLogAction }) {
         }
       }
 
-      setMessage("Profile picture updated successfully.");
+      toast.success("Profile picture updated successfully.");
 
       if (onLogAction) {
         await onLogAction({
@@ -126,12 +157,14 @@ function Profile({ profile, reloadProfile, onLogAction }) {
       }
 
       await reloadProfile();
-    } catch (error) {
-      console.error("Unexpected avatar error:", error);
+    } catch (unexpected) {
+      console.error("Unexpected avatar error:", unexpected);
 
-      setMessage("Something went wrong while changing the profile picture.");
+      toast.error("Something went wrong while changing the profile picture.");
     } finally {
       setSaving(false);
+      // Clearing the input is what lets the same file fire `change` twice —
+      // otherwise a failed upload cannot be retried with the same picture.
       event.target.value = "";
     }
   };
@@ -141,7 +174,7 @@ function Profile({ profile, reloadProfile, onLogAction }) {
     setNickname(profile.nickname || "");
     setBio(profile.bio || "");
     setAvatarUrl(profile.avatar_url || "");
-    setMessage("");
+    setError("");
     setEditMode(false);
   };
 
@@ -149,9 +182,9 @@ function Profile({ profile, reloadProfile, onLogAction }) {
     event.preventDefault();
 
     setSaving(true);
-    setMessage("");
+    setError("");
 
-    const { error } = await supabase
+    const { error: saveError } = await supabase
       .from("profiles")
       .update({
         full_name: fullName.trim(),
@@ -161,13 +194,13 @@ function Profile({ profile, reloadProfile, onLogAction }) {
       })
       .eq("id", profile.id);
 
-    if (error) {
-      setMessage(error.message);
+    if (saveError) {
+      setError(saveError.message);
       setSaving(false);
       return;
     }
 
-    setMessage("Profile saved successfully.");
+    toast.success("Profile saved successfully.");
 
     if (onLogAction) {
       await onLogAction({
@@ -229,6 +262,7 @@ function Profile({ profile, reloadProfile, onLogAction }) {
         pointEntries: pointResult.count || 0,
         completedClubTasks: todoResult.count || 0,
       });
+      setStatsLoading(false);
     };
 
     loadProfileStats();
@@ -239,317 +273,251 @@ function Profile({ profile, reloadProfile, onLogAction }) {
   }, [profile.id, profile.points, profile.role, profile.is_active]);
 
   const joinDate = profile.created_at
-    ? new Date(profile.created_at).toLocaleDateString(undefined, {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      })
+    ? formatDate(profile.created_at)
     : "Unknown";
 
-  const displayName = profile.nickname || profile.full_name || "UU MLC Member";
+  const name = profile.nickname || profile.full_name || "UU MLC Member";
 
-  const initials =
-    displayName
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((word) => word[0]?.toUpperCase())
-      .join("") || "M";
+  // Shown only when the nickname is doing the talking and the legal name adds
+  // something — repeating the same string twice is noise.
+  const showFullName =
+    profile.nickname &&
+    profile.full_name &&
+    profile.nickname !== profile.full_name;
 
   return (
-    <div className="space-y-6">
-      {/* Profile hero */}
-      <section className="relative overflow-hidden nexus-glass-strong rounded-3xl p-6 md:p-8">
-        <div className="nexus-glow-purple w-96 h-96 -right-24 -top-32" />
-        <div className="nexus-glow-pink w-72 h-72 -left-16 -bottom-24" />
-
-        <div className="relative flex flex-col md:flex-row md:items-center gap-6">
-          <div className="relative shrink-0">
-            <div className="absolute inset-0 rounded-3xl bg-gradient-aurora blur-xl opacity-50" />
-            <div className="relative w-32 h-32 rounded-3xl overflow-hidden nexus-image-frame-yellow">
-              {avatarUrl ? (
-                <SafeImage
-                  src={avatarUrl}
-                  alt={displayName}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-4xl font-black nexus-text-aurora">
-                  {initials}
-                </div>
-              )}
-            </div>
-
-            {editMode && (
-              <label className="absolute -bottom-2 -right-2 w-10 h-10 rounded-xl nexus-morphic-button cursor-pointer p-0 hover:scale-110">
-                ✎
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={uploadAvatar}
-                  disabled={saving}
-                  className="hidden"
-                />
-              </label>
-            )}
-          </div>
+    <div className="space-y-5">
+      <section className="nx-panel p-6 md:p-8">
+        <div className="flex flex-col gap-6 md:flex-row md:items-center">
+          <Avatar
+            size="2xl"
+            ring
+            src={avatarUrl}
+            name={name}
+            seed={profile.id}
+            className="shrink-0"
+          />
 
           <div className="min-w-0 flex-1">
-            <span className="nexus-badge-yellow text-[10px] tracking-[0.25em]">
-              Member Profile
-            </span>
+            <p className="nx-eyebrow">Member Profile</p>
 
-            <h2 className="text-3xl md:text-5xl font-black mt-3 truncate">
-              <span className="nexus-text-aurora">{displayName}</span>
-            </h2>
+            <h1 className="nx-display mt-2 truncate text-[1.75rem] md:text-[2.5rem]">
+              {name}
+            </h1>
 
-            {profile.nickname &&
-              profile.full_name &&
-              profile.nickname !== profile.full_name && (
-                <p className="text-gray-500 mt-1">{profile.full_name}</p>
-              )}
+            {showFullName && (
+              <p className="mt-1 truncate text-sm text-ink-muted">
+                {profile.full_name}
+              </p>
+            )}
 
-            <div className="flex flex-wrap gap-2 mt-4">
-              <span className="nexus-badge-yellow">
-                {ROLE_NAMES[profile.role]}
-              </span>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Badge tone="brand" icon="shield">
+                {roleLabel(profile.role)}
+              </Badge>
 
-              <span className="nexus-badge-purple">
-                {profile.points ?? 0} points
-              </span>
+              <Badge tone="violet" icon="trophy">
+                {formatNumber(profile.points ?? 0)} points
+              </Badge>
 
-              <span className="nexus-badge-cyan">
+              <Badge tone="info" icon="medal">
                 {profileStats.rank ? `Rank #${profileStats.rank}` : "Rank —"}
-              </span>
+              </Badge>
 
-              <span className="nexus-badge">
+              <Badge tone="neutral" icon="calendar">
                 Joined {joinDate}
-              </span>
+              </Badge>
             </div>
           </div>
 
           {!editMode && (
-            <button
-              type="button"
+            <Button
+              variant="primary"
+              icon="pencil"
+              className="shrink-0"
               onClick={() => {
-                setMessage("");
+                setError("");
                 setEditMode(true);
               }}
-              className="nexus-morphic-button px-5 py-3 shrink-0"
             >
               Edit Profile
-            </button>
+            </Button>
           )}
         </div>
       </section>
 
-      {/* Profile stats */}
-      <section className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="nexus-stat nexus-stat-stat-yellow">
-          <p className="text-gray-500 text-xs uppercase tracking-wider">
-            Current Points
-          </p>
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          label="Current Points"
+          value={formatNumber(profile.points ?? 0)}
+          hint="Current club points"
+          icon="trophy"
+          tone="brand"
+        />
 
-          <p className="text-3xl font-black mt-2 nexus-text-aurora">
-            {profile.points ?? 0}
-          </p>
+        <StatCard
+          label="Current Rank"
+          value={profileStats.rank ? ordinal(profileStats.rank) : "—"}
+          hint={`Of ${formatNumber(profileStats.totalMembers)} active members`}
+          icon="medal"
+          tone="info"
+          loading={statsLoading}
+        />
 
-          <p className="text-gray-500 text-xs mt-1">Current club points</p>
-        </div>
+        <StatCard
+          label="Point Entries"
+          value={formatNumber(profileStats.pointEntries)}
+          hint="Recorded point changes"
+          icon="history"
+          tone="violet"
+          loading={statsLoading}
+        />
 
-        <div className="nexus-stat nexus-stat-stat-cyan">
-          <p className="text-gray-500 text-xs uppercase tracking-wider">
-            Current Rank
-          </p>
-
-          <p className="text-3xl font-black mt-2 text-cyan-300">
-            {profileStats.rank ? `#${profileStats.rank}` : "—"}
-          </p>
-
-          <p className="text-gray-500 text-xs mt-1">
-            Of {profileStats.totalMembers} active members
-          </p>
-        </div>
-
-        <div className="nexus-stat nexus-stat-stat-purple">
-          <p className="text-gray-500 text-xs uppercase tracking-wider">
-            Point Entries
-          </p>
-
-          <p className="text-3xl font-black mt-2 text-purple-300">
-            {profileStats.pointEntries}
-          </p>
-
-          <p className="text-gray-500 text-xs mt-1">Recorded point changes</p>
-        </div>
-
-        <div className="nexus-stat nexus-stat-stat-pink">
-          <p className="text-gray-500 text-xs uppercase tracking-wider">
-            Club Tasks Done
-          </p>
-
-          <p className="text-3xl font-black mt-2 text-pink-300">
-            {profileStats.completedClubTasks}
-          </p>
-
-          <p className="text-gray-500 text-xs mt-1">
-            Completed across the club
-          </p>
-        </div>
+        <StatCard
+          label="Club Tasks Done"
+          value={formatNumber(profileStats.completedClubTasks)}
+          hint="Completed across the club"
+          icon="check-circle"
+          tone="success"
+          loading={statsLoading}
+        />
       </section>
 
-      {/* Membership */}
-      <section className="nexus-glass-strong rounded-3xl p-6 relative overflow-hidden">
-        <div className="absolute -top-10 right-10 w-48 h-48 rounded-full bg-purple-500/10 blur-3xl pointer-events-none" />
-
-        <div className="relative">
-          <p className="nexus-text-aurora text-xs font-bold uppercase tracking-wider">
-            Membership
-          </p>
-
-          <div className="grid md:grid-cols-2 gap-4 mt-4">
-            <div className="rounded-2xl nexus-glass-flat p-4">
-              <p className="text-gray-600 text-xs uppercase">Joined</p>
-
-              <p className="font-bold mt-2">{joinDate}</p>
-            </div>
-
-            <div className="rounded-2xl nexus-glass-flat p-4">
-              <p className="text-gray-600 text-xs uppercase">Status</p>
-
-              <p className="font-bold text-green-300 mt-2">Active</p>
-            </div>
-          </div>
+      <Panel
+        eyebrow="Membership"
+        title="Account"
+        icon="user-check"
+        bodyClassName="grid gap-3 sm:grid-cols-2"
+      >
+        <div className="nx-well p-4">
+          <p className="nx-eyebrow">Joined</p>
+          <p className="mt-1.5 font-semibold">{joinDate}</p>
         </div>
-      </section>
 
-      {/* Profile editor / bio */}
-      <section className="nexus-glass-strong rounded-3xl p-6 md:p-7 relative overflow-hidden">
-        <div className="absolute -bottom-10 left-1/3 w-48 h-48 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" />
+        <div className="nx-well p-4">
+          <p className="nx-eyebrow">Status</p>
+          <p className="mt-1.5 inline-flex items-center gap-1.5 font-semibold text-success">
+            <Icon name="check-circle" size={15} />
+            Active
+          </p>
+        </div>
+      </Panel>
 
-        {!editMode ? (
-          <div className="relative grid md:grid-cols-[1fr_auto] gap-6">
-            <div>
-              <p className="nexus-text-aurora text-xs font-bold uppercase tracking-wider">
-                About
-              </p>
+      {!editMode ? (
+        <Panel eyebrow="About" title="Bio" icon="book-open">
+          <div className="grid gap-5 md:grid-cols-[1fr_16rem]">
+            <p
+              className={
+                profile.bio
+                  ? "text-sm leading-relaxed whitespace-pre-wrap text-ink-muted"
+                  : "text-sm leading-relaxed text-ink-subtle italic"
+              }
+            >
+              {profile.bio ||
+                "Add a short introduction about yourself, your interests, or what you work on in the club."}
+            </p>
 
-              <h3 className="text-xl font-black mt-1">Bio</h3>
-
-              <p className="text-gray-400 leading-relaxed mt-4 whitespace-pre-wrap">
-                {profile.bio ||
-                  "Add a short introduction about yourself, your interests, or what you work on in the club."}
-              </p>
-            </div>
-
-            <div className="rounded-2xl nexus-glass-flat p-5 md:w-64">
-              <p className="text-gray-600 text-xs uppercase tracking-wider">
-                Profile picture
-              </p>
-
-              <p className="text-gray-400 text-sm mt-2">
+            <div className="nx-well p-4">
+              <p className="nx-eyebrow">Profile picture</p>
+              <p className="mt-2 text-[0.8125rem] leading-relaxed text-ink-muted">
                 Click Edit Profile to upload a new picture.
               </p>
             </div>
           </div>
-        ) : (
-          <form onSubmit={saveProfile} className="relative space-y-5">
-            <div>
-              <p className="nexus-text-aurora text-xs font-bold uppercase tracking-wider">
-                Edit Profile
-              </p>
+        </Panel>
+      ) : (
+        <Panel eyebrow="Edit Profile" title="Your Information" icon="pencil">
+          <form onSubmit={saveProfile} className="space-y-5">
+            <div className="grid gap-4 md:grid-cols-2">
+              <TextInput
+                label="Full name"
+                value={fullName}
+                onChange={(event) => setFullName(event.target.value)}
+                autoComplete="name"
+                disabled={saving}
+              />
 
-              <h3 className="text-2xl font-black mt-1">Your Information</h3>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">
-                  Full Name
-                </label>
-
-                <input
-                  value={fullName}
-                  onChange={(event) => setFullName(event.target.value)}
-                  placeholder="Full name"
-                  className="nexus-input"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">
-                  Nickname
-                </label>
-
-                <input
-                  value={nickname}
-                  onChange={(event) => setNickname(event.target.value)}
-                  placeholder="Nickname"
-                  className="nexus-input"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm text-gray-400 mb-2">Bio</label>
-
-              <textarea
-                value={bio}
-                onChange={(event) => setBio(event.target.value)}
-                placeholder="Tell the club a little about yourself..."
-                rows={5}
-                className="nexus-textarea"
+              <TextInput
+                label="Nickname"
+                hint="What the club calls you. Used everywhere your name appears."
+                value={nickname}
+                onChange={(event) => setNickname(event.target.value)}
+                autoComplete="nickname"
+                disabled={saving}
               />
             </div>
 
-            <div className="rounded-2xl nexus-glass-flat p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl overflow-hidden nexus-image-frame">
-                  <SafeImage
-                    src={avatarUrl || logo}
-                    alt=""
-                    className="w-full h-full object-cover"
-                  />
-                </div>
+            <TextArea
+              label="Bio"
+              hint="Shown on your card in the member directory."
+              value={bio}
+              onChange={(event) => setBio(event.target.value)}
+              rows={5}
+              disabled={saving}
+            />
+
+            <div className="nx-well p-4">
+              <div className="flex flex-wrap items-center gap-3">
+                <Avatar
+                  size="lg"
+                  src={avatarUrl}
+                  name={name}
+                  seed={profile.id}
+                />
 
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold">Profile Picture</p>
-
-                  <p className="text-gray-600 text-xs mt-1">
-                    Maximum 5 MB. Use the edit button on the profile photo to
-                    replace it.
+                  <p className="mt-1 text-[0.75rem] text-ink-subtle">
+                    Maximum 5 MB. A new picture is saved as soon as you choose
+                    it — you do not need to submit the form for it.
                   </p>
                 </div>
+
+                <FileButton
+                  label="Change picture"
+                  size="sm"
+                  accept="image/*"
+                  icon="image"
+                  disabled={saving}
+                  onChange={uploadAvatar}
+                />
               </div>
             </div>
 
-            {message && (
-              <div className="nexus-badge-yellow rounded-xl px-3 py-2">
-                {message}
+            {/* Stays put rather than fading away: this is the one message that
+                means "nothing was saved, try again". */}
+            {error && (
+              <div
+                role="alert"
+                className="flex items-start gap-2 rounded-control border border-danger-line bg-danger-soft px-3 py-2.5 text-[0.8125rem] text-danger"
+              >
+                <Icon name="alert-triangle" size={15} className="mt-px shrink-0" />
+                <span>{error}</span>
               </div>
             )}
 
-            <div className="flex flex-wrap gap-3">
-              <button
+            <div className="flex flex-wrap gap-2.5">
+              <Button
                 type="submit"
-                disabled={saving}
-                className="nexus-morphic-button px-6 py-3 disabled:opacity-50"
+                variant="primary"
+                icon="check"
+                loading={saving}
               >
                 {saving ? "Saving..." : "Save Profile"}
-              </button>
+              </Button>
 
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={resetEdits}
                 disabled={saving}
-                className="nexus-morphic-button-ghost px-6 py-3"
               >
                 Cancel
-              </button>
+              </Button>
             </div>
           </form>
-        )}
-      </section>
+        </Panel>
+      )}
     </div>
   );
 }

@@ -28,7 +28,7 @@ Avoid introducing a new accent color unless it has a clear semantic role.
 
 ## Typography
 
-- Use the existing system/Inter-style sans-serif stack.
+- Use the native system sans-serif stack (`--font-sans`); no webfonts.
 - Headings should use strong weight and tight tracking.
 - Body copy should favor readable line-height over excessive density.
 - Labels and metadata may use uppercase tracking sparingly.

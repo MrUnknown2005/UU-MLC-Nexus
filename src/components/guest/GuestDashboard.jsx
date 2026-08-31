@@ -1,127 +1,194 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
-import Header from "../common/Header";
+import { Avatar } from "../ui/Avatar.jsx";
+import { Badge } from "../ui/Badge.jsx";
+import { Brand } from "../common/Brand.jsx";
+import { Button } from "../ui/Button.jsx";
+import { EmptyState } from "../ui/EmptyState.jsx";
+import { Panel } from "../ui/Panel.jsx";
+import { Skeleton } from "../ui/Skeleton.jsx";
+import { ThemeToggle } from "../common/ThemeToggle.jsx";
+import { displayName, formatDateTime, formatNumber } from "../../lib/format.js";
 
+/**
+ * What a guest sees: why they cannot get in yet, and the club news anyway.
+ *
+ * This screen cannot use the dashboard shell — a guest has no navigation, so a
+ * rail with nothing in it would be a lie. It carries its own slim top bar
+ * instead, holding only the three things a guest can actually do: switch theme,
+ * see who they are signed in as, and leave.
+ *
+ * The news query is unchanged, but it now has the two states it was missing.
+ * Before, a failed request and an empty club looked identical: "No news
+ * published yet." Silence is not the same as nothing.
+ */
 function GuestDashboard({ profile, onLogout }) {
   const [news, setNews] = useState([]);
+  const [status, setStatus] = useState("loading"); // loading | ready | error
 
-  async function loadNews() {
-    const { data } = await supabase
+  const loadNews = useCallback(async () => {
+    setStatus("loading");
+
+    const { data, error } = await supabase
       .from("news")
       .select("*")
       .order("created_at", {
         ascending: false,
       });
 
+    if (error) {
+      console.error("Guest news load error:", error);
+      setNews([]);
+      setStatus("error");
+      return;
+    }
+
     setNews(data || []);
-  }
+    setStatus("ready");
+  }, []);
 
   useEffect(() => {
     // Intentional fetch-on-mount; loadNews is stable for the component's lifetime.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadNews();
-  }, []);
+  }, [loadNews]);
+
+  const name = displayName(profile);
 
   return (
-    <div className="nexus-app-bg min-h-screen text-white">
-      {/* Glow blobs */}
-      <div className="nexus-glow-yellow w-[22rem] h-[22rem] -top-32 -left-32" />
-      <div className="nexus-glow-purple w-[26rem] h-[26rem] top-1/3 -right-32" />
-      <div className="nexus-glow-cyan w-[20rem] h-[20rem] bottom-0 left-1/4" />
+    <div className="nx-backdrop min-h-dvh">
+      <header className="sticky top-0 z-30 border-b border-line bg-canvas/85 backdrop-blur-md">
+        <div className="mx-auto flex h-[var(--topbar-h)] w-full max-w-5xl items-center gap-3 px-4 sm:px-6">
+          <Brand size="sm" />
 
-      <div className="relative z-10">
-        <Header profile={profile} onLogout={onLogout} />
+          <div className="ml-auto flex items-center gap-2">
+            <ThemeToggle />
 
-        <main className="max-w-5xl mx-auto px-3 sm:px-6 py-5 sm:py-10 space-y-5 sm:space-y-8">
-          <section className="nexus-glass-strong rounded-3xl p-5 sm:p-8 relative overflow-hidden">
-            <div className="nexus-glow-yellow w-72 h-72 -top-20 -right-20" />
-            <div className="nexus-glow-purple w-72 h-72 -bottom-20 -left-20" />
-
-            <div className="relative">
-              <span className="nexus-glass-pill-yellow text-[10px] tracking-[0.2em]">
-                <span className="nexus-dot-glow" />
-                Pending
+            {/* The avatar is the only place a guest can confirm which account
+                they are waiting on — worth the space on a screen this empty. */}
+            <span className="flex items-center gap-2 pl-1">
+              <Avatar
+                size="sm"
+                src={profile.avatar_url}
+                name={name}
+                seed={profile.id}
+              />
+              <span className="hidden text-[0.8125rem] font-semibold sm:inline">
+                {name}
               </span>
+            </span>
 
-              <p className="text-gray-400 mt-4">
-                Welcome,{" "}
-                <span className="nexus-text-aurora font-bold">
-                  {profile.nickname || profile.full_name}
-                </span>
-              </p>
+            <Button variant="ghost" size="sm" icon="log-out" onClick={onLogout}>
+              <span className="hidden sm:inline">Sign out</span>
+            </Button>
+          </div>
+        </div>
+      </header>
 
-              <h2 className="text-3xl sm:text-5xl font-black mt-2">
-                <span className="nexus-text-aurora">Your account</span>{" "}
-                <span className="nexus-text-ocean">is pending</span>
-              </h2>
+      <main className="mx-auto w-full max-w-5xl space-y-5 px-4 py-6 sm:px-6 sm:py-9">
+        <section className="nx-panel p-6 sm:p-9">
+          <p className="nx-eyebrow inline-flex items-center gap-2 rounded-full border border-warn-line bg-warn-soft px-3 py-1.5 text-warn">
+            <span className="nx-dot nx-dot-live" />
+            Pending
+          </p>
 
-              <p className="text-gray-400 mt-4 max-w-2xl">
-                An administrator needs to promote your account before you
-                become a full club member. Hang tight — exciting things are
-                happening in the meantime.
-              </p>
+          <p className="mt-5 text-sm text-ink-muted">
+            Welcome, <span className="font-semibold text-ink">{name}</span>
+          </p>
 
-              <div className="flex flex-wrap gap-2 mt-6">
-                <span className="nexus-badge-yellow">
-                  Guest
-                </span>
-                <span className="nexus-badge-purple">
-                  Awaiting Approval
-                </span>
-                <span className="nexus-badge-cyan">
-                  {profile.points ?? 0} pts
-                </span>
-              </div>
+          <h1 className="nx-display mt-2 text-[1.75rem] sm:text-[2.5rem]">
+            Your account is <span className="text-brand-text">pending</span>
+          </h1>
+
+          <p className="mt-4 max-w-2xl text-sm leading-relaxed text-ink-muted">
+            An administrator needs to promote your account before you become a
+            full club member. Hang tight — exciting things are happening in the
+            meantime.
+          </p>
+
+          <div className="mt-6 flex flex-wrap gap-2">
+            <Badge tone="warn" icon="clock">
+              Guest
+            </Badge>
+            <Badge tone="violet" icon="shield">
+              Awaiting Approval
+            </Badge>
+            <Badge tone="brand" icon="trophy">
+              {formatNumber(profile.points ?? 0)} pts
+            </Badge>
+          </div>
+        </section>
+
+        <Panel
+          eyebrow="Updates"
+          title="Club News"
+          icon="newspaper"
+          actions={
+            status !== "loading" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                icon="refresh"
+                onClick={loadNews}
+              >
+                Refresh
+              </Button>
+            )
+          }
+          bodyClassName="space-y-3"
+        >
+          {status === "loading" && (
+            <div aria-busy="true" aria-live="polite" className="space-y-3">
+              <span className="sr-only">Loading club news…</span>
+              {[0, 1].map((row) => (
+                <div key={row} className="nx-card space-y-2.5 p-5">
+                  <Skeleton className="h-5 w-1/2" />
+                  <Skeleton className="h-3.5 w-full" />
+                  <Skeleton className="h-3.5 w-4/5" />
+                </div>
+              ))}
             </div>
-          </section>
+          )}
 
-          <section className="nexus-glass-strong rounded-3xl p-6 relative overflow-hidden">
-            <div className="nexus-glass-overlay-aurora absolute -top-10 right-10 w-48 h-48 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" />
+          {status === "error" && (
+            <EmptyState
+              icon="alert-triangle"
+              title="Could not load club news"
+              description="The announcements are there — this is a loading problem, not an empty club."
+              action={
+                <Button variant="secondary" icon="refresh" onClick={loadNews}>
+                  Try again
+                </Button>
+              }
+            />
+          )}
 
-            <div className="relative">
-              <p className="nexus-text-ocean text-xs font-bold uppercase tracking-wider">
-                Updates
-              </p>
+          {status === "ready" &&
+            (news.length === 0 ? (
+              <EmptyState
+                icon="newspaper"
+                title="No news published yet."
+                description="When the club posts an announcement it will appear here first."
+              />
+            ) : (
+              news.map((item) => (
+                <article key={item.id} className="nx-card nx-lift p-5">
+                  <h2 className="nx-display text-lg">{item.title}</h2>
 
-              <h3 className="text-2xl font-black mt-1 mb-5">
-                Club News
-              </h3>
-
-              {news.length === 0 ? (
-                <div className="text-center py-10 nexus-glass-flat nexus-glass-dashed rounded-2xl">
-                  <div className="text-4xl">📰</div>
-                  <p className="text-gray-500 mt-3">
-                    No news published yet.
+                  <p className="mt-2 text-sm leading-relaxed whitespace-pre-wrap text-ink-muted">
+                    {item.content}
                   </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {news.map((item) => (
-                    <article
-                      key={item.id}
-                      className="nexus-glass-flat nexus-glass-hover rounded-2xl p-5"
-                    >
-                      <h4 className="font-black text-lg">
-                        {item.title}
-                      </h4>
 
-                      <p className="text-gray-400 mt-2 whitespace-pre-wrap">
-                        {item.content}
-                      </p>
-
-                      {item.created_at && (
-                        <p className="text-gray-600 text-xs mt-3">
-                          {new Date(item.created_at).toLocaleString()}
-                        </p>
-                      )}
-                    </article>
-                  ))}
-                </div>
-              )}
-            </div>
-          </section>
-        </main>
-      </div>
+                  {item.created_at && (
+                    <p className="mt-3.5 text-[0.75rem] text-ink-subtle">
+                      {formatDateTime(item.created_at)}
+                    </p>
+                  )}
+                </article>
+              ))
+            ))}
+        </Panel>
+      </main>
     </div>
   );
 }

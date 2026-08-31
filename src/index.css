@@ -1,32 +1,26 @@
-@import "tailwindcss";
-@import "./styles/NexusMorphism.css";
-@import "./styles/NexusRefined.css";
-@import "./styles/NexusPages.css";
-@import "./styles/NexusV2.css";
+/* =============================================================
+   UU MLC Nexus — stylesheet entry
+   -------------------------------------------------------------
+   Three files, in dependency order, zero overlap:
 
-:root {
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  color: #f7f2df;
-  background: #080907;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-* { box-sizing: border-box; }
-html, body, #root { min-width: 320px; min-height: 100%; }
-body { margin: 0; }
-button, input, textarea, select { font: inherit; }
-button { cursor: pointer; }
-button:disabled { cursor: not-allowed; }
-img { display: block; max-width: 100%; }
-a { color: inherit; text-decoration: none; }
-button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid #f4c84b; outline-offset: 3px; }
-* { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.22) transparent; }
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,.22); border-radius: 999px; }
-::selection { background: rgba(244,200,75,.28); color: #fff9e8; }
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
-}
+     tokens.css      values + the Tailwind theme bridge
+     base.css        element defaults
+     components.css  the few composite classes
+
+   There is no fourth layer and no `!important` override file.
+   If something looks wrong, fix the token or the component —
+   never add a patch sheet on top.
+   ============================================================= */
+
+@import "tailwindcss";
+@import "./styles/tokens.css";
+@import "./styles/base.css";
+@import "./styles/components.css";
+
+/* After the imports, because CSS requires it: `@import` may only be
+   preceded by `@charset` or an empty `@layer`.
+
+   Explicit sources keep class detection deterministic instead of
+   relying on Vite's automatic content inference. */
+@source "../index.html";
+@source "./";

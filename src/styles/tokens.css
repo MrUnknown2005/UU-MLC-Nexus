@@ -1,0 +1,344 @@
+/* =============================================================
+   UU MLC Nexus — Design tokens
+   -------------------------------------------------------------
+   One source of truth. Two layers:
+
+   1. RUNTIME TOKENS  (`--bg`, `--fg`, `--brand`, …)
+      Plain custom properties re-declared per theme. Everything
+      visual resolves through these, so a single `data-theme`
+      attribute repaints the whole product.
+
+   2. TAILWIND BRIDGE (`@theme inline`)
+      Maps the runtime tokens onto Tailwind's theme namespaces so
+      utilities like `bg-surface`, `text-ink-muted`, `border-line`
+      and `font-display` stay theme-aware with zero duplication.
+
+   Palette is derived from the club mark: marigold amber on warm
+   ink. Amber is the only accent — semantics (success / danger /
+   warn / info) exist to communicate state, never to decorate.
+   ============================================================= */
+
+/* -------------------------------------------------------------
+   Dark theme — the default surface for the product.
+   ------------------------------------------------------------- */
+:root {
+  color-scheme: dark;
+
+  /* Surfaces, lightest-on-darkest order */
+  --bg: #0c0b09;
+  --bg-veil: #08070600;
+  --surface: #141310;
+  --surface-2: #1c1a16;
+  --surface-3: #24211c;
+  --well: #100f0c;
+
+  /* Interaction wash */
+  --hover: rgb(245 241 232 / 4%);
+  --active: rgb(245 241 232 / 8%);
+
+  /* Type */
+  --fg: #f5f1e8;
+  --fg-muted: #a8a296;
+  --fg-subtle: #736e63;
+
+  /* Hairlines */
+  --line: rgb(245 241 232 / 9%);
+  --line-strong: rgb(245 241 232 / 17%);
+
+  /* Brand — the club marigold */
+  --brand: #f2a81c;
+  --brand-hover: #ffbb33;
+  --brand-press: #d8930f;
+  --brand-ink: #1a1509;
+  --brand-text: #f8c053;
+  --brand-soft: rgb(242 168 28 / 13%);
+  --brand-line: rgb(242 168 28 / 30%);
+  --brand-ring: rgb(242 168 28 / 38%);
+
+  /* State */
+  --success: #46d28a;
+  --success-soft: rgb(70 210 138 / 13%);
+  --success-line: rgb(70 210 138 / 28%);
+  --danger: #ff6b6b;
+  --danger-soft: rgb(255 107 107 / 13%);
+  --danger-line: rgb(255 107 107 / 30%);
+  --warn: #ffc24b;
+  --warn-soft: rgb(255 194 75 / 13%);
+  --warn-line: rgb(255 194 75 / 28%);
+  --info: #5cc8ff;
+  --info-soft: rgb(92 200 255 / 13%);
+  --info-line: rgb(92 200 255 / 28%);
+  --violet: #a78bfa;
+  --violet-soft: rgb(167 139 250 / 14%);
+  --violet-line: rgb(167 139 250 / 30%);
+
+  /* Elevation */
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 30%), 0 8px 24px -12px rgb(0 0 0 / 45%);
+  --shadow-pop: 0 12px 40px -8px rgb(0 0 0 / 60%), 0 2px 8px rgb(0 0 0 / 35%);
+  --shadow-brand: 0 8px 24px -10px rgb(242 168 28 / 45%);
+
+  /* Skeleton shimmer */
+  --shimmer: rgb(245 241 232 / 7%);
+  --shimmer-peak: rgb(245 241 232 / 13%);
+}
+
+/* -------------------------------------------------------------
+   Light theme — warm paper, same amber.
+   Applied when the visitor's OS prefers light and they have not
+   pinned a theme, or when `data-theme="light"` is set explicitly.
+   ------------------------------------------------------------- */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+
+    --bg: #faf8f4;
+    --bg-veil: #faf8f400;
+    --surface: #ffffff;
+    --surface-2: #f6f3ec;
+    --surface-3: #efeae0;
+    --well: #f3efe7;
+
+    --hover: rgb(26 21 9 / 4%);
+    --active: rgb(26 21 9 / 8%);
+
+    --fg: #1a1815;
+    --fg-muted: #5d584e;
+    --fg-subtle: #8a8478;
+
+    --line: rgb(26 21 9 / 11%);
+    --line-strong: rgb(26 21 9 / 21%);
+
+    --brand: #f2a81c;
+    --brand-hover: #e39c12;
+    --brand-press: #c4840c;
+    --brand-ink: #1a1509;
+    --brand-text: #8a5a05;
+    --brand-soft: rgb(242 168 28 / 17%);
+    --brand-line: rgb(196 132 12 / 38%);
+    --brand-ring: rgb(196 132 12 / 40%);
+
+    --success: #0f9d63;
+    --success-soft: rgb(15 157 99 / 12%);
+    --success-line: rgb(15 157 99 / 30%);
+    --danger: #d93a3a;
+    --danger-soft: rgb(217 58 58 / 11%);
+    --danger-line: rgb(217 58 58 / 30%);
+    --warn: #b7791f;
+    --warn-soft: rgb(183 121 31 / 13%);
+    --warn-line: rgb(183 121 31 / 30%);
+    --info: #0a7ea4;
+    --info-soft: rgb(10 126 164 / 11%);
+    --info-line: rgb(10 126 164 / 28%);
+    --violet: #6d5ae0;
+    --violet-soft: rgb(109 90 224 / 11%);
+    --violet-line: rgb(109 90 224 / 30%);
+
+    --shadow-card: 0 1px 2px rgb(26 21 9 / 6%), 0 8px 24px -14px rgb(26 21 9 / 18%);
+    --shadow-pop: 0 16px 48px -12px rgb(26 21 9 / 22%), 0 2px 8px rgb(26 21 9 / 8%);
+    --shadow-brand: 0 8px 24px -10px rgb(196 132 12 / 40%);
+
+    --shimmer: rgb(26 21 9 / 6%);
+    --shimmer-peak: rgb(26 21 9 / 11%);
+  }
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+
+  --bg: #faf8f4;
+  --bg-veil: #faf8f400;
+  --surface: #ffffff;
+  --surface-2: #f6f3ec;
+  --surface-3: #efeae0;
+  --well: #f3efe7;
+
+  --hover: rgb(26 21 9 / 4%);
+  --active: rgb(26 21 9 / 8%);
+
+  --fg: #1a1815;
+  --fg-muted: #5d584e;
+  --fg-subtle: #8a8478;
+
+  --line: rgb(26 21 9 / 11%);
+  --line-strong: rgb(26 21 9 / 21%);
+
+  --brand: #f2a81c;
+  --brand-hover: #e39c12;
+  --brand-press: #c4840c;
+  --brand-ink: #1a1509;
+  --brand-text: #8a5a05;
+  --brand-soft: rgb(242 168 28 / 17%);
+  --brand-line: rgb(196 132 12 / 38%);
+  --brand-ring: rgb(196 132 12 / 40%);
+
+  --success: #0f9d63;
+  --success-soft: rgb(15 157 99 / 12%);
+  --success-line: rgb(15 157 99 / 30%);
+  --danger: #d93a3a;
+  --danger-soft: rgb(217 58 58 / 11%);
+  --danger-line: rgb(217 58 58 / 30%);
+  --warn: #b7791f;
+  --warn-soft: rgb(183 121 31 / 13%);
+  --warn-line: rgb(183 121 31 / 30%);
+  --info: #0a7ea4;
+  --info-soft: rgb(10 126 164 / 11%);
+  --info-line: rgb(10 126 164 / 28%);
+  --violet: #6d5ae0;
+  --violet-soft: rgb(109 90 224 / 11%);
+  --violet-line: rgb(109 90 224 / 30%);
+
+  --shadow-card: 0 1px 2px rgb(26 21 9 / 6%), 0 8px 24px -14px rgb(26 21 9 / 18%);
+  --shadow-pop: 0 16px 48px -12px rgb(26 21 9 / 22%), 0 2px 8px rgb(26 21 9 / 8%);
+  --shadow-brand: 0 8px 24px -10px rgb(196 132 12 / 40%);
+
+  --shimmer: rgb(26 21 9 / 6%);
+  --shimmer-peak: rgb(26 21 9 / 11%);
+}
+
+/* An explicit dark pin re-states the defaults so it also wins
+   inside `prefers-color-scheme: light`. */
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #0c0b09;
+  --bg-veil: #08070600;
+  --surface: #141310;
+  --surface-2: #1c1a16;
+  --surface-3: #24211c;
+  --well: #100f0c;
+
+  --hover: rgb(245 241 232 / 4%);
+  --active: rgb(245 241 232 / 8%);
+
+  --fg: #f5f1e8;
+  --fg-muted: #a8a296;
+  --fg-subtle: #736e63;
+
+  --line: rgb(245 241 232 / 9%);
+  --line-strong: rgb(245 241 232 / 17%);
+
+  --brand: #f2a81c;
+  --brand-hover: #ffbb33;
+  --brand-press: #d8930f;
+  --brand-ink: #1a1509;
+  --brand-text: #f8c053;
+  --brand-soft: rgb(242 168 28 / 13%);
+  --brand-line: rgb(242 168 28 / 30%);
+  --brand-ring: rgb(242 168 28 / 38%);
+
+  --success: #46d28a;
+  --success-soft: rgb(70 210 138 / 13%);
+  --success-line: rgb(70 210 138 / 28%);
+  --danger: #ff6b6b;
+  --danger-soft: rgb(255 107 107 / 13%);
+  --danger-line: rgb(255 107 107 / 30%);
+  --warn: #ffc24b;
+  --warn-soft: rgb(255 194 75 / 13%);
+  --warn-line: rgb(255 194 75 / 28%);
+  --info: #5cc8ff;
+  --info-soft: rgb(92 200 255 / 13%);
+  --info-line: rgb(92 200 255 / 28%);
+  --violet: #a78bfa;
+  --violet-soft: rgb(167 139 250 / 14%);
+  --violet-line: rgb(167 139 250 / 30%);
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 30%), 0 8px 24px -12px rgb(0 0 0 / 45%);
+  --shadow-pop: 0 12px 40px -8px rgb(0 0 0 / 60%), 0 2px 8px rgb(0 0 0 / 35%);
+  --shadow-brand: 0 8px 24px -10px rgb(242 168 28 / 45%);
+
+  --shimmer: rgb(245 241 232 / 7%);
+  --shimmer-peak: rgb(245 241 232 / 13%);
+}
+
+/* -------------------------------------------------------------
+   Non-themed constants: type, rhythm, geometry, timing.
+   ------------------------------------------------------------- */
+:root {
+  /* One native stack, no webfont. Headings differ from body by weight and
+     tracking (see base.css), never by family — a display+body pairing is a
+     tell we deliberately avoid. `--font-display` aliases the same stack so
+     every existing `font-display` utility keeps working. */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-display: var(--font-sans);
+  --font-mono: ui-monospace, "JetBrains Mono", "SFMono-Regular", Menlo,
+    Consolas, monospace;
+
+  /* Layout rhythm */
+  --shell-max: 1560px;
+  --rail-w: 17rem;
+  --topbar-h: 3.75rem;
+
+  /* Geometry */
+  --r-control: 10px;
+  --r-card: 14px;
+  --r-panel: 18px;
+  --r-sheet: 22px;
+
+  /* Motion — one curve, three speeds */
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --t-fast: 120ms;
+  --t-base: 190ms;
+  --t-slow: 320ms;
+}
+
+/* -------------------------------------------------------------
+   Tailwind bridge. `inline` keeps the reference to the runtime
+   variable instead of copying its value, so utilities follow the
+   active theme.
+   ------------------------------------------------------------- */
+@theme inline {
+  --color-canvas: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-well: var(--well);
+  --color-hover: var(--hover);
+  --color-active: var(--active);
+
+  --color-ink: var(--fg);
+  --color-ink-muted: var(--fg-muted);
+  --color-ink-subtle: var(--fg-subtle);
+
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-press: var(--brand-press);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-text: var(--brand-text);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-line: var(--brand-line);
+
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-success-line: var(--success-line);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-line: var(--danger-line);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-warn-line: var(--warn-line);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-info-line: var(--info-line);
+  --color-violet: var(--violet);
+  --color-violet-soft: var(--violet-soft);
+  --color-violet-line: var(--violet-line);
+
+  --font-display: var(--font-display);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  --radius-control: var(--r-control);
+  --radius-card: var(--r-card);
+  --radius-panel: var(--r-panel);
+  --radius-sheet: var(--r-sheet);
+
+  --shadow-card: var(--shadow-card);
+  --shadow-pop: var(--shadow-pop);
+  --shadow-brand: var(--shadow-brand);
+
+  --ease-out-quint: var(--ease);
+}

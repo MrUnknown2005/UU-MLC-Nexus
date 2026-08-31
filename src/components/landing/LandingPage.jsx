@@ -1,72 +1,145 @@
-import logo from "../../assets/club-logo.png";
+import { Brand, BrandMark } from "../common/Brand.jsx";
+import { Button } from "../ui/Button.jsx";
+import { Icon } from "../ui/Icon.jsx";
+import { ThemeToggle } from "../common/ThemeToggle.jsx";
 
-const modules = [
-  { code: "01", name: "Members", detail: "People, roles, presence" },
-  { code: "02", name: "Points", detail: "Recognition, ranking, momentum" },
-  { code: "03", name: "Workspace", detail: "Tasks, news, club activity" },
+/**
+ * The signed-out front door.
+ *
+ * The old version was a wall of one-off effects — three animated orbit rings, a
+ * noise overlay, two float-cards, and about a dozen hardcoded rgba values that
+ * only ever worked in dark mode. All of it competed with the two things this
+ * page is actually for: saying what Nexus is, and getting you to a form.
+ *
+ * So the hierarchy is now the hero, then the two buttons, then everything else.
+ * The panel on the right is still there but quiet, built from the same tokens as
+ * the rest of the product, and it simply does not render below `lg` — a phone
+ * needs that vertical space for content, not decoration.
+ */
+const MODULES = [
+  {
+    code: "01",
+    name: "Members",
+    detail: "People, roles, presence",
+    icon: "users",
+  },
+  {
+    code: "02",
+    name: "Points",
+    detail: "Recognition, ranking, momentum",
+    icon: "trophy",
+  },
+  {
+    code: "03",
+    name: "Workspace",
+    detail: "Tasks, news, club activity",
+    icon: "tasks",
+  },
 ];
 
 function LandingPage({ onLogin, onJoin }) {
   return (
-    <div className="nexus-v2-landing min-h-screen text-white overflow-hidden relative">
-      <div className="nexus-v2-noise" aria-hidden="true" />
-      <div className="max-w-[1480px] mx-auto px-5 sm:px-8 py-6 sm:py-8 relative z-10">
-        <header className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src={logo} alt="UU MLC logo" className="w-11 h-11 rounded-xl object-cover nexus-v2-logo" />
-            <div>
-              <p className="text-[10px] uppercase tracking-[.22em] text-yellow-300/70">Uttara University</p>
-              <p className="text-sm font-black tracking-[-.02em]">Machine Learning Club</p>
-            </div>
+    <div className="nx-backdrop flex min-h-dvh flex-col">
+      <div className="mx-auto flex w-full max-w-[var(--shell-max)] flex-1 flex-col px-4 py-5 sm:px-7 sm:py-7">
+        <header className="flex items-center justify-between gap-3">
+          <Brand size="md" subtitle="Uttara University" />
+
+          <div className="flex items-center gap-1.5">
+            <ThemeToggle />
+            {/* The header sign-in and the hero's secondary button are the same
+                action on purpose: whichever one you reach for first, it works. */}
+            <Button
+              variant="ghost"
+              size="sm"
+              iconRight="arrow-right"
+              onClick={onLogin}
+            >
+              <span className="hidden sm:inline">Member sign in</span>
+              <span className="sm:hidden">Sign in</span>
+            </Button>
           </div>
-          <button type="button" onClick={onLogin} className="nexus-v2-link-button">Member sign in <span>↗</span></button>
         </header>
 
-        <main className="grid lg:grid-cols-[1.08fr_.92fr] gap-12 lg:gap-20 items-center min-h-[calc(100vh-150px)] py-16 lg:py-20">
-          <section>
-            <div className="inline-flex items-center gap-2 text-[10px] uppercase tracking-[.22em] font-extrabold text-yellow-300 border border-yellow-300/20 bg-yellow-300/[.06] rounded-full px-3 py-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(120,224,143,.8)]" />
+        <main className="grid flex-1 items-center gap-14 py-14 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:py-20">
+          <section className="min-w-0">
+            <p className="nx-eyebrow inline-flex items-center gap-2 rounded-full border border-brand-line bg-brand-soft px-3 py-1.5 text-brand-text">
+              <span className="nx-dot nx-dot-live text-success" />
               Nexus is live
-            </div>
-            <h1 className="mt-7 text-[clamp(3.4rem,8vw,7.8rem)] leading-[.88] font-black tracking-[-.075em] max-w-5xl">
-              The club,<br /><span className="nexus-v2-gold-text">in motion.</span>
-            </h1>
-            <p className="mt-8 max-w-xl text-base sm:text-lg leading-8 text-white/55">
-              Nexus is the operating layer for UU MLC — a focused place where people, contribution, work and momentum meet.
             </p>
-            <div className="flex flex-wrap gap-3 mt-9">
-              <button type="button" onClick={onJoin} className="nexus-v2-primary">Enter Nexus <span>→</span></button>
-              <button type="button" onClick={onLogin} className="nexus-v2-secondary">I already have an account</button>
+
+            <h1 className="nx-hero-type mt-7">
+              The club,
+              <br />
+              <span className="nx-mark">in motion.</span>
+            </h1>
+
+            <p className="mt-7 max-w-xl text-base leading-relaxed text-ink-muted sm:text-lg">
+              Nexus is the operating layer for UU MLC — a focused place where
+              people, contribution, work and momentum meet.
+            </p>
+
+            <div className="mt-9 flex flex-wrap gap-2.5">
+              <Button
+                variant="primary"
+                size="lg"
+                iconRight="arrow-right"
+                onClick={onJoin}
+              >
+                Enter Nexus
+              </Button>
+              <Button variant="secondary" size="lg" onClick={onLogin}>
+                I already have an account
+              </Button>
             </div>
-            <div className="grid sm:grid-cols-3 gap-px bg-white/[.08] border border-white/[.08] rounded-2xl overflow-hidden mt-14 max-w-2xl">
-              {modules.map((item) => (
-                <div key={item.code} className="bg-[#10120e] p-5 group hover:bg-[#171a13] transition-colors">
-                  <div className="flex justify-between text-[10px] font-bold uppercase tracking-[.18em] text-white/30"><span>{item.code}</span><span className="text-yellow-300/60">N</span></div>
-                  <p className="mt-7 font-black text-lg tracking-[-.02em] group-hover:text-yellow-200 transition-colors">{item.name}</p>
-                  <p className="text-xs text-white/35 mt-1 leading-5">{item.detail}</p>
-                </div>
+
+            {/* Cards rather than a hairline grid of divs: the module list is
+                content, and it has to survive a theme switch. */}
+            <ul className="mt-14 grid max-w-2xl gap-3 sm:grid-cols-3">
+              {MODULES.map((item) => (
+                <li key={item.code} className="nx-card nx-lift p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="nx-eyebrow nx-num">{item.code}</span>
+                    <Icon
+                      name={item.icon}
+                      size={15}
+                      className="text-brand-text"
+                    />
+                  </div>
+
+                  <p className="nx-display mt-6 text-base">{item.name}</p>
+                  <p className="mt-1 text-[0.75rem] leading-relaxed text-ink-subtle">
+                    {item.detail}
+                  </p>
+                </li>
               ))}
-            </div>
+            </ul>
           </section>
 
-          <section className="relative min-h-[500px] flex items-center justify-center">
-            <div className="nexus-v2-orbit orbit-a" aria-hidden="true" />
-            <div className="nexus-v2-orbit orbit-b" aria-hidden="true" />
-            <div className="nexus-v2-orbit orbit-c" aria-hidden="true" />
-            <div className="nexus-v2-core">
-              <div className="nexus-v2-core-ring" />
-              <img src={logo} alt="UU MLC" className="w-24 h-24 sm:w-32 sm:h-32 rounded-[28px] object-cover relative z-10 shadow-2xl" />
-              <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 whitespace-nowrap text-center">
-                <p className="text-[10px] uppercase tracking-[.28em] text-white/30">UU MLC / NEXUS</p>
-                <p className="text-sm font-bold text-white/75 mt-2">Community operating system</p>
-              </div>
+          {/* Decorative, and honestly so: no information lives in here, which is
+              exactly why it is allowed to vanish on a narrow screen. */}
+          <section
+            aria-hidden="true"
+            className="relative hidden aspect-square w-full place-items-center lg:grid"
+          >
+            <span className="absolute h-full w-full rounded-full border border-line" />
+            <span className="absolute h-[74%] w-[74%] rounded-full border border-line-strong" />
+            <span className="absolute h-[48%] w-[48%] rounded-full border border-brand-line bg-brand-soft" />
+
+            <span className="absolute top-[13%] h-2 w-2 rounded-full bg-brand" />
+            <span className="absolute right-[13%] bottom-[26%] h-1.5 w-1.5 rounded-full bg-info" />
+            <span className="absolute bottom-[13%] left-[22%] h-1.5 w-1.5 rounded-full bg-violet" />
+
+            <div className="relative grid place-items-center">
+              <BrandMark size="xl" className="shadow-brand" />
+              <p className="nx-eyebrow mt-5 text-center">UU MLC / Nexus</p>
+              <p className="mt-1.5 text-sm font-semibold text-ink-muted">
+                Community operating system
+              </p>
             </div>
-            <div className="absolute top-16 right-3 sm:right-10 nexus-v2-float-card"><span className="text-emerald-300">●</span> Live activity</div>
-            <div className="absolute bottom-16 left-0 sm:left-4 nexus-v2-float-card"><span className="text-yellow-300">✦</span> Contribution matters</div>
           </section>
         </main>
 
-        <footer className="border-t border-white/[.08] pt-5 flex flex-col sm:flex-row justify-between gap-2 text-[10px] uppercase tracking-[.16em] text-white/25">
+        <footer className="nx-eyebrow flex flex-col justify-between gap-2 border-t border-line pt-5 sm:flex-row">
           <span>Uttara University · Machine Learning Club</span>
           <span>Learn · Build · Lead</span>
         </footer>

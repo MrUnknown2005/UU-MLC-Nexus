@@ -1,37 +1,264 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { uploadAttachment } from "../../lib/uploadAttachment";
+import { Badge } from "../ui/Badge.jsx";
+import { Button } from "../ui/Button.jsx";
+import { Checkbox } from "../ui/Checkbox.jsx";
+import { EmptyState } from "../ui/EmptyState.jsx";
+import { Icon } from "../ui/Icon.jsx";
+import { IconButton } from "../ui/IconButton.jsx";
+import { Panel } from "../ui/Panel.jsx";
+import { Progress } from "../ui/Progress.jsx";
+import { SearchInput } from "../ui/SearchInput.jsx";
+import { Select } from "../ui/Select.jsx";
+import { Skeleton } from "../ui/Skeleton.jsx";
+import { StatCard } from "../ui/StatCard.jsx";
+import { TextArea } from "../ui/TextArea.jsx";
+import { TextInput } from "../ui/TextInput.jsx";
+import { FileButton } from "../ui/FileButton.jsx";
+import { useConfirm } from "../ui/confirm-context.js";
+import { useToast } from "../ui/toast-context.js";
+import { useNow } from "../../hooks/useNow.js";
+import { cn } from "../../lib/cn.js";
+import {
+  countLabel,
+  daysUntil,
+  formatDate,
+  formatDeadline,
+  parseDate,
+  toDateInputValue,
+} from "../../lib/format.js";
+
+/**
+ * Club tasks — the shared to-do list, editable by admins and completable by all.
+ *
+ * Four things were wrong with the old version beyond the styling.
+ *
+ * `TodoCard` was declared inside the component body, so every keystroke in the
+ * search box gave React a brand-new component type and it threw away and rebuilt
+ * every card in the list. It lives at module scope now.
+ *
+ * "Today" and "Overdue" were computed from `new Date().toISOString()`, which is
+ * UTC. Anyone not on GMT saw a task flip to overdue at the wrong hour — the
+ * exact bug `parseDate` and `daysUntil` exist to prevent. Both now compare local
+ * midnights, against a `now` that ticks, so a tab left open overnight is right
+ * in the morning.
+ *
+ * Deleting asked through `window.confirm` and every failure arrived as an
+ * `alert()`. Deletion now names the task and lists what it does; failures go to
+ * toasts and the editor keeps its own error where the retry button is.
+ *
+ * And the edit affordances were `opacity-0` until hover, which means they did
+ * not exist for touch or keyboard. They are always visible.
+ */
+
+const DEADLINE_FILTERS = [
+  { key: "all", label: "All deadlines", icon: "tasks" },
+  { key: "overdue", label: "Overdue", icon: "alert-triangle" },
+  { key: "today", label: "Due today", icon: "clock" },
+  { key: "upcoming", label: "Upcoming", icon: "calendar" },
+  { key: "no-date", label: "No deadline", icon: "ban" },
+];
+
+const SORT_OPTIONS = [
+  { value: "deadline", label: "Sort: Deadline" },
+  { value: "overdue", label: "Sort: Overdue first" },
+  { value: "newest", label: "Sort: Newest" },
+  { value: "oldest", label: "Sort: Oldest" },
+];
+
+/** True only for a deadline strictly before today, compared at local midnight. */
+function isOverdue(value, now) {
+  const days = daysUntil(value, now);
+  return days !== null && days < 0;
+}
+
+/** Which of the deadline filters a task belongs to. */
+function bucketOf(todo, now) {
+  if (!todo.deadline) return "no-date";
+  const days = daysUntil(todo.deadline, now);
+  if (days < 0) return "overdue";
+  if (days === 0) return "today";
+  return "upcoming";
+}
+
+/**
+ * One task.
+ *
+ * At module scope on purpose — see the note at the top of the file. Everything
+ * it needs arrives as a prop, including `now`, so the whole list agrees about
+ * what "today" means.
+ */
+function TodoCard({ todo, isAdmin, now, busy, onToggle, onEdit, onDelete }) {
+  const overdue = !todo.completed && isOverdue(todo.deadline, now);
+  const dueToday = !todo.completed && daysUntil(todo.deadline, now) === 0;
+
+  return (
+    <li
+      className={cn(
+        "nx-card p-4 sm:p-5",
+        todo.completed ? "opacity-70" : "nx-lift",
+        overdue && "border-danger-line"
+      )}
+    >
+      <div className="flex items-start gap-3.5">
+        <Checkbox
+          className="mt-1"
+          checked={Boolean(todo.completed)}
+          disabled={busy}
+          onChange={() => onToggle(todo)}
+          aria-label={
+            todo.completed
+              ? `Mark "${todo.title}" incomplete`
+              : `Mark "${todo.title}" complete`
+          }
+        />
+
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h4
+              className={cn(
+                "font-display text-base leading-snug font-bold tracking-tight",
+                todo.completed && "text-ink-subtle line-through"
+              )}
+            >
+              {todo.title}
+            </h4>
+
+            {overdue && (
+              <Badge tone="danger" size="sm" icon="alert-triangle">
+                Overdue
+              </Badge>
+            )}
+
+            {dueToday && (
+              <Badge tone="warn" size="sm" icon="clock">
+                Due today
+              </Badge>
+            )}
+
+            {todo.completed && (
+              <Badge tone="success" size="sm" icon="check">
+                Completed
+              </Badge>
+            )}
+          </div>
+
+          {todo.description && (
+            <p
+              className={cn(
+                "mt-2 text-[0.8125rem] leading-relaxed whitespace-pre-wrap",
+                todo.completed ? "text-ink-subtle" : "text-ink-muted"
+              )}
+            >
+              {todo.description}
+            </p>
+          )}
+
+          {todo.image_url && (
+            <img
+              src={todo.image_url}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              className="mt-3.5 max-h-72 w-full rounded-control border border-line object-cover"
+              // A dead attachment link should leave a tidy card, not a torn-image
+              // icon in the middle of the task.
+              onError={(event) => {
+                event.currentTarget.style.display = "none";
+              }}
+            />
+          )}
+
+          {todo.deadline && (
+            <p
+              className={cn(
+                "mt-3 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.75rem] font-semibold",
+                overdue
+                  ? "border-danger-line bg-danger-soft text-danger"
+                  : "border-line bg-well text-ink-muted"
+              )}
+            >
+              <Icon name="calendar" size={12} />
+              {overdue ? "Overdue · " : "Due · "}
+              {formatDate(todo.deadline)}
+              {!todo.completed && (
+                <span className="font-normal opacity-70">
+                  ({formatDeadline(todo.deadline, now)})
+                </span>
+              )}
+            </p>
+          )}
+        </div>
+
+        {/* Always visible. Hiding these behind :hover put them out of reach of
+            every touch and keyboard user the club has. */}
+        {isAdmin && (
+          <div className="flex shrink-0 gap-1">
+            <IconButton
+              icon="pencil"
+              label={`Edit "${todo.title}"`}
+              size="sm"
+              disabled={busy}
+              onClick={() => onEdit(todo)}
+            />
+            <IconButton
+              icon="trash"
+              label={`Delete "${todo.title}"`}
+              size="sm"
+              variant="danger"
+              disabled={busy}
+              onClick={() => onDelete(todo)}
+            />
+          </div>
+        )}
+      </div>
+    </li>
+  );
+}
 
 function Todo({ profile, isAdmin, onLogAction }) {
+  const { toast } = useToast();
+  const confirm = useConfirm();
+  const now = useNow();
+
   const [todos, setTodos] = useState([]);
-
   const [loading, setLoading] = useState(true);
-
   const [showCompleted, setShowCompleted] = useState(false);
 
   const [showForm, setShowForm] = useState(false);
-
   const [editingTodo, setEditingTodo] = useState(null);
-
   const [title, setTitle] = useState("");
-
   const [description, setDescription] = useState("");
-
   const [deadline, setDeadline] = useState("");
-
   const [imageFile, setImageFile] = useState(null);
-
   const [imagePreview, setImagePreview] = useState("");
 
   const [search, setSearch] = useState("");
-
   const [deadlineFilter, setDeadlineFilter] = useState("all");
-
   const [sortBy, setSortBy] = useState("deadline");
 
   const [saving, setSaving] = useState(false);
+  const [busyId, setBusyId] = useState(null);
+  const [titleError, setTitleError] = useState("");
+  const [formError, setFormError] = useState("");
 
-  const loadTodos = async () => {
+  // Needed to clear the picker: without it, choosing a file, removing it, then
+  // choosing the same file again fires no `change` event at all.
+  const fileInputRef = useRef(null);
+  // The blob URL currently on screen, so it can be released before the next one
+  // replaces it. Object URLs live until the document unloads otherwise.
+  const previewUrlRef = useRef("");
+
+  const setPreview = useCallback((next) => {
+    if (previewUrlRef.current && previewUrlRef.current !== next) {
+      URL.revokeObjectURL(previewUrlRef.current);
+    }
+    previewUrlRef.current = next.startsWith("blob:") ? next : "";
+    setImagePreview(next);
+  }, []);
+
+  const loadTodos = useCallback(async () => {
     const { data, error } = await supabase
       .from("todos")
       .select("*")
@@ -55,7 +282,7 @@ function Todo({ profile, isAdmin, onLogAction }) {
     }
 
     setLoading(false);
-  };
+  }, []);
 
   useEffect(() => {
     // Intentional fetch-on-mount, paired with a realtime subscription below.
@@ -73,45 +300,65 @@ function Todo({ profile, isAdmin, onLogAction }) {
         },
         () => {
           loadTodos();
-        },
+        }
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [loadTodos]);
+
+  // Release the last preview on unmount — the component can be left while a
+  // chosen-but-unsaved image is still on screen.
+  useEffect(
+    () => () => {
+      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+    },
+    []
+  );
 
   const resetForm = () => {
     setTitle("");
     setDescription("");
     setDeadline("");
     setImageFile(null);
-    setImagePreview("");
+    setPreview("");
     setEditingTodo(null);
     setShowForm(false);
+    setTitleError("");
+    setFormError("");
+
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleImageChange = (event) => {
     const file = event.target.files?.[0] || null;
 
     setImageFile(file);
+    setPreview(file ? URL.createObjectURL(file) : "");
+  };
 
-    if (file) {
-      setImagePreview(URL.createObjectURL(file));
-    } else {
-      setImagePreview("");
-    }
+  const clearChosenImage = () => {
+    setImageFile(null);
+    // Falls back to whatever the task already had, so removing a *new* pick does
+    // not look like removing the existing attachment.
+    setPreview(editingTodo?.image_url || "");
+
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const saveTodo = async (event) => {
     event.preventDefault();
 
+    setFormError("");
+
     if (!title.trim()) {
-      alert("Please enter a task title.");
+      setTitleError("Please enter a task title.");
       return;
     }
 
+    setTitleError("");
     setSaving(true);
 
     try {
@@ -121,22 +368,24 @@ function Todo({ profile, isAdmin, onLogAction }) {
         const { url, error: uploadError } = await uploadAttachment(
           imageFile,
           profile.id,
-          "todos",
+          "todos"
         );
 
         if (uploadError) {
-          alert(uploadError.message);
+          setFormError(uploadError.message);
           return;
         }
 
         imageUrl = url;
       }
 
+      const taskName = title.trim();
+
       if (editingTodo) {
         const { error } = await supabase
           .from("todos")
           .update({
-            title: title.trim(),
+            title: taskName,
             description: description.trim(),
             deadline: deadline || null,
             image_url: imageUrl,
@@ -145,21 +394,23 @@ function Todo({ profile, isAdmin, onLogAction }) {
           .eq("id", editingTodo.id);
 
         if (error) {
-          alert(error.message);
+          setFormError(error.message);
           return;
         }
 
         if (onLogAction) {
           await onLogAction({
             action: "TODO_EDITED",
-            details: `Edited task: ${title.trim()}${
+            details: `Edited task: ${taskName}${
               imageFile ? " and attached a new image." : "."
             }`,
           });
         }
+
+        toast.success(`"${taskName}" updated`);
       } else {
         const { error } = await supabase.from("todos").insert({
-          title: title.trim(),
+          title: taskName,
           description: description.trim(),
           deadline: deadline || null,
           image_url: imageUrl,
@@ -167,18 +418,20 @@ function Todo({ profile, isAdmin, onLogAction }) {
         });
 
         if (error) {
-          alert(error.message);
+          setFormError(error.message);
           return;
         }
 
         if (onLogAction) {
           await onLogAction({
             action: "TODO_CREATED",
-            details: `Created task: ${title.trim()}${
+            details: `Created task: ${taskName}${
               imageFile ? " with an attached image." : "."
             }`,
           });
         }
+
+        toast.success(`"${taskName}" added to the club list`);
       }
 
       resetForm();
@@ -192,10 +445,14 @@ function Todo({ profile, isAdmin, onLogAction }) {
     setEditingTodo(todo);
     setTitle(todo.title || "");
     setDescription(todo.description || "");
-    setDeadline(todo.deadline || "");
+    setDeadline(toDateInputValue(todo.deadline));
     setImageFile(null);
-    setImagePreview(todo.image_url || "");
+    setPreview(todo.image_url || "");
     setShowForm(true);
+    setTitleError("");
+    setFormError("");
+
+    if (fileInputRef.current) fileInputRef.current.value = "";
 
     window.scrollTo({
       top: 0,
@@ -204,14 +461,28 @@ function Todo({ profile, isAdmin, onLogAction }) {
   };
 
   const deleteTodo = async (todo) => {
-    if (!window.confirm(`Delete "${todo.title}"?`)) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: `Delete "${todo.title}"?`,
+      description:
+        "The task is removed from the club list for everyone, straight away.",
+      tone: "danger",
+      confirmLabel: "Delete task",
+      consequences: [
+        "Nobody can complete or reopen it afterwards.",
+        "Any attached picture stays in storage but stops being reachable.",
+        "This cannot be undone — the task would have to be written again.",
+      ],
+    });
+
+    if (!confirmed) return;
+
+    setBusyId(todo.id);
 
     const { error } = await supabase.from("todos").delete().eq("id", todo.id);
 
     if (error) {
-      alert(error.message);
+      setBusyId(null);
+      toast.error("Could not delete the task", { description: error.message });
       return;
     }
 
@@ -223,10 +494,15 @@ function Todo({ profile, isAdmin, onLogAction }) {
     }
 
     await loadTodos();
+    setBusyId(null);
+
+    toast.success(`"${todo.title}" deleted`);
   };
 
   const toggleComplete = async (todo) => {
     const completed = !todo.completed;
+
+    setBusyId(todo.id);
 
     const { error } = await supabase
       .from("todos")
@@ -238,7 +514,8 @@ function Todo({ profile, isAdmin, onLogAction }) {
       .eq("id", todo.id);
 
     if (error) {
-      alert(error.message);
+      setBusyId(null);
+      toast.error("Could not update the task", { description: error.message });
       return;
     }
 
@@ -253,34 +530,29 @@ function Todo({ profile, isAdmin, onLogAction }) {
     }
 
     await loadTodos();
+    setBusyId(null);
+
+    toast.success(
+      completed ? `"${todo.title}" done` : `"${todo.title}" reopened`
+    );
   };
 
-  const activeTodos = todos.filter((todo) => !todo.completed);
+  const activeTodos = useMemo(
+    () => todos.filter((todo) => !todo.completed),
+    [todos]
+  );
 
-  const completedTodos = todos.filter((todo) => todo.completed);
-
-  const isOverdue = (value) => {
-    if (!value) {
-      return false;
-    }
-
-    const today = new Date();
-
-    today.setHours(0, 0, 0, 0);
-
-    const due = new Date(`${value}T00:00:00`);
-
-    return due < today;
-  };
-
-  const todayString = new Date().toISOString().slice(0, 10);
+  const completedTodos = useMemo(
+    () => todos.filter((todo) => todo.completed),
+    [todos]
+  );
 
   const dueTodayCount = activeTodos.filter(
-    (todo) => todo.deadline === todayString,
+    (todo) => daysUntil(todo.deadline, now) === 0
   ).length;
 
   const overdueCount = activeTodos.filter((todo) =>
-    isOverdue(todo.deadline),
+    isOverdue(todo.deadline, now)
   ).length;
 
   const completionPercent =
@@ -288,494 +560,444 @@ function Todo({ profile, isAdmin, onLogAction }) {
       ? 0
       : Math.round((completedTodos.length / todos.length) * 100);
 
-  const filteredActiveTodos = activeTodos
-    .filter((todo) => {
-      const searchable = [todo.title, todo.description]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
+  // Per-filter counts, so a chip says how much it will reveal before it is used.
+  const bucketCounts = useMemo(() => {
+    const tally = {
+      all: activeTodos.length,
+      overdue: 0,
+      today: 0,
+      upcoming: 0,
+      "no-date": 0,
+    };
 
-      const matchesSearch =
-        !search.trim() || searchable.includes(search.trim().toLowerCase());
+    for (const todo of activeTodos) tally[bucketOf(todo, now)] += 1;
 
-      const matchesDeadline =
-        deadlineFilter === "all" ||
-        (deadlineFilter === "overdue" && isOverdue(todo.deadline)) ||
-        (deadlineFilter === "today" && todo.deadline === todayString) ||
-        (deadlineFilter === "upcoming" &&
-          todo.deadline &&
-          !isOverdue(todo.deadline) &&
-          todo.deadline !== todayString) ||
-        (deadlineFilter === "no-date" && !todo.deadline);
+    return tally;
+  }, [activeTodos, now]);
 
-      return matchesSearch && matchesDeadline;
-    })
-    .sort((a, b) => {
-      if (sortBy === "newest") {
-        return new Date(b.created_at || 0) - new Date(a.created_at || 0);
-      }
+  const filteredActiveTodos = useMemo(() => {
+    const needle = search.trim().toLowerCase();
 
-      if (sortBy === "oldest") {
-        return new Date(a.created_at || 0) - new Date(b.created_at || 0);
-      }
+    return activeTodos
+      .filter((todo) => {
+        const searchable = [todo.title, todo.description]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
 
-      if (sortBy === "overdue") {
-        return Number(isOverdue(b.deadline)) - Number(isOverdue(a.deadline));
-      }
+        const matchesSearch = !needle || searchable.includes(needle);
+        const matchesDeadline =
+          deadlineFilter === "all" || bucketOf(todo, now) === deadlineFilter;
 
-      if (!a.deadline) {
-        return 1;
-      }
+        return matchesSearch && matchesDeadline;
+      })
+      .sort((a, b) => {
+        if (sortBy === "newest") {
+          return (
+            (parseDate(b.created_at)?.getTime() || 0) -
+            (parseDate(a.created_at)?.getTime() || 0)
+          );
+        }
 
-      if (!b.deadline) {
-        return -1;
-      }
+        if (sortBy === "oldest") {
+          return (
+            (parseDate(a.created_at)?.getTime() || 0) -
+            (parseDate(b.created_at)?.getTime() || 0)
+          );
+        }
 
-      return (
-        new Date(`${a.deadline}T00:00:00`) - new Date(`${b.deadline}T00:00:00`)
-      );
-    });
+        if (sortBy === "overdue") {
+          return (
+            Number(isOverdue(b.deadline, now)) -
+            Number(isOverdue(a.deadline, now))
+          );
+        }
 
-  const formatDeadline = (value) => {
-    if (!value) {
-      return null;
-    }
+        // Deadline order, with undated tasks last — an open-ended task is not
+        // more urgent than one with a date on it.
+        if (!a.deadline) return 1;
+        if (!b.deadline) return -1;
 
-    return new Date(`${value}T00:00:00`).toLocaleDateString(undefined, {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
+        return (
+          (parseDate(a.deadline)?.getTime() || 0) -
+          (parseDate(b.deadline)?.getTime() || 0)
+        );
+      });
+  }, [activeTodos, search, deadlineFilter, sortBy, now]);
+
+  const filtering = search.trim() !== "" || deadlineFilter !== "all";
+
+  const clearFilters = () => {
+    setSearch("");
+    setDeadlineFilter("all");
   };
-
-  const TodoCard = ({ todo }) => (
-    <div
-      className={`group nexus-glass rounded-2xl p-4 transition ${
-        todo.completed
-          ? "opacity-70"
-          : isOverdue(todo.deadline)
-            ? "nexus-glass-danger"
-            : "nexus-glass-hover hover:-translate-y-0.5"
-      }`}
-    >
-      <div className="flex items-start gap-4">
-        <button
-          type="button"
-          onClick={() => toggleComplete(todo)}
-          aria-label={
-            todo.completed ? "Mark task incomplete" : "Mark task complete"
-          }
-          className={`mt-1 w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition ${
-            todo.completed
-              ? "bg-gradient-aurora bg-[length:200%_200%] animate-grad-pan border-transparent text-black shadow-[0_0_18px_rgba(250,204,21,0.45)]"
-              : "nexus-glass-flat"
-          }`}
-        >
-          {todo.completed ? "✓" : ""}
-        </button>
-
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h4
-              className={`font-semibold text-lg ${
-                todo.completed ? "line-through text-gray-500" : "text-white"
-              }`}
-            >
-              {todo.title}
-            </h4>
-
-            {todo.deadline && !todo.completed && isOverdue(todo.deadline) && (
-              <span className="nexus-badge-red">
-                Overdue
-              </span>
-            )}
-
-            {todo.deadline === todayString && !todo.completed && (
-              <span className="nexus-badge-yellow">
-                Due today
-              </span>
-            )}
-          </div>
-
-          {todo.description && (
-            <p
-              className={`text-sm mt-2 whitespace-pre-wrap ${
-                todo.completed ? "text-gray-600" : "text-gray-400"
-              }`}
-            >
-              {todo.description}
-            </p>
-          )}
-
-          {todo.image_url && (
-            <img
-              src={todo.image_url}
-              alt=""
-              className="mt-4 w-full max-h-72 object-cover rounded-xl nexus-image-frame"
-              loading="lazy"
-              onError={(event) => {
-                event.currentTarget.style.display = "none";
-              }}
-            />
-          )}
-
-          <div className="flex flex-wrap gap-2 mt-3">
-            {todo.deadline && (
-              <span
-                className={`nexus-pill ${
-                  !todo.completed && isOverdue(todo.deadline)
-                    ? "nexus-pill-red"
-                    : "nexus-pill-neutral"
-                }`}
-              >
-                {isOverdue(todo.deadline) && !todo.completed
-                  ? "Overdue · "
-                  : "Due · "}
-                {formatDeadline(todo.deadline)}
-              </span>
-            )}
-
-            {todo.completed && (
-              <span className="nexus-badge-yellow">
-                Completed
-              </span>
-            )}
-          </div>
-        </div>
-
-        {isAdmin && (
-          <div className="flex gap-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition">
-            <button
-              type="button"
-              onClick={() => beginEdit(todo)}
-              className="px-3 py-2 nexus-morphic-button-ghost text-xs"
-            >
-              Edit
-            </button>
-
-            <button
-              type="button"
-              onClick={() => deleteTodo(todo)}
-              className="nexus-morphic-button-danger px-3 py-2 text-xs"
-            >
-              Delete
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
 
   if (loading) {
     return (
-      <section className="nexus-glass-strong rounded-3xl p-8">
-        <p className="text-gray-500">Loading tasks...</p>
-      </section>
+      <div className="space-y-5" aria-busy="true" aria-live="polite">
+        <span className="sr-only">Loading tasks…</span>
+
+        <Panel pad="md" bodyClassName="space-y-3">
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="h-2 w-full" />
+        </Panel>
+
+        <div className="space-y-3">
+          {[0, 1, 2].map((row) => (
+            <div key={row} className="nx-card space-y-2.5 p-5">
+              <Skeleton className="h-5 w-1/2" />
+              <Skeleton className="h-3.5 w-full" />
+              <Skeleton className="h-3.5 w-3/5" />
+            </div>
+          ))}
+        </div>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header and progress */}
-      <section className="nexus-glass-strong rounded-3xl p-6 relative overflow-hidden">
-        <div className="nexus-glow-yellow w-72 h-72 -top-20 -right-20" />
-        <div className="nexus-glow-purple w-72 h-72 -bottom-20 -left-20" />
-
-        <div className="relative flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
-          <div>
-            <p className="nexus-text-aurora text-xs font-bold uppercase tracking-wider">
-              Club Tasks
-            </p>
-
-            <h2 className="text-3xl font-black mt-1">To-Do List</h2>
-
-            <p className="text-gray-500 mt-1">
-              {activeTodos.length} active · {completedTodos.length} completed
-            </p>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2">
-            <div className="nexus-glass-flat rounded-xl px-4 py-3">
-              <p className="text-gray-500 text-[10px] uppercase font-bold">
-                Progress
-              </p>
-              <p className="font-black text-lg mt-1 nexus-text-aurora">
-                {completionPercent}%
-              </p>
-            </div>
-
-            <div className="nexus-stat nexus-stat-stat-yellow rounded-xl px-4 py-3">
-              <p className="text-yellow-300 text-[10px] uppercase font-bold">
-                Today
-              </p>
-              <p className="font-black text-lg mt-1 text-yellow-300">
-                {dueTodayCount}
-              </p>
-            </div>
-
-            <div className="nexus-stat nexus-stat-stat-red rounded-xl px-4 py-3">
-              <p className="text-red-300 text-[10px] uppercase font-bold">
-                Overdue
-              </p>
-              <p className="font-black text-lg mt-1 text-red-300">
-                {overdueCount}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-5">
-          <div className="flex justify-between text-xs text-gray-500 mb-2">
-            <span>Overall completion</span>
-            <span>
-              {completedTodos.length}/{todos.length}
-            </span>
-          </div>
-
-          <div className="nexus-progress">
-            <div
-              className="nexus-progress-bar"
-              style={{
-                width: `${completionPercent}%`,
+    <div className="space-y-5">
+      <Panel
+        eyebrow="Club Tasks"
+        title="To-Do List"
+        description={`${countLabel(activeTodos.length, "active task")} · ${
+          completedTodos.length
+        } completed`}
+        icon="tasks"
+        actions={
+          isAdmin && (
+            <Button
+              variant="primary"
+              size="sm"
+              icon="plus"
+              onClick={() => {
+                resetForm();
+                setShowForm(true);
               }}
-            />
-          </div>
-        </div>
-      </section>
-
-      {isAdmin && (
-        <div className="flex justify-end">
-          <button
-            type="button"
-            onClick={() => {
-              resetForm();
-              setShowForm(true);
-            }}
-            className="nexus-morphic-button px-5 py-3"
-          >
-            + Add Task
-          </button>
-        </div>
-      )}
-
-      {/* Admin editor */}
-      {isAdmin && showForm && (
-        <section className="nexus-glass-strong nexus-glass-yellow rounded-3xl p-6 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/[0.04] via-purple-500/[0.04] to-transparent pointer-events-none" />
-
-          <div className="relative flex items-center justify-between mb-5">
-            <h3 className="text-xl font-black">
-              <span className="nexus-text-aurora">
-                {editingTodo ? "Edit Task" : "Add Task"}
-              </span>
-            </h3>
-
-            <button
-              type="button"
-              onClick={resetForm}
-              className="text-gray-500 hover:text-white"
             >
-              ✕
-            </button>
-          </div>
+              Add Task
+            </Button>
+          )
+        }
+        bodyClassName="space-y-4"
+      >
+        <div className="grid gap-3 sm:grid-cols-3">
+          <StatCard
+            label="Progress"
+            value={`${completionPercent}%`}
+            hint="of every club task"
+            icon="trending-up"
+            tone="brand"
+          />
+          <StatCard
+            label="Today"
+            value={dueTodayCount}
+            hint="due before tonight"
+            icon="clock"
+            tone="warn"
+          />
+          <StatCard
+            label="Overdue"
+            value={overdueCount}
+            hint="past their deadline"
+            icon="alert-triangle"
+            tone="danger"
+          />
+        </div>
 
-          <form onSubmit={saveTodo} className="relative space-y-4">
-            <input
-              type="text"
+        <Progress
+          label="Overall completion"
+          value={completedTodos.length}
+          max={todos.length || 1}
+          tone={completionPercent === 100 ? "success" : "brand"}
+        />
+
+        <p className="text-[0.75rem] text-ink-subtle">
+          <span className="nx-num font-semibold text-ink tabular-nums">
+            {completedTodos.length}
+          </span>
+          /{todos.length} tasks completed
+        </p>
+      </Panel>
+
+      {isAdmin && showForm && (
+        <Panel
+          eyebrow={editingTodo ? "Editing" : "New Task"}
+          title={editingTodo ? "Edit Task" : "Add Task"}
+          icon={editingTodo ? "pencil" : "plus"}
+          actions={
+            <IconButton
+              icon="close"
+              label="Close the task editor"
+              size="sm"
+              onClick={resetForm}
+            />
+          }
+        >
+          <form onSubmit={saveTodo} className="space-y-4" noValidate>
+            <TextInput
+              label="Task title"
+              required
               value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              placeholder="Task title"
-              className="nexus-input"
+              onChange={(event) => {
+                setTitle(event.target.value);
+                if (titleError) setTitleError("");
+              }}
+              error={titleError || undefined}
+              disabled={saving}
             />
 
-            <textarea
+            <TextArea
+              label="Description"
+              optional
+              hint="What does done look like? Anyone in the club can pick this up."
               value={description}
               onChange={(event) => setDescription(event.target.value)}
-              placeholder="Task description"
-              rows="4"
-              className="nexus-textarea"
+              rows={4}
+              disabled={saving}
             />
 
-            <div>
-              <label className="block text-sm text-gray-400 mb-2">
-                Deadline
-              </label>
+            <TextInput
+              label="Deadline"
+              optional
+              type="date"
+              value={deadline}
+              onChange={(event) => setDeadline(event.target.value)}
+              disabled={saving}
+              fieldClassName="max-w-56"
+            />
 
-              <input
-                type="date"
-                value={deadline}
-                onChange={(event) => setDeadline(event.target.value)}
-                className="nexus-input"
-              />
-            </div>
+            <div className="nx-well space-y-3 p-4">
+              <div>
+                <p className="text-[0.8125rem] font-semibold">Attach Picture</p>
+                <p className="mt-1 text-[0.75rem] text-ink-subtle">
+                  Optional. Images only, up to 8 MB.
+                </p>
+              </div>
 
-            <div className="nexus-glass-flat rounded-2xl p-4">
-              <label className="block text-sm text-gray-300 mb-2">
-                Attach Picture <span className="text-gray-600">(optional)</span>
-              </label>
-
-              <input
-                type="file"
+              <FileButton
+                label={imageFile ? "Choose a different picture" : "Choose a picture"}
+                size="sm"
+                icon="image"
                 accept="image/*"
+                inputRef={fileInputRef}
+                disabled={saving}
                 onChange={handleImageChange}
-                className="block w-full text-sm text-gray-300"
               />
 
               {imagePreview && (
-                <div className="mt-4">
+                <div>
                   <img
                     src={imagePreview}
                     alt="Task preview"
-                    className="w-full max-h-64 object-cover rounded-xl nexus-image-frame"
+                    className="max-h-64 w-full rounded-control border border-line object-cover"
                   />
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setImageFile(null);
-                      setImagePreview(editingTodo?.image_url || "");
-                    }}
-                    className="mt-2 text-sm text-red-300 hover:text-red-200"
-                  >
-                    Remove new picture
-                  </button>
+                  {imageFile && (
+                    <Button
+                      type="button"
+                      variant="danger-soft"
+                      size="sm"
+                      icon="close"
+                      className="mt-2.5"
+                      disabled={saving}
+                      onClick={clearChosenImage}
+                    >
+                      Remove new picture
+                    </Button>
+                  )}
                 </div>
               )}
             </div>
 
-            <div className="flex gap-3">
-              <button
+            {formError && (
+              <div
+                role="alert"
+                className="flex items-start gap-2 rounded-control border border-danger-line bg-danger-soft px-3 py-2.5 text-[0.8125rem] text-danger"
+              >
+                <Icon
+                  name="alert-triangle"
+                  size={15}
+                  className="mt-px shrink-0"
+                />
+                <span>{formError}</span>
+              </div>
+            )}
+
+            <div className="flex flex-wrap gap-2.5">
+              <Button
                 type="submit"
-                disabled={saving}
-                className="nexus-morphic-button px-6 py-3 disabled:opacity-50"
+                variant="primary"
+                icon="check"
+                loading={saving}
               >
                 {saving
                   ? "Saving..."
                   : editingTodo
                     ? "Save Changes"
                     : "Create Task"}
-              </button>
+              </Button>
 
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={resetForm}
-                className="nexus-morphic-button-ghost px-6 py-3"
+                disabled={saving}
               >
                 Cancel
-              </button>
+              </Button>
             </div>
           </form>
-        </section>
+        </Panel>
       )}
 
-      {/* Filters */}
-      <section className="nexus-glass-strong rounded-3xl p-5">
-        <div className="grid lg:grid-cols-[1fr_auto_auto] gap-3">
-          <input
+      <Panel pad="md" bodyClassName="space-y-4">
+        <div className="grid gap-3 lg:grid-cols-[1fr_14rem]">
+          <SearchInput
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search tasks..."
-            className="nexus-input"
+            onChange={setSearch}
+            onClear={() => setSearch("")}
+            placeholder="Search tasks…"
+            label="Search tasks"
+            resultCount={filtering ? filteredActiveTodos.length : undefined}
           />
 
-          <select
-            value={deadlineFilter}
-            onChange={(event) => setDeadlineFilter(event.target.value)}
-            className="nexus-select"
-          >
-            <option value="all">All deadlines</option>
-            <option value="overdue">Overdue</option>
-            <option value="today">Due today</option>
-            <option value="upcoming">Upcoming</option>
-            <option value="no-date">No deadline</option>
-          </select>
-
-          <select
+          <Select
+            aria-label="Sort tasks"
             value={sortBy}
             onChange={(event) => setSortBy(event.target.value)}
-            className="nexus-select"
-          >
-            <option value="deadline">Sort: Deadline</option>
-            <option value="overdue">Sort: Overdue first</option>
-            <option value="newest">Sort: Newest</option>
-            <option value="oldest">Sort: Oldest</option>
-          </select>
+            options={SORT_OPTIONS}
+          />
         </div>
-      </section>
 
-      {/* Active */}
+        <div className="nx-scroll-x flex gap-2 pb-1">
+          {DEADLINE_FILTERS.map((option) => (
+            <button
+              key={option.key}
+              type="button"
+              className="nx-chip"
+              data-active={deadlineFilter === option.key}
+              aria-pressed={deadlineFilter === option.key}
+              onClick={() => setDeadlineFilter(option.key)}
+            >
+              <Icon name={option.icon} size={14} />
+              {option.label}
+              <span className="nx-num tabular-nums opacity-70">
+                {bucketCounts[option.key]}
+              </span>
+            </button>
+          ))}
+        </div>
+      </Panel>
+
       <section>
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-3.5 flex items-end justify-between gap-3">
           <div>
-            <p className="nexus-text-aurora text-xs font-bold uppercase tracking-wider">
-              In progress
-            </p>
-            <h3 className="text-xl font-black mt-1">Active</h3>
+            <p className="nx-eyebrow">In progress</p>
+            <h3 className="nx-display mt-1 text-lg">Active</h3>
           </div>
 
-          <span className="nexus-badge-purple">
-            {filteredActiveTodos.length} shown
-          </span>
+          <Badge tone="violet">{filteredActiveTodos.length} shown</Badge>
         </div>
 
         {filteredActiveTodos.length === 0 ? (
-          <div className="nexus-glass nexus-glass-dashed rounded-2xl p-8 text-center">
-            <div className="text-3xl">✓</div>
-
-            <p className="text-gray-500 mt-2">
-              No active tasks match your filters.
-            </p>
-          </div>
+          <Panel pad="lg">
+            <EmptyState
+              icon={filtering ? "search" : "check-circle"}
+              title={
+                filtering
+                  ? "No active tasks match your filters."
+                  : "Nothing left to do."
+              }
+              description={
+                filtering
+                  ? "Try a shorter search, or clear the filters to see every active task."
+                  : "Every club task is finished. New ones will show up here."
+              }
+              action={
+                filtering ? (
+                  <Button
+                    variant="secondary"
+                    icon="close"
+                    onClick={clearFilters}
+                  >
+                    Clear Filters
+                  </Button>
+                ) : undefined
+              }
+            />
+          </Panel>
         ) : (
-          <div className="space-y-3">
+          <ul className="space-y-3">
             {filteredActiveTodos.map((todo) => (
-              <TodoCard key={todo.id} todo={todo} />
+              <TodoCard
+                key={todo.id}
+                todo={todo}
+                isAdmin={isAdmin}
+                now={now}
+                busy={busyId === todo.id}
+                onToggle={toggleComplete}
+                onEdit={beginEdit}
+                onDelete={deleteTodo}
+              />
             ))}
-          </div>
+          </ul>
         )}
       </section>
 
-      {/* Completed */}
-      <section className="nexus-divider mt-6 pt-6">
+      {/* A real disclosure: the button owns the state and says so, rather than a
+          rotating glyph a screen reader reads as "black right-pointing triangle". */}
+      <section className="border-t border-line pt-5">
         <button
           type="button"
           onClick={() => setShowCompleted((current) => !current)}
-          className="w-full flex items-center justify-between nexus-glass-flat nexus-glass-hover rounded-2xl px-5 py-4"
+          aria-expanded={showCompleted}
+          aria-controls="completed-tasks"
+          className={cn(
+            "nx-card nx-lift flex w-full items-center justify-between gap-3 px-5 py-4",
+            "focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
+          )}
         >
-          <div className="flex items-center gap-3">
-            <span
-              className={`transition-transform text-yellow-300 ${
-                showCompleted ? "rotate-90" : ""
-              }`}
-            >
-              ▶
-            </span>
+          <span className="flex items-center gap-3">
+            <Icon
+              name="chevron-down"
+              size={16}
+              className={cn(
+                "text-brand-text transition-transform duration-[var(--t-fast)]",
+                !showCompleted && "-rotate-90"
+              )}
+            />
+            <span className="font-semibold">Completed</span>
+            <Badge tone="neutral">{completedTodos.length}</Badge>
+          </span>
 
-            <span className="font-bold text-gray-300">Completed</span>
-
-            <span className="nexus-badge">
-              {completedTodos.length}
-            </span>
-          </div>
-
-          <span className="text-gray-500 text-sm">
+          <span className="text-[0.8125rem] text-ink-subtle">
             {showCompleted ? "Hide" : "Show"}
           </span>
         </button>
 
-        {showCompleted && completedTodos.length > 0 && (
-          <div className="space-y-3 mt-3">
-            {completedTodos.map((todo) => (
-              <TodoCard key={todo.id} todo={todo} />
-            ))}
-          </div>
-        )}
-
-        {showCompleted && completedTodos.length === 0 && (
-          <p className="text-gray-600 text-sm text-center py-5">
-            No completed tasks yet.
-          </p>
-        )}
+        <div id="completed-tasks" hidden={!showCompleted}>
+          {completedTodos.length > 0 ? (
+            <ul className="mt-3 space-y-3">
+              {completedTodos.map((todo) => (
+                <TodoCard
+                  key={todo.id}
+                  todo={todo}
+                  isAdmin={isAdmin}
+                  now={now}
+                  busy={busyId === todo.id}
+                  onToggle={toggleComplete}
+                  onEdit={beginEdit}
+                  onDelete={deleteTodo}
+                />
+              ))}
+            </ul>
+          ) : (
+            <p className="py-5 text-center text-[0.8125rem] text-ink-subtle">
+              No completed tasks yet.
+            </p>
+          )}
+        </div>
       </section>
     </div>
   );

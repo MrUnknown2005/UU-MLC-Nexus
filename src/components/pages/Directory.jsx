@@ -1,140 +1,254 @@
-import { useState } from "react";
-import logo from "../../assets/club-logo.png";
-import { ROLE_NAMES } from "../../constants/roles";
-import SafeImage from "../common/SafeImage";
+import { useMemo, useState } from "react";
+import { Avatar } from "../ui/Avatar.jsx";
+import { Badge } from "../ui/Badge.jsx";
+import { Button } from "../ui/Button.jsx";
+import { EmptyState } from "../ui/EmptyState.jsx";
+import { Icon } from "../ui/Icon.jsx";
+import { Panel } from "../ui/Panel.jsx";
+import { SearchInput } from "../ui/SearchInput.jsx";
+import { SegmentedControl } from "../ui/SegmentedControl.jsx";
+import { roleLabel, roleTone } from "../../lib/roles.js";
+import { cn } from "../../lib/cn.js";
+import {
+  countLabel,
+  displayName,
+  formatNumber,
+  ordinal,
+} from "../../lib/format.js";
 
-function Directory({ members }) {
-  const [search, setSearch] = useState("");
+/**
+ * The public face of the club.
+ *
+ * Two changes of substance from the old version. The role filter is built from
+ * the roles the members actually hold rather than a hard-coded list of five, so
+ * a role an administrator invented shows up here without a code change. And the
+ * rank each member holds is shown on their card — the directory and the
+ * leaderboard were previously two unrelated views of the same ordering.
+ */
+const SORTS = [
+  { value: "rank", label: "Rank", icon: "trophy" },
+  { value: "name", label: "Name", icon: "arrow-down" },
+];
 
-  const [filter, setFilter] = useState("all");
-
-  /*
-    Guests and inactive accounts stay private.
-  */
-  const publicMembers = members.filter(
-    (member) => member.role !== "guest" && member.is_active !== false,
-  );
-
-  const filtered = publicMembers.filter((member) => {
-    const name = `${member.full_name || ""} ${
-      member.nickname || ""
-    }`.toLowerCase();
-
-    return (
-      name.includes(search.toLowerCase()) &&
-      (filter === "all" || member.role === filter)
-    );
-  });
+function MemberCard({ member, rank, isMe }) {
+  const name = displayName(member);
 
   return (
-    <section className="space-y-6">
-      <div className="nexus-glass-strong rounded-3xl p-6 relative overflow-hidden">
-        <div className="absolute -top-10 -right-10 w-56 h-56 rounded-full bg-purple-500/10 blur-3xl pointer-events-none" />
+    <li
+      className={cn(
+        "nx-card nx-lift flex flex-col p-5 text-center",
+        isMe && "nx-selected"
+      )}
+    >
+      <div className="flex justify-center">
+        <Avatar size="xl" ring src={member.avatar_url} name={name} seed={member.id} />
+      </div>
 
-        <div className="relative">
-          <p className="nexus-text-aurora text-xs font-bold uppercase tracking-wider">
-            Community
+      <h3 className="mt-3.5 truncate text-base font-semibold">{name}</h3>
+
+      <div className="mt-2 flex flex-wrap justify-center gap-1.5">
+        <Badge tone={roleTone(member.role)} size="sm">
+          {roleLabel(member.role)}
+        </Badge>
+        {isMe && (
+          <Badge tone="brand" size="sm">
+            You
+          </Badge>
+        )}
+      </div>
+
+      <div className="mt-4 flex items-center justify-center gap-5">
+        <div>
+          <p className="nx-num text-2xl leading-none font-semibold tabular-nums">
+            {formatNumber(member.points ?? 0)}
           </p>
+          <p className="nx-eyebrow mt-1">Points</p>
+        </div>
 
-          <h2 className="text-3xl font-black mt-1">
-            <span className="nexus-text-aurora">Member</span>{" "}
-            <span className="nexus-text-ocean">Directory</span>
-          </h2>
+        <span className="h-8 w-px bg-line" aria-hidden="true" />
 
-          <p className="text-gray-500 mt-2">Browse active club members.</p>
+        <div>
+          <p className="nx-num text-2xl leading-none font-semibold tabular-nums">
+            {rank > 0 ? ordinal(rank) : "—"}
+          </p>
+          <p className="nx-eyebrow mt-1">Rank</p>
         </div>
       </div>
 
-      <div className="nexus-glass-strong rounded-3xl p-5">
-        <div className="flex flex-col md:flex-row gap-3">
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search members..."
-            className="nexus-input flex-1"
+      <p
+        className={cn(
+          "mt-4 flex-1 text-[0.8125rem] leading-relaxed",
+          member.bio?.trim() ? "text-ink-muted" : "text-ink-subtle italic"
+        )}
+      >
+        {member.bio?.trim() || "No bio yet."}
+      </p>
+    </li>
+  );
+}
+
+function Directory({ members = [], currentUserId }) {
+  const [search, setSearch] = useState("");
+  const [role, setRole] = useState("all");
+  const [sort, setSort] = useState("rank");
+
+  // Guests and deactivated accounts stay private — this is the one screen every
+  // member can see, so it only ever lists people who are actually in the club.
+  const publicMembers = useMemo(
+    () =>
+      members.filter(
+        (member) => member.role !== "guest" && member.is_active !== false
+      ),
+    [members]
+  );
+
+  // Rank is fixed by total points across the whole club, so it is computed once
+  // here and never re-derived from the filtered list — otherwise searching for
+  // one person would show them as first.
+  const rankById = useMemo(() => {
+    const sorted = [...publicMembers].sort(
+      (a, b) => Number(b.points ?? 0) - Number(a.points ?? 0)
+    );
+    return new Map(sorted.map((member, index) => [member.id, index + 1]));
+  }, [publicMembers]);
+
+  const roleOptions = useMemo(() => {
+    const counts = new Map();
+    for (const member of publicMembers) {
+      counts.set(member.role, (counts.get(member.role) ?? 0) + 1);
+    }
+
+    return [...counts.entries()]
+      .map(([key, count]) => ({ key, count, label: roleLabel(key) }))
+      .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+  }, [publicMembers]);
+
+  const visible = useMemo(() => {
+    const needle = search.trim().toLowerCase();
+
+    const filtered = publicMembers.filter((member) => {
+      if (role !== "all" && member.role !== role) return false;
+      if (!needle) return true;
+
+      // Bio is searchable too: "who here does computer vision" is a question
+      // this directory should be able to answer.
+      return [member.full_name, member.nickname, member.bio]
+        .filter(Boolean)
+        .some((field) => field.toLowerCase().includes(needle));
+    });
+
+    return filtered.sort((a, b) =>
+      sort === "name"
+        ? displayName(a).localeCompare(displayName(b))
+        : Number(b.points ?? 0) - Number(a.points ?? 0)
+    );
+  }, [publicMembers, role, search, sort]);
+
+  const filtering = search.trim() !== "" || role !== "all";
+
+  const clear = () => {
+    setSearch("");
+    setRole("all");
+  };
+
+  return (
+    <div className="space-y-5">
+      <Panel pad="md" bodyClassName="space-y-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <SearchInput
+              value={search}
+              onChange={setSearch}
+              onClear={() => setSearch("")}
+              placeholder="Search by name or bio…"
+              resultCount={filtering ? visible.length : undefined}
+            />
+          </div>
+
+          <SegmentedControl
+            name="directory-sort"
+            label="Sort by"
+            size="sm"
+            value={sort}
+            onChange={setSort}
+            options={SORTS}
           />
         </div>
 
-        <div className="flex flex-wrap gap-2 mt-4">
-          {[
-            ["all", "All", "yellow"],
-            ["member", "Members", "cyan"],
-            ["executive", "Executives", "purple"],
-            ["administrator", "Administrators", "pink"],
-            ["head_admin", "Head Admins", "red"],
-          ].map(([value, label]) => (
+        {/* Role chips carry their own counts, which makes the shape of the club
+            visible before you click anything. */}
+        <div className="nx-scroll-x flex gap-2 pb-1">
+          <button
+            type="button"
+            className="nx-chip"
+            data-active={role === "all"}
+            aria-pressed={role === "all"}
+            onClick={() => setRole("all")}
+          >
+            <Icon name="users" size={14} />
+            Everyone
+            <span className="nx-num tabular-nums opacity-70">
+              {publicMembers.length}
+            </span>
+          </button>
+
+          {roleOptions.map((option) => (
             <button
-              key={value}
-              onClick={() => setFilter(value)}
-              className={`nexus-tab-pill${filter === value ? " is-active" : ""}`}
+              key={option.key}
+              type="button"
+              className="nx-chip"
+              data-active={role === option.key}
+              aria-pressed={role === option.key}
+              onClick={() => setRole(option.key)}
             >
-              {label}
+              {option.label}
+              <span className="nx-num tabular-nums opacity-70">
+                {option.count}
+              </span>
             </button>
           ))}
         </div>
-      </div>
+      </Panel>
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {filtered.map((member) => (
-          <div
-            key={member.id}
-            className="nexus-glass-strong rounded-3xl p-6 relative overflow-hidden hover:-translate-y-1 transition group"
-          >
-            <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-yellow-400/15 via-purple-500/10 to-cyan-400/15 blur-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition" />
+      {visible.length === 0 ? (
+        <Panel pad="lg">
+          <EmptyState
+            icon={filtering ? "search" : "users"}
+            title={filtering ? "No members match" : "The directory is empty"}
+            description={
+              filtering
+                ? "Try a shorter search, or clear the filters to see everyone."
+                : "Once accounts are approved they will be listed here."
+            }
+            action={
+              filtering ? (
+                <Button variant="secondary" icon="close" onClick={clear}>
+                  Clear filters
+                </Button>
+              ) : undefined
+            }
+          />
+        </Panel>
+      ) : (
+        <>
+          <p className="text-[0.8125rem] text-ink-muted">
+            {countLabel(visible.length, "member")}
+            {filtering && ` of ${publicMembers.length}`}
+          </p>
 
-            <div className="relative flex justify-center">
-              <div className="relative">
-                <div className="absolute inset-0 rounded-full bg-gradient-aurora blur-md opacity-50" />
-                <SafeImage
-                  src={member.avatar_url || logo}
-                  alt={member.nickname || member.full_name}
-                  className="relative w-24 h-24 rounded-full object-cover nexus-image-frame"
-                />
-              </div>
-            </div>
-
-            <div className="text-center mt-4">
-              <h3 className="text-xl font-black">
-                {member.nickname || member.full_name}
-              </h3>
-
-              <p className="text-yellow-300 text-sm mt-2 font-semibold">
-                {ROLE_NAMES[member.role]}
-              </p>
-
-              <p className="text-3xl font-black mt-4 nexus-text-aurora">
-                {member.points}
-              </p>
-
-              <p className="text-gray-500 text-xs uppercase tracking-wider">
-                points
-              </p>
-
-              <p className="text-gray-400 text-sm mt-4 line-clamp-3">
-                {member.bio || "No bio yet."}
-              </p>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {filtered.length === 0 && (
-        <div className="text-center py-16 nexus-glass-strong nexus-glass-dashed rounded-3xl">
-          <div className="text-4xl">🔍</div>
-          <p className="text-gray-500 mt-4">No members found.</p>
-
-          <button
-            onClick={() => {
-              setSearch("");
-              setFilter("all");
-            }}
-            className="mt-5 nexus-morphic-button-ghost px-5 py-2.5"
-          >
-            Clear Filters
-          </button>
-        </div>
+          <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            {visible.map((member) => (
+              <MemberCard
+                key={member.id}
+                member={member}
+                rank={rankById.get(member.id) ?? 0}
+                isMe={member.id === currentUserId}
+              />
+            ))}
+          </ul>
+        </>
       )}
-    </section>
+    </div>
   );
 }
 
