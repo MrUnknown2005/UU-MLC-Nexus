@@ -1,9 +1,11 @@
 import { useState } from "react";
 import AuthLayout from "./AuthLayout.jsx";
 import { Button } from "../ui/Button.jsx";
+import { Checkbox } from "../ui/Checkbox.jsx";
 import { Icon } from "../ui/Icon.jsx";
 import { TextInput, PasswordInput } from "../ui/TextInput.jsx";
 import { useToast } from "../ui/toast-context.js";
+import { usePrivacyPolicy } from "../legal/privacy-context.js";
 import {
   requestPasswordReset,
   signInWithPassword,
@@ -159,10 +161,12 @@ function SignUp({ email, setEmail, setMode, onBack, onSignup }) {
   const [nickname, setNickname] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState("");
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
   const { toast } = useToast();
+  const { openPrivacy } = usePrivacyPolicy();
 
   const submit = async (event) => {
     event.preventDefault();
@@ -182,6 +186,10 @@ function SignUp({ email, setEmail, setMode, onBack, onSignup }) {
     }
     if (password !== confirm) {
       setError("Those two passwords don't match.");
+      return;
+    }
+    if (!agreed) {
+      setError("Please read and agree to the Privacy Policy to continue.");
       return;
     }
 
@@ -322,6 +330,26 @@ function SignUp({ email, setEmail, setMode, onBack, onSignup }) {
             confirm && confirm !== password ? "Doesn't match." : undefined
           }
           required
+        />
+
+        <Checkbox
+          checked={agreed}
+          onChange={(event) => setAgreed(event.target.checked)}
+          label={
+            <>
+              I have read and agree to the{" "}
+              {/* A button inside the label is interactive content, so clicking
+                  it opens the policy without toggling the checkbox. */}
+              <button
+                type="button"
+                onClick={openPrivacy}
+                className="font-semibold text-brand-text underline decoration-brand-line underline-offset-2 hover:decoration-brand"
+              >
+                Privacy Policy
+              </button>
+              .
+            </>
+          }
         />
 
         <Notice>{error}</Notice>

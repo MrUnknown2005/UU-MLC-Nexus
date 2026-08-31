@@ -8,6 +8,7 @@ import { EmptyState } from "../ui/EmptyState.jsx";
 import { Panel } from "../ui/Panel.jsx";
 import { Skeleton } from "../ui/Skeleton.jsx";
 import { ThemeToggle } from "../common/ThemeToggle.jsx";
+import { usePrivacyPolicy } from "../legal/privacy-context.js";
 import { displayName, formatDateTime, formatNumber } from "../../lib/format.js";
 
 /**
@@ -25,6 +26,7 @@ import { displayName, formatDateTime, formatNumber } from "../../lib/format.js";
 function GuestDashboard({ profile, onLogout }) {
   const [news, setNews] = useState([]);
   const [status, setStatus] = useState("loading"); // loading | ready | error
+  const { openPrivacy } = usePrivacyPolicy();
 
   const loadNews = useCallback(async () => {
     setStatus("loading");
@@ -188,6 +190,16 @@ function GuestDashboard({ profile, onLogout }) {
               ))
             ))}
         </Panel>
+
+        <footer className="nx-eyebrow flex justify-center border-t border-line pt-5 sm:justify-end">
+          <button
+            type="button"
+            onClick={openPrivacy}
+            className="underline decoration-line-strong underline-offset-2 transition-colors hover:text-ink"
+          >
+            Privacy Policy
+          </button>
+        </footer>
       </main>
     </div>
   );

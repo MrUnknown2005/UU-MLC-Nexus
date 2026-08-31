@@ -2,6 +2,7 @@ import { Brand, BrandMark } from "../common/Brand.jsx";
 import { Button } from "../ui/Button.jsx";
 import { Icon } from "../ui/Icon.jsx";
 import { ThemeToggle } from "../common/ThemeToggle.jsx";
+import { usePrivacyPolicy } from "../legal/privacy-context.js";
 
 /**
  * The signed-out front door.
@@ -38,6 +39,8 @@ const MODULES = [
 ];
 
 function LandingPage({ onLogin, onJoin }) {
+  const { openPrivacy } = usePrivacyPolicy();
+
   return (
     <div className="nx-backdrop flex min-h-dvh flex-col">
       <div className="mx-auto flex w-full max-w-[var(--shell-max)] flex-1 flex-col px-4 py-5 sm:px-7 sm:py-7">
@@ -139,9 +142,19 @@ function LandingPage({ onLogin, onJoin }) {
           </section>
         </main>
 
-        <footer className="nx-eyebrow flex flex-col justify-between gap-2 border-t border-line pt-5 sm:flex-row">
+        <footer className="nx-eyebrow flex flex-col justify-between gap-2 border-t border-line pt-5 sm:flex-row sm:items-center">
           <span>Uttara University · Machine Learning Club</span>
-          <span>Learn · Build · Lead</span>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={openPrivacy}
+              className="underline decoration-line-strong underline-offset-2 transition-colors hover:text-ink"
+            >
+              Privacy Policy
+            </button>
+            <span aria-hidden="true">·</span>
+            <span>Learn · Build · Lead</span>
+          </div>
         </footer>
       </div>
     </div>

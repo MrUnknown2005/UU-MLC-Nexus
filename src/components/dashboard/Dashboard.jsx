@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import useDashboardController from "../../hooks/useDashboardController";
 import { CommandPalette } from "../ui/CommandPalette.jsx";
 import { Sheet } from "../ui/Sheet.jsx";
+import { usePrivacyPolicy } from "../legal/privacy-context.js";
 import { useHotkey } from "../../hooks/useHotkey.js";
 import { humanizeToken } from "../../lib/format.js";
 import TopBar from "./TopBar.jsx";
@@ -40,6 +41,8 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
   } = useDashboardController({ profile, reloadProfile, onLogout });
 
   const [paletteOpen, setPaletteOpen] = useState(false);
+
+  const { openPrivacy } = usePrivacyPolicy();
 
   const canOpenMembers = canViewMembers || canManageMembers;
 
@@ -311,6 +314,16 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
               />
             )}
           </div>
+
+          <footer className="nx-eyebrow mt-8 flex justify-center border-t border-line pt-5 sm:justify-end">
+            <button
+              type="button"
+              onClick={openPrivacy}
+              className="underline decoration-line-strong underline-offset-2 transition-colors hover:text-ink"
+            >
+              Privacy Policy
+            </button>
+          </footer>
         </main>
       </div>
 
