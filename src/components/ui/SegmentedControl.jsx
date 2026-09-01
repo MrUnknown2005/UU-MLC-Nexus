@@ -36,7 +36,7 @@ export function SegmentedControl({
           <label
             key={optionValue}
             className={cn(
-              "relative inline-flex cursor-pointer items-center gap-1.5 rounded-full",
+              "relative inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full",
               "font-semibold whitespace-nowrap transition-colors select-none",
               size === "sm" ? "h-7 px-2.5 text-[0.75rem]" : "h-8 px-3 text-[0.8125rem]",
               selected

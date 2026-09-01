@@ -3,6 +3,7 @@ import { supabase } from "../../lib/supabaseClient";
 import { uploadAttachment } from "../../lib/uploadAttachment";
 import { Badge } from "../ui/Badge.jsx";
 import { Button } from "../ui/Button.jsx";
+import { ChipBar } from "../ui/ChipBar.jsx";
 import { Checkbox } from "../ui/Checkbox.jsx";
 import { EmptyState } from "../ui/EmptyState.jsx";
 import { Icon } from "../ui/Icon.jsx";
@@ -870,7 +871,7 @@ function Todo({ profile, isAdmin, onLogAction }) {
           />
         </div>
 
-        <div className="nx-scroll-x flex gap-2 pb-1">
+        <ChipBar label="Filter by deadline">
           {DEADLINE_FILTERS.map((option) => (
             <button
               key={option.key}
@@ -887,7 +888,7 @@ function Todo({ profile, isAdmin, onLogAction }) {
               </span>
             </button>
           ))}
-        </div>
+        </ChipBar>
       </Panel>
 
       <section>

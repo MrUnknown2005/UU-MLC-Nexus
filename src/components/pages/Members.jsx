@@ -3,6 +3,7 @@ import { SYSTEM_ROLE_DEFINITIONS } from "../../constants/roles";
 import { Avatar } from "../ui/Avatar.jsx";
 import { Badge } from "../ui/Badge.jsx";
 import { Button } from "../ui/Button.jsx";
+import { ChipBar } from "../ui/ChipBar.jsx";
 import { EmptyState } from "../ui/EmptyState.jsx";
 import { Icon } from "../ui/Icon.jsx";
 import { Panel } from "../ui/Panel.jsx";
@@ -293,7 +294,7 @@ function Members({
           resultCount={filtering ? filteredMembers.length : undefined}
         />
 
-        <div className="nx-scroll-x flex gap-2 pb-1">
+        <ChipBar label="Filter by account status">
           {[
             { key: "all", label: "All accounts", icon: "users" },
             { key: "pending", label: "Pending", icon: "clock" },
@@ -315,7 +316,7 @@ function Members({
               </span>
             </button>
           ))}
-        </div>
+        </ChipBar>
 
         <p className="text-[0.8125rem] text-ink-muted">
           Showing{" "}

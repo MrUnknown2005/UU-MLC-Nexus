@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Avatar } from "../ui/Avatar.jsx";
 import { Badge } from "../ui/Badge.jsx";
 import { Button } from "../ui/Button.jsx";
+import { ChipBar } from "../ui/ChipBar.jsx";
 import { EmptyState } from "../ui/EmptyState.jsx";
 import { Icon } from "../ui/Icon.jsx";
 import { Panel } from "../ui/Panel.jsx";
@@ -177,7 +178,7 @@ function Directory({ members = [], currentUserId }) {
 
         {/* Role chips carry their own counts, which makes the shape of the club
             visible before you click anything. */}
-        <div className="nx-scroll-x flex gap-2 pb-1">
+        <ChipBar label="Filter by role">
           <button
             type="button"
             className="nx-chip"
@@ -207,7 +208,7 @@ function Directory({ members = [], currentUserId }) {
               </span>
             </button>
           ))}
-        </div>
+        </ChipBar>
       </Panel>
 
       {visible.length === 0 ? (
