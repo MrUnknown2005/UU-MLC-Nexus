@@ -36,7 +36,7 @@ export default function AuthLayout({
   onBack,
 }) {
   return (
-    <div className="grid min-h-dvh lg:grid-cols-[1fr_minmax(0,30rem)]">
+    <div className="nx-safe-top nx-safe-bottom grid min-h-dvh lg:grid-cols-[1fr_minmax(0,30rem)]">
       <aside className="nx-backdrop relative hidden flex-col justify-between overflow-hidden border-r border-line p-10 lg:flex xl:p-14">
         <Brand size="md" />
 

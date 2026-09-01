@@ -125,7 +125,7 @@ function Palette({ onClose, groups }) {
             }
             autoComplete="off"
             spellCheck={false}
-            className="h-13 w-full bg-transparent py-3.5 text-sm outline-none placeholder:text-ink-subtle"
+            className="h-13 w-full bg-transparent py-3.5 text-base outline-none placeholder:text-ink-subtle sm:text-sm"
           />
           <kbd className="shrink-0 rounded-[5px] border border-line px-1.5 py-0.5 font-mono text-[0.625rem] text-ink-subtle">
             esc

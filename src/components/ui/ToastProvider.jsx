@@ -113,7 +113,7 @@ export function ToastProvider({ children }) {
           aria-live="polite"
           aria-atomic="false"
           className={cn(
-            "pointer-events-none fixed z-[60] flex flex-col gap-2",
+            "nx-safe-bottom pointer-events-none fixed z-[60] flex flex-col gap-2",
             "inset-x-3 bottom-3 sm:inset-x-auto sm:right-5 sm:bottom-5 sm:w-[22rem]"
           )}
         >

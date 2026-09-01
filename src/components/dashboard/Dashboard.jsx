@@ -315,7 +315,7 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
             )}
           </div>
 
-          <footer className="nx-eyebrow mt-8 flex justify-center border-t border-line pt-5 sm:justify-end">
+          <footer className="nx-safe-bottom nx-eyebrow mt-8 flex justify-center border-t border-line pt-5 sm:justify-end">
             <button
               type="button"
               onClick={openPrivacy}

@@ -56,7 +56,7 @@ export function Modal({
   if (!open) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+    <div className="nx-safe-bottom fixed inset-0 z-50 flex items-end justify-center sm:items-center">
       <div
         aria-hidden="true"
         onClick={dismissible ? onClose : undefined}

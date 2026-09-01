@@ -42,7 +42,7 @@ function LandingPage({ onLogin, onJoin }) {
   const { openPrivacy } = usePrivacyPolicy();
 
   return (
-    <div className="nx-backdrop flex min-h-dvh flex-col">
+    <div className="nx-backdrop nx-safe-top nx-safe-bottom flex min-h-dvh flex-col">
       <div className="mx-auto flex w-full max-w-[var(--shell-max)] flex-1 flex-col px-4 py-5 sm:px-7 sm:py-7">
         <header className="flex items-center justify-between gap-3">
           <Brand size="md" subtitle="Uttara University" />

@@ -65,7 +65,7 @@ export function Sheet({
         tabIndex={-1}
         style={{ width, maxWidth: "88vw" }}
         className={cn(
-          "absolute flex flex-col border-line-strong bg-surface shadow-pop",
+          "nx-safe-top nx-safe-bottom nx-safe-left absolute flex flex-col border-line-strong bg-surface shadow-pop",
           "focus:outline-none",
           config.position,
           config.animation,

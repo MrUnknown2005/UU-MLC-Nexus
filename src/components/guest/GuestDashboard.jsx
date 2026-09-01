@@ -59,7 +59,7 @@ function GuestDashboard({ profile, onLogout }) {
 
   return (
     <div className="nx-backdrop min-h-dvh">
-      <header className="sticky top-0 z-30 border-b border-line bg-canvas/85 backdrop-blur-md">
+      <header className="nx-safe-top sticky top-0 z-30 border-b border-line bg-canvas/85 backdrop-blur-md">
         <div className="mx-auto flex h-[var(--topbar-h)] w-full max-w-5xl items-center gap-3 px-4 sm:px-6">
           <Brand size="sm" />
 
@@ -191,7 +191,7 @@ function GuestDashboard({ profile, onLogout }) {
             ))}
         </Panel>
 
-        <footer className="nx-eyebrow flex justify-center border-t border-line pt-5 sm:justify-end">
+        <footer className="nx-safe-bottom nx-eyebrow flex justify-center border-t border-line pt-5 sm:justify-end">
           <button
             type="button"
             onClick={openPrivacy}

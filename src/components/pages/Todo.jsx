@@ -198,14 +198,14 @@ function TodoCard({ todo, isAdmin, now, busy, onToggle, onEdit, onDelete }) {
             <IconButton
               icon="pencil"
               label={`Edit "${todo.title}"`}
-              size="sm"
+              size="md"
               disabled={busy}
               onClick={() => onEdit(todo)}
             />
             <IconButton
               icon="trash"
               label={`Delete "${todo.title}"`}
-              size="sm"
+              size="md"
               variant="danger"
               disabled={busy}
               onClick={() => onDelete(todo)}

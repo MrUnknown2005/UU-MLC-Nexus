@@ -33,7 +33,7 @@ export default function TopBar({
   const [accountOpen, setAccountOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-line bg-canvas/85 backdrop-blur-md">
+    <header className="nx-safe-top sticky top-0 z-30 border-b border-line bg-canvas/85 backdrop-blur-md">
       <div className="flex h-[var(--topbar-h)] items-center gap-2 px-3 sm:px-5">
         <IconButton
           icon="menu"

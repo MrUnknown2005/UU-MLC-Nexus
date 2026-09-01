@@ -192,6 +192,18 @@
     padding-left: 2.5rem;
   }
 
+  /* Below the sm breakpoint the controls inherit the 15px body size, which is
+     under the 16px iOS Safari uses to decide whether to zoom the viewport when
+     a field takes focus. Lifting just the mobile size to 16px stops that zoom
+     without touching desktop density. */
+  @media (max-width: 39.98rem) {
+    .nx-input,
+    .nx-textarea,
+    .nx-select {
+      font-size: 1rem;
+    }
+  }
+
   /* ===========================================================
      NAVIGATION
      =========================================================== */
@@ -391,6 +403,23 @@
   .nx-scroll-y {
     overflow-y: auto;
     overscroll-behavior-y: contain;
+  }
+
+  /* Safe-area padding for fixed and full-bleed surfaces, so a notch, the
+     rounded screen corners, or the home indicator never sit over content. The
+     `0px` fallback leaves every non-notched device and the desktop untouched.
+     Apply only to an element with no Tailwind padding on the same side — a
+     utility sits in a later layer and would win, dropping the inset. */
+  .nx-safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .nx-safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .nx-safe-left {
+    padding-left: env(safe-area-inset-left, 0px);
   }
 
   /* Amber underline used for the one focal word in a heading. */

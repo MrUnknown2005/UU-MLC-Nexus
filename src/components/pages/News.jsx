@@ -92,14 +92,14 @@ function NewsRow({ item, now, editing, busy, onEdit, onDelete }) {
               icon="pencil"
               label={`Edit "${item.title || "this post"}"`}
               variant="surface"
-              size="sm"
+              size="md"
               onClick={() => onEdit(item)}
             />
             <IconButton
               icon="trash"
               label={`Delete "${item.title || "this post"}"`}
               variant="danger"
-              size="sm"
+              size="md"
               loading={busy}
               onClick={() => onDelete(item)}
             />
