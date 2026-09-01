@@ -304,7 +304,7 @@ const PATHS = {
     </>
   ),
 
-  /* ---- Achievement ---- */
+  /* ---- Rank / medal ---- */
   medal: (
     <>
       <circle cx="12" cy="14.8" r="4.8" />

@@ -102,7 +102,6 @@ export default function PrivacyContent() {
           <li>Your club points and point history.</li>
           <li>Point awards or adjustments made through the club system.</li>
           <li>Tasks assigned to you and whether you completed them.</li>
-          <li>Achievements awarded to you by the club.</li>
           <li>
             News or other club content you are authorized to create or publish.
           </li>
@@ -125,7 +124,7 @@ export default function PrivacyContent() {
           <li>To manage UU MLC membership and member roles.</li>
           <li>
             To provide club features such as the member directory, points,
-            rankings, tasks, achievements, and news.
+            rankings, tasks, and news.
           </li>
           <li>To manage authorized administrative functions.</li>
           <li>To investigate misuse, abuse, or security issues.</li>
