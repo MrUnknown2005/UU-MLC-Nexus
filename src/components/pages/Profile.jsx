@@ -8,8 +8,9 @@ import { Icon } from "../ui/Icon.jsx";
 import { Panel } from "../ui/Panel.jsx";
 import { StatCard } from "../ui/StatCard.jsx";
 import { TextArea } from "../ui/TextArea.jsx";
-import { TextInput } from "../ui/TextInput.jsx";
+import { TextInput, PasswordInput } from "../ui/TextInput.jsx";
 import { useToast } from "../ui/toast-context.js";
+import { changePassword } from "../../services/authService";
 import { roleLabel } from "../../lib/roles.js";
 import { formatDate, formatNumber, ordinal } from "../../lib/format.js";
 
@@ -403,6 +404,8 @@ function Profile({ profile, reloadProfile, onLogAction }) {
         </div>
       </Panel>
 
+      <PasswordPanel onLogAction={onLogAction} profileId={profile.id} />
+
       {!editMode ? (
         <Panel eyebrow="About" title="Bio" icon="book-open">
           <div className="grid gap-5 md:grid-cols-[1fr_16rem]">
@@ -519,6 +522,134 @@ function Profile({ profile, reloadProfile, onLogAction }) {
         </Panel>
       )}
     </div>
+  );
+}
+
+/**
+ * Change-password panel for the signed-in member.
+ *
+ * Kept as its own component with its own state so Profile's larger edit form
+ * doesn't grow four more fields it has to reset. The heavy lifting — verifying
+ * the current password before setting the new one — lives in
+ * authService.changePassword; this is just the form around it.
+ */
+function PasswordPanel({ onLogAction, profileId }) {
+  const { toast } = useToast();
+
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const reset = () => {
+    setCurrent("");
+    setNext("");
+    setConfirm("");
+    setError("");
+  };
+
+  const submit = async (event) => {
+    event.preventDefault();
+    setError("");
+
+    if (!current) {
+      setError("Enter your current password.");
+      return;
+    }
+    if (next.length < 8) {
+      setError("Your new password needs at least 8 characters.");
+      return;
+    }
+    if (next === current) {
+      setError("Your new password must be different from the current one.");
+      return;
+    }
+    if (next !== confirm) {
+      setError("Those two new passwords don't match.");
+      return;
+    }
+
+    setSaving(true);
+
+    const { error: changeError } = await changePassword({
+      currentPassword: current,
+      newPassword: next,
+    });
+
+    if (changeError) {
+      setError(changeError.message);
+      setSaving(false);
+      return;
+    }
+
+    toast.success("Password changed", {
+      description: "Use your new password next time you sign in.",
+    });
+
+    // Best-effort audit trail. Never records the password itself — only that a
+    // change happened, and by whom.
+    if (onLogAction) {
+      await onLogAction({
+        action: "PASSWORD_CHANGED",
+        targetUserId: profileId,
+        details: "Changed their account password.",
+      });
+    }
+
+    reset();
+    setSaving(false);
+  };
+
+  return (
+    <Panel eyebrow="Security" title="Password" icon="key">
+      <form onSubmit={submit} className="max-w-md space-y-4">
+        <PasswordInput
+          label="Current password"
+          value={current}
+          onChange={(event) => setCurrent(event.target.value)}
+          placeholder="Your current password"
+          autoComplete="current-password"
+          disabled={saving}
+          required
+        />
+
+        <PasswordInput
+          label="New password"
+          value={next}
+          onChange={(event) => setNext(event.target.value)}
+          placeholder="At least 8 characters"
+          autoComplete="new-password"
+          disabled={saving}
+          required
+        />
+
+        <PasswordInput
+          label="Confirm new password"
+          value={confirm}
+          onChange={(event) => setConfirm(event.target.value)}
+          placeholder="Type the new password again"
+          autoComplete="new-password"
+          error={confirm && confirm !== next ? "Doesn't match." : undefined}
+          disabled={saving}
+          required
+        />
+
+        {error && (
+          <div
+            role="alert"
+            className="flex items-start gap-2 rounded-control border border-danger-line bg-danger-soft px-3 py-2.5 text-[0.8125rem] text-danger"
+          >
+            <Icon name="alert-triangle" size={15} className="mt-px shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <Button type="submit" variant="primary" icon="check" loading={saving}>
+          {saving ? "Changing..." : "Change password"}
+        </Button>
+      </form>
+    </Panel>
   );
 }
 

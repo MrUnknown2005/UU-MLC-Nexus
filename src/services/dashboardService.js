@@ -97,8 +97,44 @@ export function subscribeToActivityChanges(profileId, onChange) {
   return () => supabase.removeChannel(channel);
 }
 
+export function subscribeToPointHistoryChanges(profileId, onChange) {
+  const channel = supabase
+    .channel(`point-history-${profileId}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "point_history",
+      },
+      onChange,
+    )
+    .subscribe();
+
+  return () => supabase.removeChannel(channel);
+}
+
+export function subscribeToNewsChanges(profileId, onChange) {
+  const channel = supabase
+    .channel(`news-${profileId}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "news",
+      },
+      onChange,
+    )
+    .subscribe();
+
+  return () => supabase.removeChannel(channel);
+}
+
 export default {
   fetchDashboardData,
   subscribeToProfileChanges,
   subscribeToActivityChanges,
+  subscribeToPointHistoryChanges,
+  subscribeToNewsChanges,
 };

@@ -3,6 +3,8 @@ import {
   fetchDashboardData,
   subscribeToActivityChanges,
   subscribeToProfileChanges,
+  subscribeToPointHistoryChanges,
+  subscribeToNewsChanges,
 } from "../services/dashboardService";
 
 /**
@@ -90,6 +92,24 @@ export function useDashboardData({
     return unsubscribe;
     // loadData is intentionally omitted: it's redefined each render,
     // and including it would tear down/recreate the realtime subscription unnecessarily.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile.id, profile.role]);
+
+  useEffect(() => {
+    // point_history and news are visible to every member, so these run for
+    // everyone — not gated on isAdmin like the activity-log subscription below.
+    const unsubscribePoints = subscribeToPointHistoryChanges(
+      profile.id,
+      loadData,
+    );
+    const unsubscribeNews = subscribeToNewsChanges(profile.id, loadData);
+
+    return () => {
+      unsubscribePoints();
+      unsubscribeNews();
+    };
+    // loadData is intentionally omitted: it's redefined each render,
+    // and including it would tear down/recreate the realtime subscriptions unnecessarily.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile.id, profile.role]);
 
