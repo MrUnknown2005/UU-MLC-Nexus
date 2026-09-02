@@ -79,10 +79,67 @@ export async function changePassword({ currentPassword, newPassword }) {
   return supabase.auth.updateUser({ password: newPassword });
 }
 
+/**
+ * Permanently deletes the signed-in member's own account.
+ *
+ * Same reasoning as changePassword: a live Supabase session can call privileged
+ * RPCs on its own, and deletion is irreversible, so we re-verify the current
+ * password first to be sure the person at the keyboard is the account owner and
+ * not someone who found an unlocked device.
+ *
+ * The erasure itself happens server-side in the `delete_own_account` RPC
+ * (SECURITY DEFINER): it sends the farewell email via Resend, removes the
+ * member's owned rows, records the deletion in the audit log, then deletes the
+ * auth user. We finally sign the now-deleted session out so the app returns to
+ * the logged-out screen — a signOut failure is ignored, the account is gone
+ * either way.
+ *
+ * Returns { error } — a friendly message when the password is wrong, or
+ * whatever the RPC reports. On success, { error: null }.
+ */
+export async function deleteOwnAccount({ currentPassword }) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user?.email) {
+    return {
+      error: { message: "You need to be signed in to delete your account." },
+    };
+  }
+
+  const { error: verifyError } = await supabase.auth.signInWithPassword({
+    email: user.email,
+    password: currentPassword,
+  });
+
+  if (verifyError) {
+    return {
+      error: {
+        message:
+          verifyError.message === "Invalid login credentials"
+            ? "Your password is incorrect."
+            : verifyError.message,
+      },
+    };
+  }
+
+  const { error: rpcError } = await supabase.rpc("delete_own_account");
+
+  if (rpcError) {
+    return { error: rpcError };
+  }
+
+  await supabase.auth.signOut();
+
+  return { error: null };
+}
+
 export default {
   signInWithPassword,
   signUp,
   requestPasswordReset,
   updatePassword,
   changePassword,
+  deleteOwnAccount,
 };

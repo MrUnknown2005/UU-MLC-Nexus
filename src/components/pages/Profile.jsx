@@ -10,7 +10,8 @@ import { StatCard } from "../ui/StatCard.jsx";
 import { TextArea } from "../ui/TextArea.jsx";
 import { TextInput, PasswordInput } from "../ui/TextInput.jsx";
 import { useToast } from "../ui/toast-context.js";
-import { changePassword } from "../../services/authService";
+import { useConfirm } from "../ui/confirm-context.js";
+import { changePassword, deleteOwnAccount } from "../../services/authService";
 import { roleLabel } from "../../lib/roles.js";
 import { formatDate, formatNumber, ordinal } from "../../lib/format.js";
 
@@ -521,6 +522,8 @@ function Profile({ profile, reloadProfile, onLogAction }) {
           </form>
         </Panel>
       )}
+
+      <DangerZonePanel />
     </div>
   );
 }
@@ -647,6 +650,106 @@ function PasswordPanel({ onLogAction, profileId }) {
 
         <Button type="submit" variant="primary" icon="check" loading={saving}>
           {saving ? "Changing..." : "Change password"}
+        </Button>
+      </form>
+    </Panel>
+  );
+}
+
+/**
+ * Danger zone — permanent, self-service account deletion.
+ *
+ * The heaviest action a member can take on their own record, so it carries the
+ * two gates the app reserves for destructive work: the current password is
+ * re-verified (a live session alone must not be able to erase the account —
+ * see authService.deleteOwnAccount), and the shared typed-phrase confirm dialog
+ * spells out exactly what disappears before it enables the button.
+ *
+ * The erasure and the farewell email happen server-side in the
+ * `delete_own_account` RPC; on success the session signs out, which returns the
+ * app to the login screen — so there is no success state to render here.
+ */
+function DangerZonePanel() {
+  const { toast } = useToast();
+  const confirm = useConfirm();
+
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (event) => {
+    event.preventDefault();
+    setError("");
+
+    if (!password) {
+      setError("Enter your current password to confirm.");
+      return;
+    }
+
+    const ok = await confirm({
+      title: "Permanently delete your account?",
+      tone: "danger",
+      confirmLabel: "Delete my account",
+      requireText: "DELETE MY ACCOUNT",
+      description:
+        "This erases your account and everything tied to it. It cannot be undone, and we cannot bring it back.",
+      consequences: [
+        "Your profile, points and point history are permanently deleted",
+        "Your notifications are removed and you are signed out",
+        "We email you a short goodbye — then your address is gone from our records",
+        "Club tasks and other members' data are not affected",
+      ],
+    });
+
+    if (!ok) return;
+
+    setBusy(true);
+
+    const { error: deleteError } = await deleteOwnAccount({
+      currentPassword: password,
+    });
+
+    if (deleteError) {
+      setError(deleteError.message);
+      setBusy(false);
+      return;
+    }
+
+    // No lingering success state: signOut inside deleteOwnAccount tears the
+    // session down and the app falls back to the login screen. The toast is the
+    // last thing shown on the way out.
+    toast.success("Your account has been deleted. Take care.");
+  };
+
+  return (
+    <Panel eyebrow="Danger zone" title="Delete account" icon="alert-triangle">
+      <form onSubmit={submit} className="max-w-md space-y-4">
+        <p className="text-[0.8125rem] leading-relaxed text-ink-muted">
+          Deleting your account is permanent — everything tied to it is erased
+          and cannot be recovered. If you're sure, confirm your password below.
+        </p>
+
+        <PasswordInput
+          label="Current password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          placeholder="Confirm your password to continue"
+          autoComplete="current-password"
+          disabled={busy}
+        />
+
+        {error && (
+          <div
+            role="alert"
+            className="flex items-start gap-2 rounded-control border border-danger-line bg-danger-soft px-3 py-2.5 text-[0.8125rem] text-danger"
+          >
+            <Icon name="alert-triangle" size={15} className="mt-px shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <Button type="submit" variant="danger-soft" icon="trash" loading={busy}>
+          {busy ? "Deleting..." : "Delete my account"}
         </Button>
       </form>
     </Panel>

@@ -13,8 +13,8 @@
 **Phase 2 — Auth completion & full realtime sync.** Code written; **`npm run lint` and
 `npm run build` both pass, and the realtime migration is applied & verified in Supabase
 (all six tables confirmed in `supabase_realtime`) — 2026-09-02.** Remaining before Phase 2
-closes: live-test only — the member-join fix (two-client) and forgot-password E2E. Phase 1
-(mobile UI) done and committed.
+closes: **self-service delete-account (new — top of 2A, a code task)**, plus live-tests — the
+member-join fix (two-client) and forgot-password E2E. Phase 1 (mobile UI) done and committed.
 
 ---
 
@@ -44,8 +44,21 @@ Two workstreams. Both are "finish the core functionality" before any audit.
 
 ### 2A · Auth completion
 
-Most of this already exists — the only missing piece is change-password.
+Change-password is done. Remaining: build self-service **delete-account** (new top item),
+and live-test forgot-password.
 
+- [ ] **Delete-account (self-service)** — new **"Danger zone"** in `src/components/pages/Profile.jsx`,
+      below the Security panel. Lets a member permanently delete their own account, then signs out.
+      - ✅ **Locked (Decisions #3):** hard-delete everything — cascade all owned rows.
+      - ✉️ **Farewell email** via **Resend** (`pg_net` in the RPC, key in Vault) — see Decisions #4.
+        Sent *before* the user row is deleted. Needs a Resend API key + from-address from the user.
+      - ⚠️ Deleting the `auth.users` row needs privilege the client must never hold, and there is
+        **no edge-function infra** in this repo. Use the established pattern: a SECURITY DEFINER
+        Postgres RPC (e.g. `delete_own_account()` → `delete from auth.users where id = auth.uid()`,
+        cascade handles owned rows), called via `supabase.rpc(...)`, applied in the Supabase SQL editor.
+      - UX mirrors the admin destructive-action convention: typed confirmation phrase + itemised
+        consequences, and re-verify the current password (as change-password does).
+      - Log `ACCOUNT_SELF_DELETED` to the audit trail *before* the row is removed.
 - [x] **Change-password form** for logged-in members, in `src/components/pages/Profile.jsx`
       (new `PasswordPanel`, "Security" section). Re-verifies current password via new
       `changePassword()` in `authService.js`. Logs `PASSWORD_CHANGED` to the audit trail.
@@ -73,6 +86,21 @@ Most of this already exists — the only missing piece is change-password.
 2. **Migration style → DEFENSIVE.** Write a guarded/idempotent migration safe to run
    regardless of current publication state. No dashboard check required.
 
+### ❓ Open decisions (Phase 2)
+
+3. **Delete-account semantics → LOCKED: HARD-DELETE EVERYTHING (2026-09-02).** Remove
+   `auth.users` + cascade all owned rows (point history, todos, notifications). True erasure;
+   archived monthly winners survive (separate snapshot table). The RPC deletes owned rows
+   explicitly if FK `ON DELETE CASCADE` isn't guaranteed.
+4. **Farewell email on self-delete → LOCKED: RESEND, set up now (2026-09-02).** Member gets a
+   warm goodbye email ("thank you for being with us") when they delete. Hard constraints:
+   (i) must send *before* the `auth.users` row is deleted — deletion removes the email address;
+   (ii) cannot be sent from the browser — needs a server-side secret. **Architecture:** send from
+   inside the `delete_own_account()` RPC via **`pg_net`** (async HTTP POST to Resend), API key in
+   **Supabase Vault**, then delete the user. Matches the repo's RPC pattern; no edge-fn/CLI/Deno.
+   Needs from user: Resend account, a verified sending domain (or `onboarding@resend.dev` for a
+   test), and an API key → stored in Vault. Free tier: 3k/mo, 100/day.
+
 ### ⚠️ Gotchas (Phase 2)
 
 - ⚠️ **Two different causes of staleness** — don't conflate them:
@@ -87,6 +115,9 @@ Most of this already exists — the only missing piece is change-password.
   Custom SMTP is deferred by decision (later phase).
 - ⚠️ **Forgot-password redirect origin** must be allowlisted in Supabase
   Authentication → URL Configuration, or the link silently falls back to the site URL.
+- ⚠️ **No `supabase/` dir in the repo right now** — migrations/RPCs are applied directly in the
+  Supabase SQL editor and are not all kept in git (same landmine as the deleted RLS migration).
+  For delete-account, keep the `delete_own_account()` SQL in the repo *and* apply it in the editor.
 
 ---
 
