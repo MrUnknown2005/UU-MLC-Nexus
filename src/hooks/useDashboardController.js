@@ -59,6 +59,8 @@ export function useDashboardController({ profile, reloadProfile, onLogout }) {
     allPointHistory,
     previousMonth,
     activityLog,
+    loading,
+    dataError,
     loadData,
   } = useDashboardData({ profile, canViewMembers, canViewHistory, isAdmin });
 
@@ -170,6 +172,8 @@ export function useDashboardController({ profile, reloadProfile, onLogout }) {
     resetMemberPoints,
     activityLog,
     deleteAdminActivityLog,
+    loading,
+    dataError,
     loadData,
     logAdminAction,
     loadRoleAccess,

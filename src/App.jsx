@@ -40,47 +40,60 @@ export default function App() {
     const token = loadToken.current + 1;
     loadToken.current = token;
 
-    const {
-      data: { session: currentSession },
-    } = await getCurrentSession();
+    try {
+      const {
+        data: { session: currentSession },
+      } = await getCurrentSession();
 
-    if (loadToken.current !== token) return;
+      if (loadToken.current !== token) return;
 
-    if (!currentSession) {
-      setSession(null);
-      setProfile(null);
+      if (!currentSession) {
+        setSession(null);
+        setProfile(null);
+        setStatus("ready");
+        return;
+      }
+
+      setSession(currentSession);
+
+      const { data, error } = await getCurrentProfile(currentSession.user.id);
+
+      if (loadToken.current !== token) return;
+
+      if (error) {
+        console.error("Profile load error:", error);
+        setProfile(null);
+        setLoadError(error.message ?? "");
+        setStatus(error.code === "PGRST116" ? "ready" : "error");
+        return;
+      }
+
+      if (data.is_active === false) {
+        // Deactivated members are signed out immediately rather than shown a
+        // half-working dashboard. The old build used alert() for this, which
+        // could be dismissed before it was read.
+        await signOut();
+
+        if (loadToken.current !== token) return;
+
+        setSession(null);
+        setProfile(null);
+        setStatus("deactivated");
+        return;
+      }
+
+      setProfile(data);
       setStatus("ready");
-      return;
-    }
-
-    setSession(currentSession);
-
-    const { data, error } = await getCurrentProfile(currentSession.user.id);
-
-    if (loadToken.current !== token) return;
-
-    if (error) {
-      console.error("Profile load error:", error);
+    } catch (err) {
+      // A thrown error (network drop, unexpected rejection) must not leave the
+      // app stuck on the boot screen forever. Surface it like any other load
+      // failure so the user still gets a Try again / Sign out choice.
+      if (loadToken.current !== token) return;
+      console.error("Session load failed:", err);
       setProfile(null);
-      setLoadError(error.message ?? "");
-      setStatus(error.code === "PGRST116" ? "ready" : "error");
-      return;
+      setLoadError(err?.message ?? "");
+      setStatus("error");
     }
-
-    if (data.is_active === false) {
-      // Deactivated members are signed out immediately rather than shown a
-      // half-working dashboard. The old build used alert() for this, which
-      // could be dismissed before it was read.
-      await signOut();
-
-      setSession(null);
-      setProfile(null);
-      setStatus("deactivated");
-      return;
-    }
-
-    setProfile(data);
-    setStatus("ready");
   }, []);
 
   useEffect(() => {
@@ -105,6 +118,16 @@ export default function App() {
         return;
       }
 
+      if (event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
+        // A refreshed token or an updated user record is the natural moment to
+        // re-validate: re-run the full load so a member who was deactivated (or
+        // had their role changed) mid-session is caught here instead of
+        // lingering on a stale dashboard until they manually reload.
+        setSession(currentSession);
+        loadSession();
+        return;
+      }
+
       setSession(currentSession);
     });
 
@@ -117,14 +140,24 @@ export default function App() {
   }, [loadSession]);
 
   const logout = useCallback(async () => {
-    await signOut();
-
+    // Invalidate any in-flight session load first, so a load that resolves
+    // after this point cannot repopulate the profile we are clearing.
     loadToken.current += 1;
-    setSession(null);
-    setProfile(null);
-    setRecovering(false);
-    setStatus("ready");
-    setView("landing");
+
+    try {
+      await signOut();
+    } catch (err) {
+      // Even if the network sign-out fails, the local session is being torn
+      // down — clear the UI regardless rather than trapping the user in a
+      // half-logged-in state they can't escape.
+      console.error("Sign out error:", err);
+    } finally {
+      setSession(null);
+      setProfile(null);
+      setRecovering(false);
+      setStatus("ready");
+      setView("landing");
+    }
   }, []);
 
   if (status === "loading") {

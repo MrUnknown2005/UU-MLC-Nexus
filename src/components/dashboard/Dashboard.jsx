@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import useDashboardController from "../../hooks/useDashboardController";
 import { CommandPalette } from "../ui/CommandPalette.jsx";
 import { Sheet } from "../ui/Sheet.jsx";
+import { Button } from "../ui/Button.jsx";
+import { Icon } from "../ui/Icon.jsx";
+import { Skeleton, SkeletonText } from "../ui/Skeleton.jsx";
 import { usePrivacyPolicy } from "../legal/privacy-context.js";
 import { useHotkey } from "../../hooks/useHotkey.js";
 import { humanizeToken } from "../../lib/format.js";
@@ -34,11 +37,11 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
     clearOwnNotifications, clearAllNotifications, openNotification,
     pendingMemberCount, overdueTodoCount, recentNewsCount, members, rankedMembers, news,
     currentRank, pointHistory, previousMonth, canViewMembers, canManageMembers, canViewPoints,
-    canViewHistory, canManageNews, canManageRoles, isAdmin, roleDefinitions, changeRole,
+    canViewHistory, canManageNews, canManageRoles, roleDefinitions, changeRole,
     toggleMemberActive, adjustPoints, canAwardPoints, isHeadAdmin, allPointHistory,
     deleteAllPointData, deleteMonthlyLeaderboard, hasPermission, resetAllPoints,
     resetMemberPoints, activityLog, deleteAdminActivityLog, loadData, logAdminAction,
-    loadRoleAccess, canManageTodos,
+    loadRoleAccess, canManageTodos, loading, dataError,
   } = useDashboardController({ profile, reloadProfile, onLogout });
 
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -220,9 +223,63 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
           id="nexus-main"
           className="nx-backdrop mx-auto min-h-[calc(100dvh-var(--topbar-h))] w-full max-w-[var(--shell-max)] px-3 py-5 sm:px-5 sm:py-7"
         >
-          {/* Keyed so switching tabs replays the entrance animation and resets
-              any per-page state instead of leaking it across sections. */}
-          <div key={activeTab} className="nx-rise">
+          {/* A failed load must not masquerade as an empty club: keep whatever
+              data we already have on screen and say plainly it may be stale. */}
+          {dataError && !loading && (
+            <div
+              role="alert"
+              className="mb-5 flex flex-col gap-3 rounded-control border border-danger-line bg-danger-soft px-4 py-3 text-[0.8125rem] sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="flex items-start gap-2 text-danger">
+                <Icon
+                  name="alert-triangle"
+                  size={16}
+                  className="mt-px shrink-0"
+                />
+                <span>
+                  <span className="font-semibold">
+                    Some club data didn&rsquo;t load.
+                  </span>{" "}
+                  <span className="text-ink-muted">
+                    You may be seeing an out-of-date view — this is a connection
+                    problem, not lost data.
+                  </span>
+                </span>
+              </div>
+              <Button
+                variant="danger-soft"
+                size="sm"
+                icon="refresh"
+                className="self-start sm:self-auto"
+                onClick={() => loadData()}
+              >
+                Retry
+              </Button>
+            </div>
+          )}
+
+          {loading ? (
+            <div aria-busy="true" aria-live="polite" className="space-y-5">
+              <span className="sr-only">Loading club data…</span>
+              <div className="nx-well grid gap-4 p-5">
+                <Skeleton className="h-6 w-1/3" rounded="card" />
+                <SkeletonText lines={3} />
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="nx-well grid gap-4 p-5">
+                  <Skeleton className="h-5 w-2/5" rounded="card" />
+                  <SkeletonText lines={2} />
+                </div>
+                <div className="nx-well grid gap-4 p-5">
+                  <Skeleton className="h-5 w-2/5" rounded="card" />
+                  <SkeletonText lines={2} />
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Keyed so switching tabs replays the entrance animation and resets
+               any per-page state instead of leaking it across sections. */
+            <div key={activeTab} className="nx-rise">
             {activeTab === "overview" && (
               <Overview
                 profile={profile}
@@ -249,7 +306,7 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
             {activeTab === "todo" && (
               <Todo
                 profile={profile}
-                isAdmin={isAdmin || canManageTodos}
+                canManage={canManageTodos}
                 onLogAction={logAdminAction}
               />
             )}
@@ -316,7 +373,8 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
                 onRolesChanged={loadRoleAccess}
               />
             )}
-          </div>
+            </div>
+          )}
 
           <footer className="nx-safe-bottom nx-eyebrow mt-8 flex justify-center border-t border-line pt-5 sm:justify-end">
             <button

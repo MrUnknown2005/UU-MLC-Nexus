@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   fetchDashboardData,
   subscribeToActivityChanges,
@@ -23,59 +23,94 @@ export function useDashboardData({
   const [allPointHistory, setAllPointHistory] = useState([]);
   const [previousMonth, setPreviousMonth] = useState(null);
   const [activityLog, setActivityLog] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [dataError, setDataError] = useState(false);
+
+  // Guards against a slow earlier load resolving after a newer one and
+  // overwriting fresh data with stale — a single mutation fans out into several
+  // concurrent loadData() calls (the mutation itself plus realtime echoes).
+  const loadSeq = useRef(0);
 
   const loadData = async () => {
-    const {
-      memberResult,
-      myHistoryResult,
-      fullHistoryResult,
-      monthResult,
-      newsResult,
-      activityResult,
-    } = await fetchDashboardData({
-      profileId: profile.id,
-      canViewMembers,
-      canViewHistory,
-    });
+    const seq = loadSeq.current + 1;
+    loadSeq.current = seq;
 
-    if (memberResult.error) {
-      console.error("Members error:", memberResult.error);
-    }
-    setMembers(memberResult.data || []);
+    try {
+      const {
+        memberResult,
+        myHistoryResult,
+        fullHistoryResult,
+        monthResult,
+        newsResult,
+        activityResult,
+      } = await fetchDashboardData({
+        profileId: profile.id,
+        canViewMembers,
+        canViewHistory,
+      });
 
-    if (myHistoryResult.error) {
-      console.error("Personal history error:", myHistoryResult.error);
-      setPointHistory([]);
-    } else {
-      setPointHistory(myHistoryResult.data || []);
-    }
+      // A newer load started while this one was in flight — let it win rather
+      // than overwriting fresh data with stale.
+      if (loadSeq.current !== seq) return;
 
-    if (fullHistoryResult.error) {
-      console.error("Full point history error:", fullHistoryResult.error);
-      setAllPointHistory([]);
-    } else {
-      setAllPointHistory(fullHistoryResult.data || []);
-    }
+      // The members list is the shared backbone (leaderboard, directory,
+      // member management). A failed read must not blank it into a confident
+      // "empty club" — surface the error and keep whatever was already there.
+      if (memberResult.error) {
+        console.error("Members error:", memberResult.error);
+      } else {
+        setMembers(memberResult.data || []);
+      }
 
-    if (monthResult.error) {
-      console.error("Monthly leaderboard error:", monthResult.error);
-      setPreviousMonth(null);
-    } else {
-      setPreviousMonth(monthResult.data || null);
-    }
+      if (myHistoryResult.error) {
+        console.error("Personal history error:", myHistoryResult.error);
+        setPointHistory([]);
+      } else {
+        setPointHistory(myHistoryResult.data || []);
+      }
 
-    if (newsResult.error) {
-      console.error("News error:", newsResult.error);
-      setNews([]);
-    } else {
-      setNews(newsResult.data || []);
-    }
+      if (fullHistoryResult.error) {
+        console.error("Full point history error:", fullHistoryResult.error);
+        setAllPointHistory([]);
+      } else {
+        setAllPointHistory(fullHistoryResult.data || []);
+      }
 
-    if (activityResult.error) {
-      console.error("Activity log error:", activityResult.error);
-      setActivityLog([]);
-    } else {
-      setActivityLog(activityResult.data || []);
+      if (monthResult.error) {
+        console.error("Monthly leaderboard error:", monthResult.error);
+        setPreviousMonth(null);
+      } else {
+        setPreviousMonth(monthResult.data || null);
+      }
+
+      if (newsResult.error) {
+        console.error("News error:", newsResult.error);
+        setNews([]);
+      } else {
+        setNews(newsResult.data || []);
+      }
+
+      if (activityResult.error) {
+        console.error("Activity log error:", activityResult.error);
+        setActivityLog([]);
+      } else {
+        setActivityLog(activityResult.data || []);
+      }
+
+      // Keyed on the members read: that is the one whose failure produces the
+      // false "empty club". Secondary sections fall back to empty on their own.
+      setDataError(Boolean(memberResult.error));
+    } catch (err) {
+      // fetchDashboardData resolves query errors into each result's `.error`,
+      // so reaching here means something threw outright (network drop, an
+      // unexpected rejection). Surface it rather than stranding the skeleton.
+      if (loadSeq.current !== seq) return;
+      console.error("Dashboard data load failed:", err);
+      setDataError(true);
+    } finally {
+      // Only the newest load clears the first-load skeleton; a superseded load
+      // must not flip it off on the current one's behalf.
+      if (loadSeq.current === seq) setLoading(false);
     }
   };
 
@@ -133,6 +168,8 @@ export function useDashboardData({
     allPointHistory,
     previousMonth,
     activityLog,
+    loading,
+    dataError,
     loadData,
   };
 }

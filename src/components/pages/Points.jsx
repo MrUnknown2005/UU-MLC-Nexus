@@ -20,6 +20,7 @@ import {
   formatNumber,
 } from "../../lib/format.js";
 import { cn } from "../../lib/cn.js";
+import { MAX_POINT_ADJUSTMENT } from "../../constants/points.js";
 
 /**
  * Points: award, review, audit.
@@ -66,7 +67,10 @@ function Points({
 
   const numeric = Number(points);
   const numericValid =
-    points.trim() !== "" && Number.isInteger(numeric) && numeric !== 0;
+    points.trim() !== "" &&
+    Number.isInteger(numeric) &&
+    numeric !== 0 &&
+    Math.abs(numeric) <= MAX_POINT_ADJUSTMENT;
 
   const errors = {
     memberId: !memberId ? "Choose who this affects." : "",
@@ -76,7 +80,9 @@ function Points({
         ? "Whole numbers only."
         : numeric === 0
           ? "Zero would not change anything."
-          : "",
+          : Math.abs(numeric) > MAX_POINT_ADJUSTMENT
+            ? `Keep it within ${formatNumber(MAX_POINT_ADJUSTMENT)} at a time.`
+            : "",
     reason: !reason.trim() ? "Say why — this is recorded permanently." : "",
   };
 

@@ -90,7 +90,7 @@ function bucketOf(todo, now) {
  * it needs arrives as a prop, including `now`, so the whole list agrees about
  * what "today" means.
  */
-function TodoCard({ todo, isAdmin, now, busy, onToggle, onEdit, onDelete }) {
+function TodoCard({ todo, canManage, now, busy, onToggle, onEdit, onDelete }) {
   const overdue = !todo.completed && isOverdue(todo.deadline, now);
   const dueToday = !todo.completed && daysUntil(todo.deadline, now) === 0;
 
@@ -194,7 +194,7 @@ function TodoCard({ todo, isAdmin, now, busy, onToggle, onEdit, onDelete }) {
 
         {/* Always visible. Hiding these behind :hover put them out of reach of
             every touch and keyboard user the club has. */}
-        {isAdmin && (
+        {canManage && (
           <div className="flex shrink-0 gap-1">
             <IconButton
               icon="pencil"
@@ -218,7 +218,7 @@ function TodoCard({ todo, isAdmin, now, busy, onToggle, onEdit, onDelete }) {
   );
 }
 
-function Todo({ profile, isAdmin, onLogAction }) {
+function Todo({ profile, canManage, onLogAction }) {
   const { toast } = useToast();
   const confirm = useConfirm();
   const now = useNow();
@@ -666,7 +666,7 @@ function Todo({ profile, isAdmin, onLogAction }) {
         } completed`}
         icon="tasks"
         actions={
-          isAdmin && (
+          canManage && (
             <Button
               variant="primary"
               size="sm"
@@ -721,7 +721,7 @@ function Todo({ profile, isAdmin, onLogAction }) {
         </p>
       </Panel>
 
-      {isAdmin && showForm && (
+      {canManage && showForm && (
         <Panel
           eyebrow={editingTodo ? "Editing" : "New Task"}
           title={editingTodo ? "Edit Task" : "Add Task"}
@@ -934,7 +934,7 @@ function Todo({ profile, isAdmin, onLogAction }) {
               <TodoCard
                 key={todo.id}
                 todo={todo}
-                isAdmin={isAdmin}
+                canManage={canManage}
                 now={now}
                 busy={busyId === todo.id}
                 onToggle={toggleComplete}
@@ -984,7 +984,7 @@ function Todo({ profile, isAdmin, onLogAction }) {
                 <TodoCard
                   key={todo.id}
                   todo={todo}
-                  isAdmin={isAdmin}
+                  canManage={canManage}
                   now={now}
                   busy={busyId === todo.id}
                   onToggle={toggleComplete}

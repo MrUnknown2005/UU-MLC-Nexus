@@ -41,6 +41,11 @@ export default function NotificationBell({
   const confirm = useConfirm();
   const { toast } = useToast();
 
+  const markAllRead = async () => {
+    const success = await onMarkAllRead();
+    if (!success) toast.error("Could not mark notifications as read");
+  };
+
   const clearOwn = async () => {
     const ok = await confirm({
       title: "Clear your notifications?",
@@ -122,7 +127,7 @@ export default function NotificationBell({
           {unreadCount > 0 && (
             <button
               type="button"
-              onClick={onMarkAllRead}
+              onClick={markAllRead}
               className="text-[0.75rem] font-semibold text-brand-text underline decoration-brand-line underline-offset-2 hover:decoration-brand"
             >
               Mark all read

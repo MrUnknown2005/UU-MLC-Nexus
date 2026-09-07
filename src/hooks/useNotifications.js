@@ -89,6 +89,14 @@ export function useNotifications({ profile, setTab, logAdminAction }) {
   };
 
   const clearAll = async () => {
+    // Defence in depth. The UI only wires this in for the head admin and the
+    // RPC re-checks server-side (raises 42501), but the function is returned
+    // from the controller, so it guards itself rather than trusting the caller.
+    if (profile.role !== "head_admin") {
+      console.warn("clearAll notifications blocked: caller is not head admin");
+      return false;
+    }
+
     const { error } = await deleteAllNotifications();
 
     if (error) {

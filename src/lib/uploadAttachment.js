@@ -1,5 +1,10 @@
 import { supabase } from "./supabaseClient";
 
+// Raster image types we accept. SVG is deliberately excluded: it can carry
+// inline <script>, and once stored it is served from the bucket origin as an
+// active document, not an inert image.
+const ALLOWED_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "webp"];
+
 export async function uploadAttachment(file, userId, folder) {
   if (!file) {
     return {
@@ -8,10 +13,10 @@ export async function uploadAttachment(file, userId, folder) {
     };
   }
 
-  if (!file.type.startsWith("image/")) {
+  if (!file.type.startsWith("image/") || file.type === "image/svg+xml") {
     return {
       url: null,
-      error: new Error("Please choose an image file."),
+      error: new Error("Please choose a PNG, JPG, GIF or WebP image."),
     };
   }
 
@@ -22,7 +27,13 @@ export async function uploadAttachment(file, userId, folder) {
     };
   }
 
-  const safeExtension = (file.name.split(".").pop() || "jpg").toLowerCase();
+  // Derived from an untrusted filename, so it is pinned to a known-safe value
+  // rather than trusted — this is what keeps the storage key well-formed and
+  // free of injected path segments.
+  const rawExtension = (file.name.split(".").pop() || "").toLowerCase();
+  const safeExtension = ALLOWED_EXTENSIONS.includes(rawExtension)
+    ? rawExtension
+    : "jpg";
 
   const filePath = `${folder}/${userId}/${crypto.randomUUID()}.${safeExtension}`;
 

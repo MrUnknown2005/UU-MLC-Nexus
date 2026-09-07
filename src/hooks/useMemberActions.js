@@ -1,5 +1,6 @@
 import { getRoleDisplayName } from "../lib/roleHelpers";
 import { useToast } from "../components/ui/toast-context.js";
+import { MAX_POINT_ADJUSTMENT } from "../constants/points.js";
 import {
   awardPoints as awardPointsService,
   deleteAdminActivityLog as deleteAdminActivityLogService,
@@ -80,6 +81,24 @@ export function useMemberActions({
   const adjustPoints = async (memberId, points, reason) => {
     if (!canAwardPoints) {
       return reportDenied("You do not have permission to award or deduct points.");
+    }
+
+    // Nobody adjusts their own total — the leaderboard is the one place
+    // self-dealing would be invisible. Mirrors blockedReason's self-guard.
+    if (memberId === profile.id) {
+      return reportDenied(
+        "You cannot award or deduct your own points. Ask another admin.",
+      );
+    }
+
+    if (!Number.isInteger(points) || points === 0) {
+      return reportDenied("Enter a whole, non-zero number of points.");
+    }
+
+    if (Math.abs(points) > MAX_POINT_ADJUSTMENT) {
+      return reportDenied(
+        `Keep a single adjustment within ${MAX_POINT_ADJUSTMENT.toLocaleString()} points.`,
+      );
     }
 
     const target = members.find((member) => member.id === memberId);
@@ -195,7 +214,20 @@ export function useMemberActions({
       return reportDenied("You do not have permission to reset points.");
     }
 
+    if (memberId === profile.id) {
+      return reportDenied("You cannot reset your own points from here.");
+    }
+
     const target = members.find((member) => member.id === memberId);
+
+    // Same head-admin protection the role/active changes enforce: a reset is
+    // destructive, so only the head admin may zero the head admin.
+    if (target?.role === "head_admin" && !isHeadAdmin) {
+      return reportDenied(
+        "Only the head admin can reset the head admin's points.",
+      );
+    }
+
     const { error } = await resetMemberPointsService(memberId);
 
     if (error) return reportFailure(error, "Could not reset that member");
