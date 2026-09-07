@@ -61,10 +61,20 @@ export default function App() {
       if (loadToken.current !== token) return;
 
       if (error) {
+        if (error.code === "PGRST116") {
+          // No profile row yet: sign-in worked but the account has not been
+          // provisioned. A known state, not a failure — show the "no profile"
+          // screen, and don't stash a misleading message for the error screen.
+          setProfile(null);
+          setLoadError("");
+          setStatus("ready");
+          return;
+        }
+
         console.error("Profile load error:", error);
         setProfile(null);
         setLoadError(error.message ?? "");
-        setStatus(error.code === "PGRST116" ? "ready" : "error");
+        setStatus("error");
         return;
       }
 

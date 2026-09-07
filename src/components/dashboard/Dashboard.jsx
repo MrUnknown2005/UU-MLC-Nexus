@@ -5,6 +5,7 @@ import { Sheet } from "../ui/Sheet.jsx";
 import { Button } from "../ui/Button.jsx";
 import { Icon } from "../ui/Icon.jsx";
 import { Skeleton, SkeletonText } from "../ui/Skeleton.jsx";
+import { ErrorBoundary } from "../ui/ErrorBoundary.jsx";
 import { usePrivacyPolicy } from "../legal/privacy-context.js";
 import { useHotkey } from "../../hooks/useHotkey.js";
 import { humanizeToken } from "../../lib/format.js";
@@ -223,6 +224,10 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
           id="nexus-main"
           className="nx-backdrop mx-auto min-h-[calc(100dvh-var(--topbar-h))] w-full max-w-[var(--shell-max)] px-3 py-5 sm:px-5 sm:py-7"
         >
+          {/* Page-scoped: a crash in one page shows a contained fallback and
+              keeps the nav shell usable, keyed so moving to another tab clears
+              it. The root boundary in main.jsx still backstops the shell. */}
+          <ErrorBoundary inline key={activeTab}>
           {/* A failed load must not masquerade as an empty club: keep whatever
               data we already have on screen and say plainly it may be stale. */}
           {dataError && !loading && (
@@ -375,6 +380,7 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
             )}
             </div>
           )}
+          </ErrorBoundary>
 
           <footer className="nx-safe-bottom nx-eyebrow mt-8 flex justify-center border-t border-line pt-5 sm:justify-end">
             <button

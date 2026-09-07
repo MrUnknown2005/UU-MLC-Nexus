@@ -30,6 +30,45 @@ export class ErrorBoundary extends Component {
 
     if (!error) return this.props.children;
 
+    const message = error.message || String(error);
+
+    // Page-scoped boundary: the shell and its navigation are still mounted
+    // above this one, so the fallback stays inside the content area and offers
+    // a retry instead of taking over the whole viewport.
+    if (this.props.inline) {
+      return (
+        <div className="rounded-card border border-line bg-surface px-5 py-12 text-center">
+          <div className="mx-auto w-full max-w-sm">
+            <span className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-danger-soft text-danger">
+              <Icon name="alert-triangle" size={20} />
+            </span>
+
+            <h2 className="nx-display mt-4 text-lg">This page hit an error</h2>
+
+            <p className="mt-2 text-[0.8125rem] text-ink-muted">
+              The rest of Nexus is still working — switch to another tab, or try
+              this page again. If it keeps happening, tell an administrator.
+            </p>
+
+            <pre className="nx-well mt-4 max-h-32 overflow-auto px-3 py-2 text-left font-mono text-[0.6875rem] whitespace-pre-wrap text-ink-muted">
+              {message}
+            </pre>
+
+            <div className="mt-4 flex justify-center">
+              <Button
+                variant="secondary"
+                size="sm"
+                icon="refresh"
+                onClick={() => this.setState({ error: null })}
+              >
+                Try again
+              </Button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="grid min-h-dvh place-items-center bg-canvas px-5 py-16">
         <div className="w-full max-w-md text-center">

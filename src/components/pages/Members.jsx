@@ -77,15 +77,17 @@ function Members({
   const roleName = (roleKey) => roleLabel(roleKey, availableRoles);
 
   const canModifyTarget = (member) => {
-    if (currentUserRole === "head_admin") {
-      return true;
+    // Permission (canEdit) and the self-check are already applied by the
+    // callers below, so the only rule left to mirror from the hook's
+    // blockedReason is head-admin protection: a head admin can be changed only
+    // by the head admin. Leaning on those prefixes rather than re-checking a
+    // hardcoded "administrator" role string means a custom role granted
+    // manage_members sees the same controls the hook will actually honour.
+    if (member.role === "head_admin") {
+      return currentUserRole === "head_admin";
     }
 
-    if (currentUserRole === "administrator" && member.role === "head_admin") {
-      return false;
-    }
-
-    return currentUserRole === "administrator";
+    return true;
   };
 
   const pendingMembers = useMemo(
