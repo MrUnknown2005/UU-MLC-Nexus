@@ -30,7 +30,8 @@ import News from "../pages/News";
 export default function Dashboard({ profile, onLogout, reloadProfile }) {
   const {
     tab, setTab, sidebarOpen, setSidebarOpen, notificationsOpen, setNotificationsOpen,
-    notifications, unreadNotificationCount, markAllNotificationsRead, openNotification,
+    notifications, unreadNotificationCount, markAllNotificationsRead,
+    clearOwnNotifications, clearAllNotifications, openNotification,
     pendingMemberCount, overdueTodoCount, recentNewsCount, members, rankedMembers, news,
     currentRank, pointHistory, previousMonth, canViewMembers, canManageMembers, canViewPoints,
     canViewHistory, canManageNews, canManageRoles, isAdmin, roleDefinitions, changeRole,
@@ -210,6 +211,8 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
           setNotificationsOpen={setNotificationsOpen}
           unreadCount={unreadNotificationCount}
           onMarkAllRead={markAllNotificationsRead}
+          onClearOwn={clearOwnNotifications}
+          onClearAll={isHeadAdmin ? clearAllNotifications : undefined}
           onOpenNotification={openNotification}
         />
 

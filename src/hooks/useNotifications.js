@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import {
+  deleteAllNotifications,
+  deleteOwnNotifications,
   fetchNotifications,
   markAllNotificationsRead,
   markNotificationRead,
@@ -9,7 +11,7 @@ import {
 /**
  * UI adapter for notification state. Supabase access lives in the service.
  */
-export function useNotifications({ profile, setTab }) {
+export function useNotifications({ profile, setTab, logAdminAction }) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
 
@@ -74,6 +76,37 @@ export function useNotifications({ profile, setTab }) {
     return true;
   };
 
+  const clearOwn = async () => {
+    const { error } = await deleteOwnNotifications();
+
+    if (error) {
+      console.error("Clear notifications error:", error);
+      return false;
+    }
+
+    setNotifications([]);
+    return true;
+  };
+
+  const clearAll = async () => {
+    const { error } = await deleteAllNotifications();
+
+    if (error) {
+      console.error("Clear all notifications error:", error);
+      return false;
+    }
+
+    // Own bell empties immediately; other members' bells clear via the realtime
+    // subscription. Logged after the delete so a failed wipe leaves no entry.
+    await logAdminAction?.({
+      action: "WIPE_ALL_NOTIFICATIONS",
+      details: "Deleted all member notifications club-wide.",
+    });
+
+    setNotifications([]);
+    return true;
+  };
+
   const openNotification = async (notification) => {
     if (!notification.read_at) {
       await markRead(notification.id);
@@ -96,6 +129,8 @@ export function useNotifications({ profile, setTab }) {
     setNotificationsOpen,
     unreadNotificationCount,
     markAllNotificationsRead: markAllRead,
+    clearOwnNotifications: clearOwn,
+    clearAllNotifications: clearAll,
     openNotification,
   };
 }

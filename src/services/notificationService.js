@@ -19,6 +19,14 @@ export async function markAllNotificationsRead() {
   return supabase.rpc("mark_all_notifications_read");
 }
 
+export async function deleteOwnNotifications() {
+  return supabase.rpc("delete_own_notifications");
+}
+
+export async function deleteAllNotifications() {
+  return supabase.rpc("delete_all_notifications");
+}
+
 export function subscribeToNotifications(userId, onChange) {
   const channel = supabase
     .channel(`notifications-${userId}`)
@@ -41,5 +49,7 @@ export default {
   fetchNotifications,
   markNotificationRead,
   markAllNotificationsRead,
+  deleteOwnNotifications,
+  deleteAllNotifications,
   subscribeToNotifications,
 };

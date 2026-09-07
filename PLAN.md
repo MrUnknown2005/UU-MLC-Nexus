@@ -2,7 +2,7 @@
 
 > Living plan. We work top-to-bottom. Update the checkboxes and "Current position"
 > as we go so any session (or model) can resume without re-investigating.
-> Last updated: 2026-09-02
+> Last updated: 2026-09-07
 
 **Legend:** `[ ]` todo · `[~]` in progress · `[x]` done · ⚠️ caveat/gotcha · ❓ open decision
 
@@ -10,11 +10,19 @@
 
 ## Current position
 
-**Phase 2 — Auth completion & full realtime sync.** Code written; **`npm run lint` and
-`npm run build` both pass, and the realtime migration is applied & verified in Supabase
-(all six tables confirmed in `supabase_realtime`) — 2026-09-02.** Remaining before Phase 2
-closes: **self-service delete-account (new — top of 2A, a code task)**, plus live-tests — the
-member-join fix (two-client) and forgot-password E2E. Phase 1 (mobile UI) done and committed.
+**Phase 2 — Auth completion & full realtime sync.** All Phase 2 code is done and passing
+(`npm run lint` + `npm run build`). Delete-account shipped (`a3896aa`). Realtime migration
+applied & verified in Supabase. **Notification clearing added 2026-09-07** — per-member
+"Clear all" + head-admin "Clear for everyone"; both RPCs applied & verified in Supabase.
+Remaining before Phase 2 closes is **not code** — two live-run checks:
+
+- **Forgot-password E2E** — ⏸️ **PARKED (2026-09-07, user decision).** Built in code but can't be
+  live-tested: there's no email delivery set up (same blocker that killed the Resend farewell email).
+  Revisit when email delivery exists. Not a blocker for closing Phase 2.
+- **Two-client member-join** verification — a new member appears live without a refresh. Needs two
+  browser sessions; no email required. This is the one still-actionable open item.
+
+Phase 1 (mobile UI) done and committed.
 
 ---
 
@@ -47,23 +55,22 @@ Two workstreams. Both are "finish the core functionality" before any audit.
 Change-password is done. Remaining: build self-service **delete-account** (new top item),
 and live-test forgot-password.
 
-- [ ] **Delete-account (self-service)** — new **"Danger zone"** in `src/components/pages/Profile.jsx`,
-      below the Security panel. Lets a member permanently delete their own account, then signs out.
-      - ✅ **Locked (Decisions #3):** hard-delete everything — cascade all owned rows.
-      - ✉️ **Farewell email** via **Resend** (`pg_net` in the RPC, key in Vault) — see Decisions #4.
-        Sent *before* the user row is deleted. Needs a Resend API key + from-address from the user.
-      - ⚠️ Deleting the `auth.users` row needs privilege the client must never hold, and there is
-        **no edge-function infra** in this repo. Use the established pattern: a SECURITY DEFINER
-        Postgres RPC (e.g. `delete_own_account()` → `delete from auth.users where id = auth.uid()`,
-        cascade handles owned rows), called via `supabase.rpc(...)`, applied in the Supabase SQL editor.
-      - UX mirrors the admin destructive-action convention: typed confirmation phrase + itemised
-        consequences, and re-verify the current password (as change-password does).
-      - Log `ACCOUNT_SELF_DELETED` to the audit trail *before* the row is removed.
+- [x] **Delete-account (self-service)** — ✅ **DONE & SHIPPED** (`a3896aa`). `DangerZonePanel` in
+      `Profile.jsx` + `deleteOwnAccount()` in `authService.js`. Hard-delete everything via the
+      `delete_own_account()` SECURITY DEFINER RPC (applied in the Supabase SQL editor); re-verifies
+      the current password; typed-phrase confirm (`DELETE MY ACCOUNT`); signs out on success.
+      ⚠️ **Farewell email DROPPED** (2026-09-02) — no sending domain; Resend not worth it. Do not re-raise.
 - [x] **Change-password form** for logged-in members, in `src/components/pages/Profile.jsx`
       (new `PasswordPanel`, "Security" section). Re-verifies current password via new
       `changePassword()` in `authService.js`. Logs `PASSWORD_CHANGED` to the audit trail.
-- [ ] **Live-test forgot-password** end-to-end (logged-out → email → reset screen → new password).
-      Code is built; this is a config + real-run check, not a code task.
+- [x] **Clear notifications** — ✅ **DONE 2026-09-07.** Per-member "Clear all" (own bell) +
+      head-admin "Clear for everyone" (club-wide) in `NotificationBell.jsx`. Two SECURITY DEFINER
+      RPCs `delete_own_notifications()` / `delete_all_notifications()` in
+      `supabase/migrations/20260907_notification_clearing.sql` — **applied & verified in Supabase**.
+      Head-admin authority enforced server-side (raises `42501`); UI gate is cosmetic. Admin wipe
+      logs `WIPE_ALL_NOTIFICATIONS`; other members' bells clear live via the realtime subscription.
+- [~] **Live-test forgot-password** end-to-end — ⏸️ **PARKED (2026-09-07):** built in code, but no
+      email delivery set up, so it can't be run yet. Revisit when email exists. Not a Phase 2 blocker.
 
 ### 2B · Full realtime sync (so one person's change is instantly visible to all)
 

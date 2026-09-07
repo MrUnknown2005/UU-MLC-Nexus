@@ -1,8 +1,10 @@
 import { Popover } from "../ui/Popover.jsx";
 import { IconButton } from "../ui/IconButton.jsx";
 import { Icon } from "../ui/Icon.jsx";
+import { useConfirm } from "../ui/confirm-context.js";
+import { useToast } from "../ui/toast-context.js";
 import { cn } from "../../lib/cn.js";
-import { formatRelative } from "../../lib/format.js";
+import { countLabel, formatRelative } from "../../lib/format.js";
 
 const TYPE_ICON = {
   news: "newspaper",
@@ -32,8 +34,55 @@ export default function NotificationBell({
   notifications,
   unreadCount,
   onMarkAllRead,
+  onClearOwn,
+  onClearAll,
   onOpenNotification,
 }) {
+  const confirm = useConfirm();
+  const { toast } = useToast();
+
+  const clearOwn = async () => {
+    const ok = await confirm({
+      title: "Clear your notifications?",
+      tone: "danger",
+      confirmLabel: "Clear all",
+      description:
+        "This removes every notification from your bell. It does not affect anyone else, and it cannot be undone.",
+      consequences: [
+        `All ${countLabel(notifications.length, "notification", "notifications")} are removed from your bell`,
+        "Tasks, points and announcements themselves are not affected",
+      ],
+    });
+
+    if (!ok) return;
+
+    const success = await onClearOwn();
+    if (success) toast.success("Your notifications were cleared");
+    else toast.error("Could not clear your notifications");
+  };
+
+  const clearAll = async () => {
+    const ok = await confirm({
+      title: "Clear notifications for everyone?",
+      tone: "danger",
+      confirmLabel: "Wipe all notifications",
+      requireText: "CLEAR ALL NOTIFICATIONS",
+      description:
+        "This permanently deletes the notifications of every member in the club, not just yours. It cannot be undone.",
+      consequences: [
+        "Every member's notification bell is emptied",
+        "Tasks, points, news and members are not affected",
+        "The wipe is recorded in the admin activity log",
+      ],
+    });
+
+    if (!ok) return;
+
+    const success = await onClearAll();
+    if (success) toast.success("All notifications were cleared");
+    else toast.error("Could not clear notifications");
+  };
+
   return (
     <Popover
       open={open}
@@ -60,7 +109,7 @@ export default function NotificationBell({
       )}
     >
       <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
-        <div>
+        <div className="min-w-0">
           <p className="text-[0.8125rem] font-semibold text-ink">Notifications</p>
           <p className="text-[0.6875rem] text-ink-subtle">
             {unreadCount > 0
@@ -69,15 +118,26 @@ export default function NotificationBell({
           </p>
         </div>
 
-        {unreadCount > 0 && (
-          <button
-            type="button"
-            onClick={onMarkAllRead}
-            className="shrink-0 text-[0.75rem] font-semibold text-brand-text underline decoration-brand-line underline-offset-2 hover:decoration-brand"
-          >
-            Mark all read
-          </button>
-        )}
+        <div className="flex shrink-0 items-center gap-3">
+          {unreadCount > 0 && (
+            <button
+              type="button"
+              onClick={onMarkAllRead}
+              className="text-[0.75rem] font-semibold text-brand-text underline decoration-brand-line underline-offset-2 hover:decoration-brand"
+            >
+              Mark all read
+            </button>
+          )}
+          {notifications.length > 0 && (
+            <button
+              type="button"
+              onClick={clearOwn}
+              className="text-[0.75rem] font-semibold text-ink-subtle underline decoration-line-strong underline-offset-2 hover:text-danger hover:decoration-danger"
+            >
+              Clear all
+            </button>
+          )}
+        </div>
       </div>
 
       {notifications.length === 0 ? (
@@ -148,6 +208,19 @@ export default function NotificationBell({
             );
           })}
         </ul>
+      )}
+
+      {onClearAll && (
+        <div className="border-t border-line px-4 py-2.5">
+          <button
+            type="button"
+            onClick={clearAll}
+            className="flex w-full items-center justify-center gap-1.5 rounded-control py-1.5 text-[0.75rem] font-semibold text-danger transition-colors hover:bg-danger-soft"
+          >
+            <Icon name="trash" size={13} className="shrink-0" />
+            Clear notifications for everyone
+          </button>
+        </div>
       )}
     </Popover>
   );

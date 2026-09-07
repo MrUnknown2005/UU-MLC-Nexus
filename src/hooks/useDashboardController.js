@@ -70,8 +70,10 @@ export function useDashboardController({ profile, reloadProfile, onLogout }) {
     setNotificationsOpen,
     unreadNotificationCount,
     markAllNotificationsRead,
+    clearOwnNotifications,
+    clearAllNotifications,
     openNotification,
-  } = useNotifications({ profile, setTab });
+  } = useNotifications({ profile, setTab, logAdminAction });
 
   const {
     adjustPoints,
@@ -133,6 +135,8 @@ export function useDashboardController({ profile, reloadProfile, onLogout }) {
     notifications,
     unreadNotificationCount,
     markAllNotificationsRead,
+    clearOwnNotifications,
+    clearAllNotifications,
     openNotification,
     pendingMemberCount,
     overdueTodoCount,

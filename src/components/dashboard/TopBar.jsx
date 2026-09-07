@@ -28,6 +28,8 @@ export default function TopBar({
   setNotificationsOpen,
   unreadCount,
   onMarkAllRead,
+  onClearOwn,
+  onClearAll,
   onOpenNotification,
 }) {
   const [accountOpen, setAccountOpen] = useState(false);
@@ -79,6 +81,8 @@ export default function TopBar({
           notifications={notifications}
           unreadCount={unreadCount}
           onMarkAllRead={onMarkAllRead}
+          onClearOwn={onClearOwn}
+          onClearAll={onClearAll}
           onOpenNotification={onOpenNotification}
         />
 
