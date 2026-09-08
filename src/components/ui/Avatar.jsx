@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { cn } from "../../lib/cn.js";
 import { accentFor, initials } from "../../lib/format.js";
+import { useSignedImageUrl } from "../../lib/storageImage.js";
 
 const SIZES = {
   xs: { box: "h-6 w-6", text: "text-[0.625rem]" },
@@ -38,13 +39,17 @@ export function Avatar({
   className,
   ...rest
 }) {
+  // `avatar_url` is a private-bucket path; resolve it to a signed URL. Legacy
+  // full URLs and blob previews pass straight through.
+  const resolvedSrc = useSignedImageUrl(src, "avatars");
+
   // The *url* that failed, not a boolean: a member who uploads a new photo
   // gets a fresh attempt without needing an effect to reset a flag.
   const [failedSrc, setFailedSrc] = useState(null);
 
   const dims = SIZES[size] ?? SIZES.md;
   const accent = ACCENTS[accentFor(seed ?? name ?? "")] ?? ACCENTS.brand;
-  const showImage = Boolean(src) && failedSrc !== src;
+  const showImage = Boolean(resolvedSrc) && failedSrc !== resolvedSrc;
 
   return (
     <span
@@ -60,11 +65,11 @@ export function Avatar({
     >
       {showImage ? (
         <img
-          src={src}
+          src={resolvedSrc}
           alt=""
           loading="lazy"
           decoding="async"
-          onError={() => setFailedSrc(src)}
+          onError={() => setFailedSrc(resolvedSrc)}
           className="h-full w-full object-cover"
         />
       ) : (

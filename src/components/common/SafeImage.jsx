@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { cn } from "../../lib/cn.js";
 import { Icon } from "../ui/Icon.jsx";
+import { useSignedImageUrl } from "../../lib/storageImage.js";
 
 /**
  * A content image that fails quietly.
@@ -15,6 +16,7 @@ import { Icon } from "../ui/Icon.jsx";
  */
 export function SafeImage({
   src,
+  bucket = "attachments",
   alt = "",
   className,
   wrapperClassName,
@@ -22,11 +24,15 @@ export function SafeImage({
   icon = "image",
   ...rest
 }) {
+  // News/todo images are private-bucket paths; resolve to a signed URL. Legacy
+  // full URLs and blob previews pass straight through.
+  const resolvedSrc = useSignedImageUrl(src, bucket);
+
   // Tracks the url that failed rather than a boolean, so replacing the source
   // gets a fresh attempt without an effect to reset the flag.
   const [failed, setFailed] = useState(null);
 
-  if (!src || failed === src) {
+  if (!resolvedSrc || failed === resolvedSrc) {
     return (
       <div
         className={cn(
@@ -45,7 +51,7 @@ export function SafeImage({
 
   return (
     <img
-      src={src}
+      src={resolvedSrc}
       alt={alt}
       loading="lazy"
       decoding="async"
@@ -54,7 +60,7 @@ export function SafeImage({
       // when a lazily-loaded image arrives. An explicit height class still
       // wins — a definite height makes `aspect-ratio` moot.
       style={{ aspectRatio: ratio }}
-      onError={() => setFailed(src)}
+      onError={() => setFailed(resolvedSrc)}
       {...rest}
     />
   );

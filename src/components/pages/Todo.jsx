@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { uploadAttachment } from "../../lib/uploadAttachment";
+import { useSignedImageUrl } from "../../lib/storageImage.js";
 import { Badge } from "../ui/Badge.jsx";
 import { Button } from "../ui/Button.jsx";
 import { ChipBar } from "../ui/ChipBar.jsx";
@@ -90,6 +91,30 @@ function bucketOf(todo, now) {
  * it needs arrives as a prop, including `now`, so the whole list agrees about
  * what "today" means.
  */
+/**
+ * A private-bucket task image. The stored value is an object path (or a blob:
+ * preview while a file is being chosen); either way it resolves to something an
+ * `<img>` can show. A missing or dead image renders nothing, so the card stays
+ * tidy instead of showing a torn-image icon.
+ */
+function StoredImage({ value, className, alt = "" }) {
+  const src = useSignedImageUrl(value, "attachments");
+  const [failedSrc, setFailedSrc] = useState(null);
+
+  if (!src || failedSrc === src) return null;
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      loading="lazy"
+      decoding="async"
+      className={className}
+      onError={() => setFailedSrc(src)}
+    />
+  );
+}
+
 function TodoCard({ todo, isAdmin, now, busy, onToggle, onEdit, onDelete }) {
   const overdue = !todo.completed && isOverdue(todo.deadline, now);
   const dueToday = !todo.completed && daysUntil(todo.deadline, now) === 0;
@@ -157,17 +182,10 @@ function TodoCard({ todo, isAdmin, now, busy, onToggle, onEdit, onDelete }) {
           )}
 
           {todo.image_url && (
-            <img
-              src={todo.image_url}
+            <StoredImage
+              value={todo.image_url}
               alt=""
-              loading="lazy"
-              decoding="async"
               className="mt-3.5 max-h-72 w-full rounded-control border border-line object-cover"
-              // A dead attachment link should leave a tidy card, not a torn-image
-              // icon in the middle of the task.
-              onError={(event) => {
-                event.currentTarget.style.display = "none";
-              }}
             />
           )}
 
@@ -788,8 +806,8 @@ function Todo({ profile, isAdmin, onLogAction }) {
 
               {imagePreview && (
                 <div>
-                  <img
-                    src={imagePreview}
+                  <StoredImage
+                    value={imagePreview}
                     alt="Task preview"
                     className="max-h-64 w-full rounded-control border border-line object-cover"
                   />

@@ -29,10 +29,12 @@ import { formatDate, formatNumber, ordinal } from "../../lib/format.js";
  * saved successfully." Outcomes now go to toasts, and only a save failure stays
  * pinned in the form, where a retry is.
  *
- * The avatar pipeline is unchanged and deliberately so: upload to a fixed path,
- * cache-bust the public URL, write it to the profile, then sweep any older files
- * left in the member's folder. The cache-bust matters — the path never changes,
- * so without it the browser keeps showing last week's face.
+ * The avatar pipeline uploads to a fixed path, stores that path (not a URL) with
+ * a cache-bust marker, writes it to the profile, then sweeps any older files left
+ * in the member's folder. The marker matters — the path never changes, so without
+ * it the stored value would be byte-identical after a re-upload and readers would
+ * never re-sign. The bucket is private; the path is exchanged for a signed URL on
+ * read via `useSignedImageUrl` inside `<Avatar>`.
  */
 function Profile({ profile, reloadProfile, onLogAction }) {
   const { toast } = useToast();
@@ -92,23 +94,17 @@ function Profile({ profile, reloadProfile, onLogAction }) {
         return;
       }
 
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("avatars").getPublicUrl(filePath);
-
-      if (!publicUrl) {
-        toast.error("The image uploaded, but no public URL was returned.");
-        return;
-      }
-
-      // The storage path is fixed, so the URL is identical every time. Without a
-      // cache-buster the browser would keep serving the previous picture.
-      const finalUrl = `${publicUrl}?v=${Date.now()}`;
+      // The bucket is private, so we store the object *path*, not a URL. The path
+      // is fixed (`<id>/avatar`), so without a cache-bust marker the stored value
+      // would be byte-identical after a re-upload and readers would never re-sign
+      // — the browser would keep serving the previous picture. The `?v=` is
+      // stripped before signing; it exists only to change the stored value.
+      const storedPath = `${filePath}?v=${Date.now()}`;
 
       const { error: profileError } = await supabase
         .from("profiles")
         .update({
-          avatar_url: finalUrl,
+          avatar_url: storedPath,
         })
         .eq("id", profile.id);
 
@@ -121,7 +117,7 @@ function Profile({ profile, reloadProfile, onLogAction }) {
         return;
       }
 
-      setAvatarUrl(finalUrl);
+      setAvatarUrl(storedPath);
 
       // Sweep anything left over from older uploads that used a different name.
       // A failure here is logged and swallowed on purpose: the new picture is

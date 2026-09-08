@@ -41,21 +41,10 @@ export async function uploadAttachment(file, userId, folder) {
     };
   }
 
-  const {
-    data: { publicUrl },
-  } = supabase.storage.from("attachments").getPublicUrl(filePath);
-
-  if (!publicUrl) {
-    return {
-      url: null,
-      error: new Error(
-        "Image uploaded, but its public URL could not be created.",
-      ),
-    };
-  }
-
+  // The bucket is private, so we store the object *path*, not a URL. Readers
+  // exchange it for a short-lived signed URL via `useSignedImageUrl`.
   return {
-    url: publicUrl,
+    url: filePath,
     error: null,
   };
 }
