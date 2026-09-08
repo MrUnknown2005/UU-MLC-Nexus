@@ -108,16 +108,16 @@ function NewsCard({ item, now }) {
       {item.image_url && (
         <SafeImage
           src={item.image_url}
-          alt={item.title || "News image"}
+          alt=""
           ratio="16 / 7"
           className="h-32 border-b border-line"
         />
       )}
 
       <div className="p-4">
-        <h4 className="text-[0.875rem] leading-snug font-semibold">
+        <h3 className="text-[0.875rem] leading-snug font-semibold">
           {item.title || "Untitled"}
-        </h4>
+        </h3>
 
         <p className="mt-1.5 text-[0.8125rem] leading-relaxed whitespace-pre-wrap text-ink-muted">
           {truncate(item.content ?? "", 180)}

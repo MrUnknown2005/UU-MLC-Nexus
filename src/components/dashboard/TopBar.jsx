@@ -20,6 +20,8 @@ export default function TopBar({
   profile,
   roleLabel,
   onOpenMenu,
+  menuOpen,
+  menuId,
   onOpenPalette,
   onSelectTab,
   onLogout,
@@ -41,6 +43,8 @@ export default function TopBar({
           icon="menu"
           label="Open navigation"
           onClick={onOpenMenu}
+          aria-expanded={menuOpen}
+          aria-controls={menuOpen ? menuId : undefined}
           className="lg:hidden"
         />
 
@@ -48,9 +52,13 @@ export default function TopBar({
           <Brand size="sm" />
         </div>
 
-        <h2 className="nx-display hidden min-w-0 flex-1 truncate text-[0.9375rem] lg:block">
+        {/* The single <h1> for every view. It shows on the desktop bar and, on
+            mobile where the layout has no room for it, stays in the
+            accessibility tree (sr-only) so screen readers still get a
+            top-level heading for the page. */}
+        <h1 className="nx-display min-w-0 flex-1 truncate text-[0.9375rem] sr-only lg:not-sr-only">
           {title}
-        </h2>
+        </h1>
 
         <div className="flex-1 lg:hidden" />
 

@@ -45,7 +45,10 @@ function MemberCard({ member, rank, isMe }) {
         <Avatar size="xl" ring src={member.avatar_url} name={name} seed={member.id} />
       </div>
 
-      <h3 className="mt-3.5 truncate text-base font-semibold">{name}</h3>
+      {/* <h2>, not <h3>: the member grid sits directly under the page title
+          (TopBar <h1>) with no Panel heading between, so each card is a
+          top-level section rather than a level skipped from h1 to h3. */}
+      <h2 className="mt-3.5 truncate text-base font-semibold">{name}</h2>
 
       <div className="mt-2 flex flex-wrap justify-center gap-1.5">
         <Badge tone={roleTone(member.role)} size="sm">

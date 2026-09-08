@@ -53,6 +53,11 @@ export function Field({
       {error ? (
         <p
           id={errorId}
+          // Announced, not just associated: aria-describedby wires the error to
+          // the control for anyone who focuses it, but a screen-reader user who
+          // submits and stays put hears nothing without a live region. role
+          //="alert" speaks the message the moment it appears (WCAG 4.1.3).
+          role="alert"
           className="mt-1.5 flex items-start gap-1.5 text-[0.8125rem] text-danger"
         >
           <Icon name="alert-triangle" size={13} className="mt-0.5 shrink-0" />

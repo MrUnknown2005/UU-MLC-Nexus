@@ -39,6 +39,26 @@ export function ToastProvider({ children }) {
     }
   }, []);
 
+  // Pause the auto-dismiss clock while a toast is hovered or keyboard-focused,
+  // and restart it on leave/blur — so a member reaching for an Undo/Retry
+  // button never has the toast disappear mid-reach (WCAG 2.2.1). A persistent
+  // (Infinity) toast has no timer to pause.
+  const pauseTimer = useCallback((id) => {
+    const timer = timers.current.get(id);
+    if (timer) {
+      clearTimeout(timer);
+      timers.current.delete(id);
+    }
+  }, []);
+
+  const resumeTimer = useCallback(
+    (id, duration) => {
+      if (duration === Infinity || timers.current.has(id)) return;
+      timers.current.set(id, setTimeout(() => dismiss(id), duration));
+    },
+    [dismiss]
+  );
+
   const push = useCallback(
     (tone, message, options = {}) => {
       nextId.current += 1;
@@ -57,6 +77,7 @@ export function ToastProvider({ children }) {
             message,
             description: options.description,
             action: options.action,
+            duration,
           },
         ];
         // Oldest fall off rather than stacking into a wall the member has to
@@ -124,6 +145,10 @@ export function ToastProvider({ children }) {
               <div
                 key={item.id}
                 role={item.tone === "error" ? "alert" : "status"}
+                onMouseEnter={() => pauseTimer(item.id)}
+                onMouseLeave={() => resumeTimer(item.id, item.duration)}
+                onFocus={() => pauseTimer(item.id)}
+                onBlur={() => resumeTimer(item.id, item.duration)}
                 className={cn(
                   "nx-toast-in pointer-events-auto relative overflow-hidden",
                   "flex items-start gap-3 rounded-card border border-line-strong",

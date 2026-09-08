@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import useDashboardController from "../../hooks/useDashboardController";
 import { CommandPalette } from "../ui/CommandPalette.jsx";
 import { Sheet } from "../ui/Sheet.jsx";
@@ -56,6 +56,9 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
   } = useDashboardController({ profile, reloadProfile, onLogout });
 
   const [paletteOpen, setPaletteOpen] = useState(false);
+
+  // Ties the mobile hamburger's aria-controls to the nav Sheet's panel.
+  const navSheetId = useId();
 
   const { openPrivacy } = usePrivacyPolicy();
 
@@ -189,8 +192,11 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
         Skip to content
       </a>
 
-      {/* Desktop rail — fixed so long pages never scroll the navigation away. */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[var(--rail-w)] border-r border-line bg-surface lg:block">
+      {/* Desktop rail — fixed so long pages never scroll the navigation away.
+          A plain <div>, not <aside>: the real landmark is the <nav> inside
+          SideNav, and wrapping it in a complementary region would demote the
+          app's primary navigation. */}
+      <div className="fixed inset-y-0 left-0 z-30 hidden w-[var(--rail-w)] border-r border-line bg-surface lg:block">
         <SideNav
           items={navItems}
           tab={activeTab}
@@ -199,7 +205,7 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
           profile={profile}
           roleLabel={roleLabel}
         />
-      </aside>
+      </div>
 
       <Sheet
         open={sidebarOpen}
@@ -207,6 +213,7 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
         side="left"
         title="UU MLC Nexus"
         eyebrow="Navigate"
+        id={navSheetId}
       >
         <SideNavList
           items={navItems}
@@ -222,6 +229,8 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
           profile={profile}
           roleLabel={roleLabel}
           onOpenMenu={() => setSidebarOpen(true)}
+          menuOpen={sidebarOpen}
+          menuId={navSheetId}
           onOpenPalette={() => setPaletteOpen(true)}
           onSelectTab={setTab}
           onLogout={onLogout}

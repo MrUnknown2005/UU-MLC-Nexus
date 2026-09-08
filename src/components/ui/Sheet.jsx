@@ -25,6 +25,7 @@ const SIDES = {
 export function Sheet({
   open,
   onClose,
+  id,
   side = "left",
   title,
   width = "19rem",
@@ -59,6 +60,7 @@ export function Sheet({
 
       <div
         ref={panelRef}
+        id={id}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

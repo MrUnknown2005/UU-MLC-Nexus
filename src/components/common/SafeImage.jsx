@@ -41,8 +41,12 @@ export function SafeImage({
           className
         )}
         style={{ aspectRatio: ratio }}
-        role="img"
-        aria-label={alt || "Image unavailable"}
+        // A decorative image (alt="") that fails to load must stay silent — the
+        // old fallback labelled every broken decorative tile "Image
+        // unavailable". Only an informative image (real alt) exposes a label.
+        {...(alt
+          ? { role: "img", "aria-label": alt }
+          : { "aria-hidden": "true" })}
       >
         <Icon name={icon} size={22} />
       </div>

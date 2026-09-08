@@ -312,9 +312,12 @@ function Profile({ profile, reloadProfile, onLogAction }) {
           <div className="min-w-0 flex-1">
             <p className="nx-eyebrow">Member Profile</p>
 
-            <h1 className="nx-display mt-2 truncate text-[1.75rem] md:text-[2.5rem]">
+            {/* The page's single <h1> is the TopBar title ("Your profile");
+                this hero name is the first section beneath it, so it is an
+                <h2> — two <h1>s on one view is the defect being fixed. */}
+            <h2 className="nx-display mt-2 truncate text-[1.75rem] md:text-[2.5rem]">
               {name}
-            </h1>
+            </h2>
 
             {showFullName && (
               <p className="mt-1 truncate text-sm text-ink-muted">

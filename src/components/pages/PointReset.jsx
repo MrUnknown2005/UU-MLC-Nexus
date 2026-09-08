@@ -134,10 +134,10 @@ function PointReset({ members = [], onResetAll, onResetMember }) {
       {/* ---------- One member ---------- */}
       <div className="nx-well flex flex-col gap-3 p-4">
         <div>
-          <h4 className="flex items-center gap-2 text-[0.875rem] font-semibold">
+          <h3 className="flex items-center gap-2 text-[0.875rem] font-semibold">
             <Icon name="user" size={15} className="text-ink-muted" />
             One member
-          </h4>
+          </h3>
           <p className="mt-1 text-[0.8125rem] text-ink-muted">
             For a correction — a duplicate award, or points recorded against the
             wrong person.
@@ -168,10 +168,10 @@ function PointReset({ members = [], onResetAll, onResetMember }) {
       {/* ---------- Whole club ---------- */}
       <div className="nx-well flex flex-col gap-3 p-4">
         <div>
-          <h4 className="flex items-center gap-2 text-[0.875rem] font-semibold">
+          <h3 className="flex items-center gap-2 text-[0.875rem] font-semibold">
             <Icon name="calendar" size={15} className="text-ink-muted" />
             Close the month
-          </h4>
+          </h3>
           <p className="mt-1 text-[0.8125rem] text-ink-muted">
             Archives the current top two as monthly standouts, then zeroes every
             total to start the next cycle.

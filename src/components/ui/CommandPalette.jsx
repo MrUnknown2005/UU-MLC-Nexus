@@ -40,6 +40,7 @@ function Palette({ onClose, groups }) {
   const [query, setQuery] = useState("");
   const [cursor, setCursor] = useState(0);
   const listRef = useRef(null);
+  const inputRef = useRef(null);
   const listId = useId();
 
   useLockBodyScroll(true);
@@ -69,6 +70,11 @@ function Palette({ onClose, groups }) {
       if (event.key === "Escape") {
         event.preventDefault();
         onClose();
+      } else if (event.key === "Tab") {
+        // A single real tab stop: the input keeps focus, options are virtually
+        // focused via aria-activedescendant. Trap Tab so focus can't slip
+        // behind the dialog — there is nowhere else inside it to land.
+        event.preventDefault();
       } else if (event.key === "ArrowDown") {
         event.preventDefault();
         setCursor(flat.length ? (active + 1) % flat.length : 0);
@@ -95,6 +101,16 @@ function Palette({ onClose, groups }) {
       ?.scrollIntoView({ block: "nearest" });
   }, [active]);
 
+  // Move focus into the palette on open and hand it back to whatever opened it
+  // on close — the piece this dialog was missing (WCAG 2.4.3). Runs once: the
+  // Palette only exists while open, so its mount is the open and its unmount is
+  // the close.
+  useEffect(() => {
+    const opener = document.activeElement;
+    inputRef.current?.focus({ preventScroll: true });
+    return () => opener?.focus?.({ preventScroll: true });
+  }, []);
+
   return createPortal(
     <div className="fixed inset-0 z-[70] flex items-start justify-center px-4 pt-[12vh]">
       <div
@@ -112,9 +128,10 @@ function Palette({ onClose, groups }) {
         <div className="flex items-center gap-2.5 border-b border-line px-4">
           <Icon name="search" size={17} className="shrink-0 text-ink-subtle" />
           <input
-            // Safe here in a way it rarely is: this input is the only reason the
-            // dialog exists, and the dialog only mounts on a deliberate ⌘K.
-            autoFocus
+            ref={inputRef}
+            // Focus is placed here by the mount effect above rather than with
+            // autoFocus, so the element that opened the palette is captured for
+            // restoration before focus moves in.
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Jump to a page or run an action…"
@@ -162,6 +179,7 @@ function Palette({ onClose, groups }) {
                               role="option"
                               aria-selected={isActive}
                               data-active={isActive}
+                              tabIndex={-1}
                               onMouseMove={() => setCursor(index)}
                               onClick={() => {
                                 onClose();

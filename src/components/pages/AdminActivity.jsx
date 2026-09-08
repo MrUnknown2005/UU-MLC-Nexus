@@ -329,7 +329,10 @@ function AdminActivity({ activityLog = [], members = [], isHeadAdmin, onWipe }) 
             onChange={setSearch}
             label="Search the log"
             placeholder="Name, action or details…"
-            resultCount={search.trim() ? filtered.length : undefined}
+            // Keyed to `filtering`, not just the search box, so changing the
+            // Action or Administrator select also updates SearchInput's
+            // aria-live count instead of moving the results silently (4.1.3).
+            resultCount={filtering ? filtered.length : undefined}
           />
 
           <Select

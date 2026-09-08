@@ -294,9 +294,9 @@ function Points({
         >
           <div className="nx-well flex flex-col gap-3 p-4">
             <div>
-              <h4 className="text-[0.875rem] font-semibold">
+              <h3 className="text-[0.875rem] font-semibold">
                 Wipe all point data
-              </h4>
+              </h3>
               <p className="mt-1 text-[0.8125rem] text-ink-muted">
                 Sets every member to zero and deletes the entire adjustment
                 ledger, for everyone, for all time.
@@ -336,9 +336,9 @@ function Points({
 
           <div className="nx-well flex flex-col gap-3 p-4">
             <div>
-              <h4 className="text-[0.875rem] font-semibold">
+              <h3 className="text-[0.875rem] font-semibold">
                 Wipe archived months
-              </h4>
+              </h3>
               <p className="mt-1 text-[0.8125rem] text-ink-muted">
                 Deletes the saved monthly standouts. Current points are not
                 touched.

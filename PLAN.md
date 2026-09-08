@@ -40,7 +40,7 @@ Phases 1–3 done. Phase 3 commits (`301a646`, `70ee2ca` on `claude/relaxed-heyr
 | 3 | Functional + Security audit (app layer) | ✅ done (unpushed) |
 | **4** | **Database / Supabase / RLS audit** | ✅ done (only L-6 dashboard toggle, deferred to user) |
 | 5 | Performance & error handling | ✅ done (5D applied & verified live 2026-09-08; not committed) |
-| 6 | Accessibility | todo |
+| 6 | Accessibility | ✅ done (worktree; scope = Meds + cheap Lows) |
 | 7 | Final visual polish | todo |
 | 8 | Production QA on Render | todo |
 | 9 | Release / v1.0 | todo |
@@ -319,6 +319,36 @@ flip side of adding covering indexes on an empty DB, not a regression. **Nothing
 - Per-component signed-URL requests (Phase 4 M-2b) are a touch chatty — batch-signing is a possible
   future optimization, not in this pass.
 - Instant-deactivation-via-realtime (Phase 3 handoff) still unplaced — revisit at Phase 5 close.
+
+---
+
+## Phase 6 — Accessibility (✅ done in worktree, not committed)
+
+WCAG 2.1 AA pass. Audit found the design system already a11y-mature (global `:focus-visible`,
+`prefers-reduced-motion` reset, `html lang`, `--brand-text` contrast token, `useFocusTrap` on
+Modal/Sheet, skip-link). Scope taken (user decision): **all Meds + the cheap Lows**; deferred the
+high-false-positive items (Tooltip, PointHistory) and L6/L8/L9/L10/L12/L13. Lint + build green.
+
+- **M1** `Field` error `<p>` → `role="alert"` — every form error now speaks on appearance (4.1.3).
+- **M2** `CommandPalette` — real focus capture/restore + Tab trapped to the single input (it is a
+  virtual-focus listbox via `aria-activedescendant`); dropped `autoFocus` so the opener is captured
+  first. Not `useFocusTrap` (its selector counts `tabindex=-1` options).
+- **M3** `ToastProvider` — auto-dismiss timer pauses on hover/focus, resumes on leave/blur.
+- **M4** headings — **`TopBar` is the single `<h1>` per view** (sr-only on mobile, visible ≥lg);
+  `Panel title` = `<h2>`. Fixed the real defects: Profile double-`<h1>` (hero name → `<h2>`),
+  h2→h4 skips in Overview/Points(×2)/PointReset(×2)/News (→`<h3>`), Directory h1→h3 (member card
+  →`<h2>`). Members/AdminActivity/Todo/RoleManager already descend correctly.
+- **M5** mobile menu button `aria-expanded` + `aria-controls` → nav `Sheet` (`useId`); rail
+  `<aside>`→`<div>` so the inner `<nav>` is the sole nav landmark.
+- **M6** filter counts — `SearchInput` already has a built-in `aria-live` count; Members/Directory
+  passed it. Only real gap was AdminActivity keying it to the search box only → now keyed to
+  `filtering`, so the Action/Administrator selects announce too.
+- **L1** `Popover` focus into panel on open + restore to trigger on Esc/select (skip on outside-click).
+- **L2** deleted dead `common/NavItem.jsx` + `common/Tab.jsx` (no imports).
+- **L4** `SafeImage` fallback tile: `role="img"` only when `alt` given, else `aria-hidden`.
+- **L5** news image `alt=""` (Overview + News cards) — was duplicating the title heading.
+- **L7** password-reveal button no longer `tabIndex={-1}` — keyboard-reachable.
+- **L11** `ErrorBoundary` moves focus to its heading (`tabIndex={-1}`) + `role="alert"` on fallback.
 
 ---
 

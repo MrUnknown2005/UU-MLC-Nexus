@@ -62,7 +62,7 @@ function NewsRow({ item, now, editing, busy, onEdit, onDelete }) {
       {item.image_url && (
         <SafeImage
           src={item.image_url}
-          alt={item.title || "News image"}
+          alt=""
           ratio="16 / 6"
           className="max-h-56 border-b border-line"
         />
@@ -71,9 +71,9 @@ function NewsRow({ item, now, editing, busy, onEdit, onDelete }) {
       <div className="p-4 sm:p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h4 className="text-[0.9375rem] leading-snug font-semibold">
+            <h3 className="text-[0.9375rem] leading-snug font-semibold">
               {item.title || "Untitled"}
-            </h4>
+            </h3>
 
             {item.created_at && (
               <time

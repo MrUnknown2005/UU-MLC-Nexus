@@ -1,4 +1,4 @@
-import { Component } from "react";
+import { Component, createRef } from "react";
 import { Button } from "./Button.jsx";
 import { Icon } from "./Icon.jsx";
 
@@ -13,6 +13,7 @@ export class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
     this.state = { error: null };
+    this.headingRef = createRef();
   }
 
   static getDerivedStateFromError(error) {
@@ -25,6 +26,16 @@ export class ErrorBoundary extends Component {
     console.error("Unhandled error in Nexus UI", error, info?.componentStack);
   }
 
+  componentDidUpdate(prevProps, prevState) {
+    // Move focus to the fallback heading the instant a crash swaps the page
+    // out, so keyboard and screen-reader users land on the recovery UI instead
+    // of being stranded on a control that just unmounted. role="alert" on the
+    // panel announces the message in parallel (WCAG 4.1.3 / 2.4.3).
+    if (!prevState.error && this.state.error) {
+      this.headingRef.current?.focus();
+    }
+  }
+
   render() {
     const { error } = this.state;
 
@@ -32,12 +43,18 @@ export class ErrorBoundary extends Component {
 
     return (
       <div className="grid min-h-dvh place-items-center bg-canvas px-5 py-16">
-        <div className="w-full max-w-md text-center">
+        <div role="alert" className="w-full max-w-md text-center">
           <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-danger-soft text-danger">
             <Icon name="alert-triangle" size={22} />
           </span>
 
-          <h1 className="nx-display mt-5 text-xl">Something broke on this screen</h1>
+          <h1
+            ref={this.headingRef}
+            tabIndex={-1}
+            className="nx-display mt-5 text-xl outline-none"
+          >
+            Something broke on this screen
+          </h1>
 
           <p className="mt-2 text-sm text-ink-muted">
             The rest of your data is safe. Reloading usually clears it — if it
