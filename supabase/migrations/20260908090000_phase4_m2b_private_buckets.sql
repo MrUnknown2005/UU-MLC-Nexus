@@ -17,15 +17,33 @@
 -- storage.objects (both `to authenticated`) are what authorise that signing, so
 -- every logged-in member can still see every image while `anon` is locked out.
 --
+-- TRIGGER BYPASS (why the backfill disables two triggers):
+--   This backfill runs as an unauthenticated maintenance session (SQL editor or
+--   migration runner), where auth.uid() is NULL and current_user_role() is not
+--   an admin. Two BEFORE UPDATE guards would then reject it:
+--     • profiles.protect_profile_self_updates → raises "You do not have
+--       permission to modify this profile." for any non-owner without
+--       manage_members.
+--     • todos.protect_todo_member_updates → raises "Members can only update task
+--       completion status." because we change image_url.
+--   We disable each guard only around its own UPDATE and re-enable it in the same
+--   transaction, so the protection is never left off (a rollback also reverts the
+--   DISABLE). profiles.protect_profile_roles is left ON — an avatar_url-only
+--   update leaves new.role = old.role, so it short-circuits without raising.
+--   news has no BEFORE UPDATE guard.
+--
 -- ORDER OF OPERATIONS (important):
---   Deploy the path-storing app code FIRST, then run this migration. If the
---   bucket is made private while old code (which reads full public URLs straight
---   into <img>) is still live, every image 404s; and if rows are rewritten to
---   paths while old code is live, old code renders raw paths as broken images.
---   The two statements below are ordered rewrite-then-close for the same reason.
+--   Deploy the path-storing app code FIRST, then run this migration. If a bucket
+--   is made private (or its rows rewritten to paths) while old code — which reads
+--   full public URLs straight into <img> — is still the running build, those
+--   images fall back to placeholders (initials / tile) until the new build is
+--   live. Nothing errors; it self-heals once the new code is running.
 --
 -- Safe to re-run: the row rewrites only touch values that are still full URLs,
--- and the bucket flip is idempotent.
+-- and the bucket flip is idempotent. Wrapped in a transaction so the disabled
+-- triggers are always restored, even if a statement fails.
+
+begin;
 
 -- 1 · Rewrite stored public URLs -> object paths -------------------------------
 -- Strips the  https://<host>/storage/v1/object/(public|sign)/<bucket>/  prefix,
@@ -34,11 +52,15 @@
 -- before signing. A value that does not match the prefix (e.g. some external
 -- URL) is left unchanged and simply passes through the reader untouched.
 
+alter table public.profiles disable trigger protect_profile_self_updates;
+
 update public.profiles
 set avatar_url = regexp_replace(
       avatar_url,
       '^https?://[^/]+/storage/v1/object/(public|sign)/avatars/', '')
 where avatar_url like 'http%';
+
+alter table public.profiles enable trigger protect_profile_self_updates;
 
 update public.news
 set image_url = regexp_replace(
@@ -46,13 +68,19 @@ set image_url = regexp_replace(
       '^https?://[^/]+/storage/v1/object/(public|sign)/attachments/', '')
 where image_url like 'http%';
 
+alter table public.todos disable trigger protect_todo_member_updates;
+
 update public.todos
 set image_url = regexp_replace(
       image_url,
       '^https?://[^/]+/storage/v1/object/(public|sign)/attachments/', '')
 where image_url like 'http%';
 
+alter table public.todos enable trigger protect_todo_member_updates;
+
 -- 2 · Close public read access -------------------------------------------------
 update storage.buckets
 set public = false
 where id in ('avatars', 'attachments');
+
+commit;
