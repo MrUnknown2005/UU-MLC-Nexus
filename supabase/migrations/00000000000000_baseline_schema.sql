@@ -263,6 +263,41 @@ create index if not exists todo_activity_log_created_at_idx
 create index if not exists todo_activity_log_todo_id_idx
   on public.todo_activity_log using btree (todo_id);
 
+-- Covering indexes for foreign keys (Phase 5D — perf advisor). One per FK
+-- column so joins/cascades don't fall back to a sequential scan at scale.
+-- profile_achievements.user_id is already covered by its unique
+-- (user_id, achievement_id) index and is intentionally omitted.
+create index if not exists idx_achievements_created_by
+  on public.achievements using btree (created_by);
+create index if not exists idx_admin_activity_log_admin_id
+  on public.admin_activity_log using btree (admin_id);
+create index if not exists idx_admin_activity_log_target_user_id
+  on public.admin_activity_log using btree (target_user_id);
+create index if not exists idx_monthly_leaderboard_first_place_id
+  on public.monthly_leaderboard using btree (first_place_id);
+create index if not exists idx_monthly_leaderboard_second_place_id
+  on public.monthly_leaderboard using btree (second_place_id);
+create index if not exists idx_news_published_by
+  on public.news using btree (published_by);
+create index if not exists idx_point_history_awarded_by
+  on public.point_history using btree (awarded_by);
+create index if not exists idx_point_history_member_id
+  on public.point_history using btree (member_id);
+create index if not exists idx_point_reset_history_reset_by
+  on public.point_reset_history using btree (reset_by);
+create index if not exists idx_profile_achievements_achievement_id
+  on public.profile_achievements using btree (achievement_id);
+create index if not exists idx_profile_achievements_awarded_by
+  on public.profile_achievements using btree (awarded_by);
+create index if not exists idx_role_definitions_created_by
+  on public.role_definitions using btree (created_by);
+create index if not exists idx_todos_assigned_to
+  on public.todos using btree (assigned_to);
+create index if not exists idx_todos_completed_by
+  on public.todos using btree (completed_by);
+create index if not exists idx_todos_created_by
+  on public.todos using btree (created_by);
+
 -- ----------------------------------------------------------------------------
 -- 3 · FUNCTIONS  (verbatim from pg_get_functiondef; helpers first so plpgsql
 --     callers resolve them. All SECURITY DEFINER with a pinned search_path.)
@@ -1023,7 +1058,7 @@ create policy "Admins can create achievements" on public.achievements
   as permissive for insert to authenticated
   with check (exists (
     select 1 from profiles
-    where profiles.id = auth.uid()
+    where profiles.id = (select auth.uid())
       and profiles.role = any (array['administrator'::text, 'head_admin'::text])));
 
 drop policy if exists "Admins can delete achievements" on public.achievements;
@@ -1031,7 +1066,7 @@ create policy "Admins can delete achievements" on public.achievements
   as permissive for delete to authenticated
   using (exists (
     select 1 from profiles
-    where profiles.id = auth.uid()
+    where profiles.id = (select auth.uid())
       and profiles.role = any (array['administrator'::text, 'head_admin'::text])));
 
 -- admin_activity_log ---------------------------------------------------------
@@ -1076,13 +1111,13 @@ create policy "Admins can delete news" on public.news
   as permissive for delete to authenticated
   using (exists (
     select 1 from profiles
-    where profiles.id = auth.uid()
+    where profiles.id = (select auth.uid())
       and profiles.role = any (array['administrator'::text, 'head_admin'::text])));
 
 -- notifications --------------------------------------------------------------
 drop policy if exists "Users can view own notifications" on public.notifications;
 create policy "Users can view own notifications" on public.notifications
-  as permissive for select to authenticated using (user_id = auth.uid());
+  as permissive for select to authenticated using (user_id = (select auth.uid()));
 
 -- permissions ----------------------------------------------------------------
 drop policy if exists "Authenticated users can read permissions" on public.permissions;
@@ -1090,14 +1125,17 @@ create policy "Authenticated users can read permissions" on public.permissions
   as permissive for select to authenticated using (true);
 
 -- point_history --------------------------------------------------------------
+-- Phase 5D: the two permissive SELECT policies (own history, admin-all) are
+-- merged into one. Old names dropped first so this stays re-runnable.
 drop policy if exists "Users can read their own point history" on public.point_history;
-create policy "Users can read their own point history" on public.point_history
-  as permissive for select to authenticated using (member_id = auth.uid());
-
 drop policy if exists "Admins can read all point history" on public.point_history;
-create policy "Admins can read all point history" on public.point_history
+drop policy if exists "Members read own point history, admins read all" on public.point_history;
+create policy "Members read own point history, admins read all" on public.point_history
   as permissive for select to authenticated
-  using (current_user_role() = any (array['administrator'::text, 'head_admin'::text]));
+  using (
+    (member_id = (select auth.uid()))
+    or (current_user_role() = any (array['administrator'::text, 'head_admin'::text]))
+  );
 
 -- point_reset_history --------------------------------------------------------
 drop policy if exists "Admins can read point reset history" on public.point_reset_history;
@@ -1115,7 +1153,7 @@ create policy "Admins can award achievements" on public.profile_achievements
   as permissive for insert to authenticated
   with check (exists (
     select 1 from profiles
-    where profiles.id = auth.uid()
+    where profiles.id = (select auth.uid())
       and profiles.role = any (array['administrator'::text, 'head_admin'::text])));
 
 drop policy if exists "Admins can remove achievements" on public.profile_achievements;
@@ -1123,7 +1161,7 @@ create policy "Admins can remove achievements" on public.profile_achievements
   as permissive for delete to authenticated
   using (exists (
     select 1 from profiles
-    where profiles.id = auth.uid()
+    where profiles.id = (select auth.uid())
       and profiles.role = any (array['administrator'::text, 'head_admin'::text])));
 
 -- profiles -------------------------------------------------------------------
@@ -1131,34 +1169,30 @@ drop policy if exists "Controlled profile visibility" on public.profiles;
 create policy "Controlled profile visibility" on public.profiles
   as permissive for select to authenticated
   using (
-    ((auth.uid() = id) and (is_active = true))
+    (((select auth.uid()) = id) and (is_active = true))
     or ((current_user_role() <> 'guest'::text) and (role <> 'guest'::text) and (is_active = true))
     or (current_user_role() = any (array['administrator'::text, 'head_admin'::text]))
   );
 
+-- Phase 5D: four permissive UPDATE policies (two of them identical) merged
+-- into one. Old names dropped first so this stays re-runnable.
 drop policy if exists "Users can update their own profile" on public.profiles;
-create policy "Users can update their own profile" on public.profiles
-  as permissive for update to authenticated
-  using ((auth.uid() = id) and (is_active = true))
-  with check ((auth.uid() = id) and (is_active = true));
-
 drop policy if exists "Permission roles can update other profiles" on public.profiles;
-create policy "Permission roles can update other profiles" on public.profiles
-  as permissive for update to authenticated
-  using ((id <> auth.uid()) and has_permission('manage_members'::text))
-  with check ((id <> auth.uid()) and has_permission('manage_members'::text));
-
 drop policy if exists "Admins can update profiles" on public.profiles;
-create policy "Admins can update profiles" on public.profiles
-  as permissive for update to authenticated
-  using (admin_can_modify_target(id))
-  with check (admin_can_modify_target(id));
-
 drop policy if exists "Admins can change account status" on public.profiles;
-create policy "Admins can change account status" on public.profiles
+drop policy if exists "Update own profile or manage others" on public.profiles;
+create policy "Update own profile or manage others" on public.profiles
   as permissive for update to authenticated
-  using (admin_can_modify_target(id))
-  with check (admin_can_modify_target(id));
+  using (
+    admin_can_modify_target(id)
+    or ((id <> (select auth.uid())) and has_permission('manage_members'::text))
+    or (((select auth.uid()) = id) and (is_active = true))
+  )
+  with check (
+    admin_can_modify_target(id)
+    or ((id <> (select auth.uid())) and has_permission('manage_members'::text))
+    or (((select auth.uid()) = id) and (is_active = true))
+  );
 
 -- role_definitions -----------------------------------------------------------
 drop policy if exists "Authenticated users can read role definitions" on public.role_definitions;
@@ -1205,14 +1239,14 @@ create policy "todo activity read authenticated" on public.todo_activity_log
 
 drop policy if exists "todo activity insert own" on public.todo_activity_log;
 create policy "todo activity insert own" on public.todo_activity_log
-  as permissive for insert to authenticated with check (actor_id = auth.uid());
+  as permissive for insert to authenticated with check (actor_id = (select auth.uid()));
 
 drop policy if exists "todo activity delete admin" on public.todo_activity_log;
 create policy "todo activity delete admin" on public.todo_activity_log
   as permissive for delete to authenticated
   using (exists (
     select 1 from profiles p
-    where p.id = auth.uid()
+    where p.id = (select auth.uid())
       and p.role = any (array['administrator'::text, 'head_admin'::text])));
 
 -- todos ----------------------------------------------------------------------
@@ -1225,23 +1259,17 @@ create policy "Admins can create todos" on public.todos
   as permissive for insert to authenticated
   with check (exists (
     select 1 from profiles
-    where profiles.id = auth.uid()
+    where profiles.id = (select auth.uid())
       and profiles.role = any (array['administrator'::text, 'head_admin'::text])));
 
+-- Phase 5D: "Admins can edit todos" OR "Members can complete todos" merged
+-- into one. The member policy was already USING (true) WITH CHECK (true), so
+-- the union is true; per-column limits for non-admins are enforced by the
+-- protect_todo_member_updates trigger, not by RLS.
 drop policy if exists "Admins can edit todos" on public.todos;
-create policy "Admins can edit todos" on public.todos
-  as permissive for update to authenticated
-  using (exists (
-    select 1 from profiles
-    where profiles.id = auth.uid()
-      and profiles.role = any (array['administrator'::text, 'head_admin'::text])))
-  with check (exists (
-    select 1 from profiles
-    where profiles.id = auth.uid()
-      and profiles.role = any (array['administrator'::text, 'head_admin'::text])));
-
 drop policy if exists "Members can complete todos" on public.todos;
-create policy "Members can complete todos" on public.todos
+drop policy if exists "Update todos" on public.todos;
+create policy "Update todos" on public.todos
   as permissive for update to authenticated using (true) with check (true);
 
 drop policy if exists "Admins can delete todos" on public.todos;
@@ -1249,7 +1277,7 @@ create policy "Admins can delete todos" on public.todos
   as permissive for delete to authenticated
   using (exists (
     select 1 from profiles
-    where profiles.id = auth.uid()
+    where profiles.id = (select auth.uid())
       and profiles.role = any (array['administrator'::text, 'head_admin'::text])));
 
 -- ----------------------------------------------------------------------------

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useToast } from "../components/ui/toast-context.js";
 import {
   deleteAllNotifications,
   deleteOwnNotifications,
@@ -14,11 +15,16 @@ import {
 export function useNotifications({ profile, setTab, logAdminAction }) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const { toast } = useToast();
 
   const loadNotifications = async () => {
     const { data, error } = await fetchNotifications(profile.id);
 
     if (error) {
+      // Console-only by design: the bell is an ambient secondary feature that
+      // reloads on every realtime event and on remount, so a transient failure
+      // self-heals. A toast on each bell-load blip would be noise — the
+      // user-facing load-failure surface is the dashboard (useDashboardData).
       console.error("Notification load error:", error);
       setNotifications([]);
       return;
@@ -44,6 +50,11 @@ export function useNotifications({ profile, setTab, logAdminAction }) {
     const { error } = await markNotificationRead(notificationId);
 
     if (error) {
+      // No toast here, unlike the bulk actions below: markRead is a side effect
+      // of openNotification (opening a notification / navigating), not an action
+      // the user explicitly invoked. The navigation still succeeds, and a missed
+      // read-flag self-heals on the next load/realtime sync. The false return
+      // lets a caller react if it ever needs to; openNotification ignores it.
       console.error("Mark notification read error:", error);
       return false;
     }
@@ -64,6 +75,9 @@ export function useNotifications({ profile, setTab, logAdminAction }) {
 
     if (error) {
       console.error("Mark all notifications read error:", error);
+      toast.error("Couldn't mark notifications as read", {
+        description: error.message || "The server rejected the change.",
+      });
       return false;
     }
 
@@ -81,6 +95,9 @@ export function useNotifications({ profile, setTab, logAdminAction }) {
 
     if (error) {
       console.error("Clear notifications error:", error);
+      toast.error("Couldn't clear notifications", {
+        description: error.message || "The server rejected the change.",
+      });
       return false;
     }
 
@@ -93,6 +110,9 @@ export function useNotifications({ profile, setTab, logAdminAction }) {
 
     if (error) {
       console.error("Clear all notifications error:", error);
+      toast.error("Couldn't clear notifications", {
+        description: error.message || "The server rejected the change.",
+      });
       return false;
     }
 

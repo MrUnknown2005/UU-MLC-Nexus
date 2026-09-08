@@ -8,6 +8,8 @@ import { humanizeToken } from "../../lib/format.js";
 import TopBar from "./TopBar.jsx";
 import { SideNav, SideNavList } from "./SideNav.jsx";
 import { documentTitleFor, visibleNavItems } from "./navigation.js";
+import PageSkeleton from "./PageSkeleton.jsx";
+import { SkeletonRegion } from "../ui/Skeleton.jsx";
 import Overview from "../pages/Overview";
 import Profile from "../pages/Profile";
 import Directory from "../pages/Directory";
@@ -18,6 +20,18 @@ import PointReset from "../pages/PointReset";
 import AdminActivity from "../pages/AdminActivity";
 import RoleManager from "../pages/RoleManager";
 import News from "../pages/News";
+
+// Tabs whose content comes from the shared dashboard load (useDashboardData).
+// Only these show the initial-load skeleton; Profile, Todo and Roles fetch
+// their own data and manage their own loading state.
+const DATA_DRIVEN_TABS = new Set([
+  "overview",
+  "directory",
+  "members",
+  "points",
+  "activity",
+  "news",
+]);
 
 /**
  * The application shell.
@@ -38,7 +52,7 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
     toggleMemberActive, adjustPoints, canAwardPoints, isHeadAdmin, allPointHistory,
     deleteAllPointData, deleteMonthlyLeaderboard, hasPermission, resetAllPoints,
     resetMemberPoints, activityLog, deleteAdminActivityLog, loadData, logAdminAction,
-    loadRoleAccess, canManageTodos,
+    loadRoleAccess, canManageTodos, dataLoading,
   } = useDashboardController({ profile, reloadProfile, onLogout });
 
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -76,6 +90,11 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
   // effect one frame later.
   const activeItem = navItems.find((item) => item.id === tab) ?? navItems[0];
   const activeTab = activeItem?.id ?? "overview";
+
+  // Show the skeleton only during the first data load of a data-driven tab, so
+  // pages don't flash their empty states ("No members ranked yet") before the
+  // shared queries land.
+  const showSkeleton = dataLoading && DATA_DRIVEN_TABS.has(activeTab);
 
   // The tab is the closest thing this app has to a URL, so it belongs in the
   // title — it is what a member sees in a crowded row of browser tabs.
@@ -223,99 +242,105 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
           {/* Keyed so switching tabs replays the entrance animation and resets
               any per-page state instead of leaking it across sections. */}
           <div key={activeTab} className="nx-rise">
-            {activeTab === "overview" && (
-              <Overview
-                profile={profile}
-                rankedMembers={rankedMembers}
-                news={news}
-                currentRank={currentRank}
-                pointHistory={pointHistory}
-                previousMonth={previousMonth}
-              />
-            )}
-
-            {activeTab === "profile" && (
-              <Profile
-                profile={profile}
-                reloadProfile={reloadProfile}
-                onLogAction={logAdminAction}
-              />
-            )}
-
-            {activeTab === "directory" && (
-              <Directory members={rankedMembers} currentUserId={profile.id} />
-            )}
-
-            {activeTab === "todo" && (
-              <Todo
-                profile={profile}
-                isAdmin={isAdmin || canManageTodos}
-                onLogAction={logAdminAction}
-              />
-            )}
-
-            {activeTab === "members" && canOpenMembers && (
-              <Members
-                members={members}
-                currentUserId={profile.id}
-                currentUserRole={profile.role}
-                canEdit={canManageMembers}
-                canManageRoles={canManageRoles}
-                roleDefinitions={roleDefinitions}
-                onRoleChange={changeRole}
-                onToggleActive={toggleMemberActive}
-              />
-            )}
-
-            {activeTab === "points" && canViewPoints && (
-              <div className="space-y-7">
-                <Points
-                  members={rankedMembers}
-                  history={pointHistory}
-                  allHistory={allPointHistory}
-                  onAdjust={adjustPoints}
-                  canAwardPoints={canAwardPoints}
-                  canSeeAllPointHistory={canViewHistory}
-                  isHeadAdmin={isHeadAdmin}
-                  onDeleteAllPointData={deleteAllPointData}
-                  onDeleteMonthlyLeaderboard={deleteMonthlyLeaderboard}
+            <SkeletonRegion
+              loading={showSkeleton}
+              label="Loading dashboard"
+              fallback={<PageSkeleton />}
+            >
+              {activeTab === "overview" && (
+                <Overview
+                  profile={profile}
+                  rankedMembers={rankedMembers}
+                  news={news}
+                  currentRank={currentRank}
+                  pointHistory={pointHistory}
+                  previousMonth={previousMonth}
                 />
+              )}
 
-                {hasPermission("reset_points") && (
-                  <PointReset
+              {activeTab === "profile" && (
+                <Profile
+                  profile={profile}
+                  reloadProfile={reloadProfile}
+                  onLogAction={logAdminAction}
+                />
+              )}
+
+              {activeTab === "directory" && (
+                <Directory members={rankedMembers} currentUserId={profile.id} />
+              )}
+
+              {activeTab === "todo" && (
+                <Todo
+                  profile={profile}
+                  isAdmin={isAdmin || canManageTodos}
+                  onLogAction={logAdminAction}
+                />
+              )}
+
+              {activeTab === "members" && canOpenMembers && (
+                <Members
+                  members={members}
+                  currentUserId={profile.id}
+                  currentUserRole={profile.role}
+                  canEdit={canManageMembers}
+                  canManageRoles={canManageRoles}
+                  roleDefinitions={roleDefinitions}
+                  onRoleChange={changeRole}
+                  onToggleActive={toggleMemberActive}
+                />
+              )}
+
+              {activeTab === "points" && canViewPoints && (
+                <div className="space-y-7">
+                  <Points
                     members={rankedMembers}
-                    onResetAll={resetAllPoints}
-                    onResetMember={resetMemberPoints}
+                    history={pointHistory}
+                    allHistory={allPointHistory}
+                    onAdjust={adjustPoints}
+                    canAwardPoints={canAwardPoints}
+                    canSeeAllPointHistory={canViewHistory}
+                    isHeadAdmin={isHeadAdmin}
+                    onDeleteAllPointData={deleteAllPointData}
+                    onDeleteMonthlyLeaderboard={deleteMonthlyLeaderboard}
                   />
-                )}
-              </div>
-            )}
 
-            {activeTab === "activity" && canViewHistory && (
-              <AdminActivity
-                activityLog={activityLog}
-                members={members}
-                isHeadAdmin={isHeadAdmin}
-                onWipe={deleteAdminActivityLog}
-              />
-            )}
+                  {hasPermission("reset_points") && (
+                    <PointReset
+                      members={rankedMembers}
+                      onResetAll={resetAllPoints}
+                      onResetMember={resetMemberPoints}
+                    />
+                  )}
+                </div>
+              )}
 
-            {activeTab === "news" && canManageNews && (
-              <News
-                news={news}
-                profile={profile}
-                reload={loadData}
-                onLogAction={logAdminAction}
-              />
-            )}
+              {activeTab === "activity" && canViewHistory && (
+                <AdminActivity
+                  activityLog={activityLog}
+                  members={members}
+                  isHeadAdmin={isHeadAdmin}
+                  onWipe={deleteAdminActivityLog}
+                />
+              )}
 
-            {activeTab === "roles" && canManageRoles && (
-              <RoleManager
-                currentUser={profile}
-                roleDefinitions={roleDefinitions}
-                onRolesChanged={loadRoleAccess}
-              />
-            )}
+              {activeTab === "news" && canManageNews && (
+                <News
+                  news={news}
+                  profile={profile}
+                  reload={loadData}
+                  onLogAction={logAdminAction}
+                />
+              )}
+
+              {activeTab === "roles" && canManageRoles && (
+                <RoleManager
+                  currentUser={profile}
+                  roleDefinitions={roleDefinitions}
+                  onRolesChanged={loadRoleAccess}
+                />
+              )}
+            </SkeletonRegion>
           </div>
 
           <footer className="nx-safe-bottom nx-eyebrow mt-8 flex justify-center border-t border-line pt-5 sm:justify-end">

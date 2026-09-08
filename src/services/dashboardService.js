@@ -1,11 +1,19 @@
 import { supabase } from "../lib/supabaseClient";
 
-export async function fetchDashboardData({
-  profileId,
-  canViewMembers,
-  canViewHistory,
-}) {
-  const memberQuery = canViewMembers
+// Full point history is a display-only feed (a count + the AdminPointHistory
+// list on the Points page); no total or leaderboard is summed from it, so a
+// cap cannot corrupt any figure. Bounded so it can't grow without limit and
+// get re-pulled in full on every reload.
+const FULL_HISTORY_LIMIT = 500;
+const ACTIVITY_LOG_LIMIT = 500;
+
+// --- Granular fetchers -------------------------------------------------------
+// One per realtime table group, so a realtime event can refetch just the data
+// it touched instead of reloading the whole dashboard. `fetchDashboardData`
+// composes them for the initial load and manual full refreshes.
+
+export async function fetchMembers({ canViewMembers }) {
+  const query = canViewMembers
     ? supabase.from("profiles").select("*").order("points", { ascending: false })
     : supabase
         .from("profiles")
@@ -14,15 +22,11 @@ export async function fetchDashboardData({
         .eq("is_active", true)
         .order("points", { ascending: false });
 
-  const [
-    memberResult,
-    myHistoryResult,
-    fullHistoryResult,
-    monthResult,
-    newsResult,
-    activityResult,
-  ] = await Promise.all([
-    memberQuery,
+  return query;
+}
+
+export async function fetchPointHistory({ profileId, canViewHistory }) {
+  const [myHistoryResult, fullHistoryResult] = await Promise.all([
     supabase
       .from("point_history")
       .select("*")
@@ -33,24 +37,53 @@ export async function fetchDashboardData({
           .from("point_history")
           .select("*")
           .order("created_at", { ascending: false })
+          .limit(FULL_HISTORY_LIMIT)
       : Promise.resolve({ data: [], error: null }),
-    supabase
-      .from("monthly_leaderboard")
-      .select("*")
-      .order("month_start", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    supabase
-      .from("news")
-      .select("*")
-      .order("created_at", { ascending: false }),
-    canViewHistory
-      ? supabase
-          .from("admin_activity_log")
-          .select("*")
-          .order("created_at", { ascending: false })
-          .limit(500)
-      : Promise.resolve({ data: [], error: null }),
+  ]);
+
+  return { myHistoryResult, fullHistoryResult };
+}
+
+export async function fetchPreviousMonth() {
+  return supabase
+    .from("monthly_leaderboard")
+    .select("*")
+    .order("month_start", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+}
+
+export async function fetchNews() {
+  return supabase.from("news").select("*").order("created_at", { ascending: false });
+}
+
+export async function fetchActivityLog({ canViewHistory }) {
+  return canViewHistory
+    ? supabase
+        .from("admin_activity_log")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(ACTIVITY_LOG_LIMIT)
+    : Promise.resolve({ data: [], error: null });
+}
+
+export async function fetchDashboardData({
+  profileId,
+  canViewMembers,
+  canViewHistory,
+}) {
+  const [
+    memberResult,
+    { myHistoryResult, fullHistoryResult },
+    monthResult,
+    newsResult,
+    activityResult,
+  ] = await Promise.all([
+    fetchMembers({ canViewMembers }),
+    fetchPointHistory({ profileId, canViewHistory }),
+    fetchPreviousMonth(),
+    fetchNews(),
+    fetchActivityLog({ canViewHistory }),
   ]);
 
   return {
@@ -132,6 +165,11 @@ export function subscribeToNewsChanges(profileId, onChange) {
 }
 
 export default {
+  fetchMembers,
+  fetchPointHistory,
+  fetchPreviousMonth,
+  fetchNews,
+  fetchActivityLog,
   fetchDashboardData,
   subscribeToProfileChanges,
   subscribeToActivityChanges,

@@ -249,6 +249,19 @@ function Profile({ profile, reloadProfile, onLogAction }) {
         return;
       }
 
+      // Don't present a failed query as real data — a swallowed error would
+      // render rank "—" / 0 entries as if those were the true figures.
+      const failure =
+        memberResult.error || pointResult.error || todoResult.error;
+      if (failure) {
+        console.error("Profile stats error:", failure);
+        toast.error("Couldn't load your stats", {
+          description: "Check your connection and try again.",
+        });
+        setStatsLoading(false);
+        return;
+      }
+
       const activeMembers = memberResult.data || [];
 
       const rank =
@@ -268,7 +281,7 @@ function Profile({ profile, reloadProfile, onLogAction }) {
     return () => {
       cancelled = true;
     };
-  }, [profile.id, profile.points, profile.role, profile.is_active]);
+  }, [profile.id, profile.points, profile.role, profile.is_active, toast]);
 
   const joinDate = profile.created_at
     ? formatDate(profile.created_at)

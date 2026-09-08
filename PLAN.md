@@ -2,20 +2,21 @@
 
 > Living plan. We work top-to-bottom. Update the checkboxes and "Current position"
 > as we go so any session (or model) can resume without re-investigating.
-> Last updated: 2026-09-07
+> Last updated: 2026-09-08
 
 **Legend:** `[ ]` todo · `[~]` in progress · `[x]` done · ⚠️ caveat/gotcha · ❓ open decision
 
 ---
 
-**Phase 4 — Database / Supabase / RLS audit.** Audit **COMPLETE** and **remediation APPLIED &
+**Phase 4 — Database / Supabase / RLS audit. ✅ DONE.** Audit complete and **remediation APPLIED &
 verified live (2026-09-08)** via the Supabase MCP server (project `scgqhsxfzqvsqiugnceg`). Full ledger
 in the **PHASE 4** section below and in memory (`phase-4-audit`). Migration `20260908013032_phase4_db_
-hardening` landed the fixes; the **full-schema baseline** (`00000000000000_baseline_schema.sql`) now lets
+hardening` landed the fixes; the **full-schema baseline** (`00000000000000_baseline_schema.sql`) lets
 the repo rebuild the DB from scratch (drift landmine closed). MCP server restored to **read-only**.
-**M-2b is now code-complete** (signed-URL reader + path-storing uploads; lint/build-green) with the DB
-flip authored as `20260908090000_phase4_m2b_private_buckets.sql` — **apply it at deploy time** (after this
-code is the running build). Only **L-6** (HIBP dashboard toggle) remains untouched.
+**M-2b is DONE & LIVE** — signed-URL reader + path-storing uploads on `main` (`2433a0f`), and the DB flip
+(`20260908090000_phase4_m2b_private_buckets.sql`, applied `7255fec`) rewrote the legacy avatar rows → paths
+and set both buckets private (verified: 2 private, 0 public, no `http%` rows left). Only **L-6** (HIBP
+dashboard toggle) remains — **deferred to the user**, who will flip it themselves later.
 
 **Headline:** the server-side authz model is genuinely solid. Phase 3's handoffs **F-1 and F-6 are
 already closed server-side** — broad RLS policies are deliberately scoped by `BEFORE UPDATE` triggers,
@@ -37,8 +38,8 @@ Phases 1–3 done. Phase 3 commits (`301a646`, `70ee2ca` on `claude/relaxed-heyr
 | 1 | Mobile UI | ✅ done |
 | 2 | Auth completion & full realtime sync | ✅ done (2 live-checks parked) |
 | 3 | Functional + Security audit (app layer) | ✅ done (unpushed) |
-| **4** | **Database / Supabase / RLS audit** | ← **active** (audit done; fixes pending) |
-| 5 | Performance & error handling | todo |
+| **4** | **Database / Supabase / RLS audit** | ✅ done (only L-6 dashboard toggle, deferred to user) |
+| 5 | Performance & error handling | ✅ done (5D applied & verified live 2026-09-08; not committed) |
 | 6 | Accessibility | todo |
 | 7 | Final visual polish | todo |
 | 8 | Production QA on Render | todo |
@@ -132,7 +133,7 @@ and live-test forgot-password.
 
 ---
 
-## PHASE 4 — Database / Supabase / RLS audit  ← ACTIVE (remediation + baseline done; M-2b code done, DB flip pending deploy; L-6 pending)
+## PHASE 4 — Database / Supabase / RLS audit  ← DONE (remediation + baseline + M-2b all live; only L-6 dashboard toggle left, deferred to user)
 
 Read-only audit complete (2026-09-08); **remediation APPLIED & verified live (2026-09-08)** via the
 Supabase MCP server (flipped to write mode for the apply, now **restored to read-only**). Migration
@@ -164,15 +165,18 @@ deferred items remain (M-2b, L-6).
 - 🟡 **M-2a · Storage buckets unhardened.** ✅ **FIXED.** Both buckets now pin
   `allowed_mime_types = {jpeg,png,webp,gif}` (SVG excluded — the XSS vector) and `file_size_limit = 8 MB`
   (matches `uploadAttachment.js`).
-- 🟠 **M-2b · Buckets public.** 🟢 **CODE DONE (2026-09-08); DB flip pending deploy.** App now stores object
-  *paths* and mints short-lived (1 h) signed URLs on read — `src/lib/storageImage.js` (`useSignedImageUrl`),
-  used inside `<Avatar>` and `<SafeImage>`; uploads in `uploadAttachment.js` + `Profile.jsx` now store paths.
-  The reader is **dual-mode** (a value with an `http:`/`blob:`/`data:` scheme passes through, a bare path is
-  signed), so there is **no flag-day**: legacy public-URL rows keep rendering until they are rewritten. The
-  DB half — rewrite the 4 legacy public-URL rows → paths, then set both buckets `public=false` — is authored
-  as `20260908090000_phase4_m2b_private_buckets.sql`; **apply it after this code is the running build** (order
-  matters — see the file header). The existing `to authenticated` SELECT policies already authorise the
-  signing, so members keep seeing every image while `anon` is locked out.
+- 🟠 **M-2b · Buckets public.** ✅ **DONE & LIVE (2026-09-08).** Code on `main` (`2433a0f`) + DB flip applied
+  (`7255fec`). App stores object *paths* and mints short-lived (1 h) signed URLs on read —
+  `src/lib/storageImage.js` (`useSignedImageUrl`), used inside `<Avatar>` and `<SafeImage>`; uploads in
+  `uploadAttachment.js` + `Profile.jsx` store paths. The reader is **dual-mode** (a value with an
+  `http:`/`blob:`/`data:` scheme passes through, a bare path is signed) so the rollout was flag-day-free.
+  Migration `20260908090000_phase4_m2b_private_buckets.sql` rewrote the 4 legacy public-URL avatar rows →
+  paths and flipped both buckets `public=false`. **Verified live:** `private_buckets=2, public_buckets=0`,
+  zero `http%` rows left in profiles/news/todos. The `to authenticated` SELECT policies authorise the
+  signing, so members see every image while `anon` is locked out.
+  ⚠️ **Migration gotcha (fixed in `7255fec`):** the backfill runs unauthenticated, so it must disable
+  `protect_profile_self_updates` + `protect_todo_member_updates` around its UPDATEs (re-enabled in the same
+  txn); `protect_profile_roles` stays on (avatar-only update leaves role unchanged).
 - 🟡 **L-1 · `anon` holds EXECUTE** on the 3 later-added RPCs. ✅ **FIXED.** `anon` EXECUTE revoked on
   `delete_own_account` / `delete_own_notifications` / `delete_all_notifications`; `authenticated` retained.
   Advisor lint 0028 (anon) now clears. *(0029 — `authenticated` can call SECURITY DEFINER fns — remains
@@ -222,10 +226,10 @@ UPDATE ×2) · 2 unused indexes · `pg_net` 0.20.4 sits in `public` (removed if 
 
 ### Remaining Phase 4 work
 
-- 🟢 **M-2b** — **code done + lint/build-green** (signed-URL reader `src/lib/storageImage.js` + path-storing
-  uploads; `<Avatar>`/`<SafeImage>` resolve paths). DB migration authored
-  (`20260908090000_phase4_m2b_private_buckets.sql`) — **apply at deploy** (rewrites legacy URL rows → paths,
-  then flips both buckets `public=false`). Not yet applied (needs to land with the running build).
+- ✅ **M-2b** — **DONE & LIVE (2026-09-08).** Code on `main` (`2433a0f`); DB migration
+  `20260908090000_phase4_m2b_private_buckets.sql` applied (`7255fec`) — 4 legacy avatar rows rewritten →
+  paths, both buckets flipped `public=false`. Verified live: `private_buckets=2, public_buckets=0`, no
+  `http%` rows remain.
 - ⏸️ **L-6** — enable HIBP leaked-password protection. **User will do this dashboard toggle later
   (2026-09-08).** Path: **Authentication → Providers → Email → "Prevent the use of leaked passwords"**.
   ⚠️ Pro-plan-and-above feature.
@@ -235,6 +239,86 @@ UPDATE ×2) · 2 unused indexes · `pg_net` 0.20.4 sits in `public` (removed if 
 - ✅ **MCP read-only restored** — `--read-only` re-added to the Supabase server in `~/.claude.json`
   (takes effect on next session reload). Write mode was only needed for the 20260908013032 apply.
 - Then: instant-deactivation-via-realtime (Phase 3 handoff) — decide if it moves here or to a later phase.
+
+---
+
+## PHASE 5 — Performance & error handling  ← DONE (2026-09-08; 5A–5C in worktree, 5D applied & verified live; not committed)
+
+Scoped from two parallel code surveys + live DB advisors/row-counts. **Key framing: the live data is
+tiny** (largest table = notifications @ 60 rows; point_history / todos / news = 0), so the DB perf
+backlog is **correct-at-scale hardening, not live pain**. The real user-facing wins are app-layer: the
+realtime **reload-all fan-out has no debounce**, one unbounded query grows forever, and several failures
+are **invisible** (console-only). Surveys also confirmed the good news: **no subscription leaks, no N+1,
+service layer is a clean consistent `{data,error}` contract** — this is hardening, not rework.
+
+**Decisions locked 2026-09-08:** full pass (all four workstreams below) + **debounce + scoped refetch**
+(coalesce bursts AND use the realtime payload to refetch only the affected query group, not all 6).
+
+### STATUS — 2026-09-08 · DONE (5D applied & verified live; not committed)
+
+**5A, 5B, 5C** implemented in worktree `claude/strange-wilson-fb4cb8`, verified green (lint clean · build
+149 modules · 8/8 tests). **5D APPLIED to the live DB (2026-09-08, via SQL editor)** —
+`supabase/migrations/20260908130000_phase5_perf_advisors.sql` (+ matching `00000000000000_baseline_schema.sql`
+edit). **Verified via `get_advisors(performance)` post-apply:** the three target categories are **cleared to
+zero** — `unindexed_foreign_keys` 15→0, `auth_rls_initplan` 15→0, `multiple_permissive_policies` 3→0. The
+only remaining perf finding is `unused_index`, now **17** (the 15 new FK covering indexes + the 2 pre-existing
+kept ones); every one is "unused" only because the pre-launch DB has no traffic yet — the expected, benign
+flip side of adding covering indexes on an empty DB, not a regression. **Nothing committed/pushed yet.**
+
+### 5A · Realtime refetch fan-out  (highest impact)
+
+- [x] **Debounce + payload-aware refetch** in `useDashboardData.js` / `dashboardService.js`. Today every
+  event on profiles/point_history/news/activity calls `loadData`, which refetches **all 6 queries**
+  ignoring the payload — one admin point-award (writes 3 tables) → ~18 queries per open admin client;
+  bulk RPCs → event storms (`dashboardService.js:17-54`, `useDashboardData.js:27-80,90-121`). Fix:
+  coalesce events in a ~250 ms window and refetch only the query group for the changed table. Keep a
+  full `loadData()` for the initial mount + the manual `loadData` callers (member actions await it).
+- [x] **Bound `allPointHistory`** (`dashboardService.js:31-36`) — currently unbounded, grows forever,
+  re-pulled for every history-viewer on every reload. Add `.limit(500)` (matches admin_activity_log).
+  ⚠️ **Safe check DONE:** `allPointHistory` is **display-only** (`Points.jsx:269,274,277` — a count + the
+  `AdminPointHistory` list); no totals/leaderboard are summed from it (those come from `profiles.points`
+  + `monthly_leaderboard`), so a LIMIT cannot corrupt any number. Personal `pointHistory` (which
+  `Overview.jsx:196` reduces) is per-member and stays unbounded.
+
+### 5B · Silent failures → user-visible  (high impact)
+
+- [x] **Dashboard load failures** (`useDashboardData.js:41-79`) — a failed/RLS-blocked fetch is
+  `console.error`'d and the list reset to `[]`, so it looks identical to "empty club." Surface a toast
+  (and keep the console log). `GuestDashboard`/`App` already do this right — mirror them.
+- [x] **Profile stats swallow errors** (`Profile.jsx:217-264`) — 3 queries, zero `.error` checks; failure
+  renders rank `—`/`0` entries as if real. Check errors; toast on failure.
+- [x] **Notification actions fail silently** (`useNotifications.js:47,66,83,95`) — mark-read / mark-all /
+  clear-own / clear-all return `false` on error but callers (`openNotification`, TopBar) never check.
+  Toast on failure (the hook already has the boolean; wire a toast in the hook itself).
+- [x] **usePermissions silent legacy fallback** (`usePermissions.js:47,59`) — quietly drops to
+  `LEGACY_ROLE_PERMISSIONS` on error (console.warn only), changing which tabs/actions show. Decide:
+  toast a soft warning, or leave (document why). Lowest of this group.
+
+### 5C · Loading states  (medium impact)
+
+- [x] **Consistent skeletons** on the bare pages. Only Todo / RoleManager / (partial) Profile show
+  loading; Overview, Members, Points, Directory, AdminActivity, News render zeros during the initial
+  central fetch, so first paint reads as "no data." The shared `SkeletonRegion` (`Skeleton.jsx`, has
+  `aria-busy`/`aria-live`) exists but **nobody uses it**. Add an initial-load flag from
+  `useDashboardData` and gate the data pages on it with `SkeletonRegion`.
+
+### 5D · DB perf migration  (low live impact; correct-at-scale)
+
+- [x] One migration for the advisor backlog (verified current 2026-09-08): **15 unindexed FKs** (add
+  covering indexes), **15 `auth_rls_initplan`** (wrap `auth.uid()`/`current_user_role()` in `(select …)`
+  so they evaluate once per query, not per row), **3 `multiple_permissive_policies`** (point_history
+  SELECT ×2, profiles UPDATE ×4, todos UPDATE ×2 — consolidate where safe), **2 unused indexes**
+  (`todo_activity_log_created_at_idx`, `role_permissions_permission_idx` — drop or leave, decide). ⚠️
+  These cost ~nothing at current row counts; do them because they're cheap and future-proof, and update
+  the schema baseline to match. Apply needs MCP write mode (currently read-only) or the SQL editor.
+
+### Notes / deferred
+
+- ⚠️ **Reload-all is per-open-client** — even after 5A, N open admin clients each hold their own
+  subscriptions. Fine at club scale; not building shared-cache/broadcast fan-in.
+- Per-component signed-URL requests (Phase 4 M-2b) are a touch chatty — batch-signing is a possible
+  future optimization, not in this pass.
+- Instant-deactivation-via-realtime (Phase 3 handoff) still unplaced — revisit at Phase 5 close.
 
 ---
 

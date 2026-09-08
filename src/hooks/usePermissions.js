@@ -42,6 +42,13 @@ export function usePermissions(profile) {
     if (!permissionResult.error && Array.isArray(permissionResult.data)) {
       setPermissions(permissionResult.data);
     } else {
+      // Soft, silent fallback by design (console.warn, no toast): drop to the
+      // hardcoded legacy role->permission map, which is correct for the standard
+      // system roles and keeps the app fully usable. It only diverges from live
+      // when an admin has created custom roles, and the server (RLS + in-RPC
+      // role checks) is the real authority regardless — so a per-blip toast here
+      // would alarm users about something usually invisible and never a security
+      // boundary. Same rationale for the role-definition fallback below.
       setPermissions(LEGACY_ROLE_PERMISSIONS[profile.role] || []);
       if (permissionResult.error) {
         console.warn(
