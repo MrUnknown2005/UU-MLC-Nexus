@@ -39,8 +39,8 @@ Phases 1–3 done. Phase 3 commits (`301a646`, `70ee2ca` on `claude/relaxed-heyr
 | 2 | Auth completion & full realtime sync | ✅ done (2 live-checks parked) |
 | 3 | Functional + Security audit (app layer) | ✅ done (unpushed) |
 | **4** | **Database / Supabase / RLS audit** | ✅ done (only L-6 dashboard toggle, deferred to user) |
-| 5 | Performance & error handling | ✅ done (5D applied & verified live 2026-09-08; not committed) |
-| 6 | Accessibility | ✅ done (worktree; scope = Meds + cheap Lows) |
+| 5 | Performance & error handling | ✅ done & pushed to `main` @ `58ad5d6` (5D applied & verified live 2026-09-08) |
+| 6 | Accessibility | ✅ done & pushed to `main` @ `58ad5d6` (scope = Meds + cheap Lows) |
 | 7 | Final visual polish | todo |
 | 8 | Production QA on Render | todo |
 | 9 | Release / v1.0 | todo |
@@ -242,7 +242,7 @@ UPDATE ×2) · 2 unused indexes · `pg_net` 0.20.4 sits in `public` (removed if 
 
 ---
 
-## PHASE 5 — Performance & error handling  ← DONE (2026-09-08; 5A–5C in worktree, 5D applied & verified live; not committed)
+## PHASE 5 — Performance & error handling  ← DONE & PUSHED to `main` @ `58ad5d6` (2026-09-08; 5A–5C code + 5D applied & verified live)
 
 Scoped from two parallel code surveys + live DB advisors/row-counts. **Key framing: the live data is
 tiny** (largest table = notifications @ 60 rows; point_history / todos / news = 0), so the DB perf
@@ -254,7 +254,7 @@ service layer is a clean consistent `{data,error}` contract** — this is harden
 **Decisions locked 2026-09-08:** full pass (all four workstreams below) + **debounce + scoped refetch**
 (coalesce bursts AND use the realtime payload to refetch only the affected query group, not all 6).
 
-### STATUS — 2026-09-08 · DONE (5D applied & verified live; not committed)
+### STATUS — 2026-09-08 · DONE & PUSHED to `main` @ `58ad5d6` (5D applied & verified live)
 
 **5A, 5B, 5C** implemented in worktree `claude/strange-wilson-fb4cb8`, verified green (lint clean · build
 149 modules · 8/8 tests). **5D APPLIED to the live DB (2026-09-08, via SQL editor)** —
@@ -322,7 +322,7 @@ flip side of adding covering indexes on an empty DB, not a regression. **Nothing
 
 ---
 
-## Phase 6 — Accessibility (✅ done in worktree, not committed)
+## Phase 6 — Accessibility (✅ done & pushed to `main` @ `58ad5d6`)
 
 WCAG 2.1 AA pass. Audit found the design system already a11y-mature (global `:focus-visible`,
 `prefers-reduced-motion` reset, `html lang`, `--brand-text` contrast token, `useFocusTrap` on
