@@ -1,4 +1,4 @@
-import { getRoleDisplayName } from "../lib/roleHelpers";
+import { roleLabel } from "../lib/roles.js";
 import { useToast } from "../components/ui/toast-context.js";
 import {
   awardPoints as awardPointsService,
@@ -131,7 +131,7 @@ export function useMemberActions({
           ? "PROMOTE_MEMBER"
           : "ROLE_CHANGE",
       targetUserId: memberId,
-      details: `Role changed from ${getRoleDisplayName(oldRole, roleDefinitions)} to ${getRoleDisplayName(
+      details: `Role changed from ${roleLabel(oldRole, roleDefinitions)} to ${roleLabel(
         newRole,
         roleDefinitions,
       )}.`,
