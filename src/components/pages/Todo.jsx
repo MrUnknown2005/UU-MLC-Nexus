@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { uploadAttachment } from "../../lib/uploadAttachment";
-import { useSignedImageUrl } from "../../lib/storageImage.js";
+import { useSignedImageUrl, removeStoredObject } from "../../lib/storageImage.js";
 import { Badge } from "../ui/Badge.jsx";
 import { Button } from "../ui/Button.jsx";
 import { ChipBar } from "../ui/ChipBar.jsx";
@@ -417,6 +417,12 @@ function Todo({ profile, isAdmin, onLogAction }) {
           return;
         }
 
+        // A new upload replaced the old image — clear the stranded object from
+        // the private bucket now that the row points at the new path.
+        if (editingTodo.image_url && editingTodo.image_url !== imageUrl) {
+          await removeStoredObject("attachments", editingTodo.image_url);
+        }
+
         if (onLogAction) {
           await onLogAction({
             action: "TODO_EDITED",
@@ -488,7 +494,7 @@ function Todo({ profile, isAdmin, onLogAction }) {
       confirmLabel: "Delete task",
       consequences: [
         "Nobody can complete or reopen it afterwards.",
-        "Any attached picture stays in storage but stops being reachable.",
+        "Any attached picture is deleted from storage as well.",
         "This cannot be undone — the task would have to be written again.",
       ],
     });
@@ -504,6 +510,9 @@ function Todo({ profile, isAdmin, onLogAction }) {
       toast.error("Could not delete the task", { description: error.message });
       return;
     }
+
+    // Row's gone — drop its attached image from the private bucket too.
+    await removeStoredObject("attachments", todo.image_url);
 
     if (onLogAction) {
       await onLogAction({

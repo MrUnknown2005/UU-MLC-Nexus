@@ -18,6 +18,7 @@ import { TextInput } from "../ui/TextInput.jsx";
 import { useConfirm } from "../ui/confirm-context.js";
 import { useToast } from "../ui/toast-context.js";
 import SafeImage from "../common/SafeImage";
+import { removeStoredObject } from "../../lib/storageImage.js";
 import { useNow } from "../../hooks/useNow.js";
 import {
   countLabel,
@@ -283,6 +284,12 @@ function News({ news = [], profile, reload, onLogAction }) {
           : `Published news: ${title.trim()}${imageUrl ? " with an attached image." : "."}`,
       });
 
+      // Replacing or clearing the image leaves the old object stranded in the
+      // private bucket — remove it now that the row no longer points at it.
+      if (editing?.image_url && editing.image_url !== imageUrl) {
+        await removeStoredObject("attachments", editing.image_url);
+      }
+
       const published = title.trim();
       const wasEditing = Boolean(editing);
 
@@ -321,6 +328,9 @@ function News({ news = [], profile, reload, onLogAction }) {
       action: "NEWS_DELETED",
       details: `Deleted news: ${item.title}`,
     });
+
+    // The post is gone; drop its attached image from the private bucket too.
+    await removeStoredObject("attachments", item.image_url);
 
     if (editing?.id === item.id) resetForm();
 

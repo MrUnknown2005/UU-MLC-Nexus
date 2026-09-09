@@ -265,7 +265,7 @@ function SignUp({ email, setEmail, setMode, onBack, onSignup }) {
     <AuthLayout
       onBack={onBack}
       title="Create your account"
-      subtitle="Join the United University Machine Learning Club."
+      subtitle="Join the Uttara University Machine Learning Club."
       footer={
         <p className="text-center text-[0.8125rem] text-ink-muted">
           Already a member?{" "}

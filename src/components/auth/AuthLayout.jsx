@@ -41,7 +41,7 @@ export default function AuthLayout({
         <Brand size="md" />
 
         <div className="relative max-w-md">
-          <p className="nx-eyebrow">United University Machine Learning Club</p>
+          <p className="nx-eyebrow">Uttara University Machine Learning Club</p>
 
           <h2 className="nx-display mt-3 text-[2.5rem] leading-[1.05] xl:text-[3rem]">
             The club, <span className="text-brand-text">organised.</span>

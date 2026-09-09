@@ -22,6 +22,29 @@ export function isDirectUrl(value) {
   return typeof value === "string" && DIRECT_URL.test(value);
 }
 
+/**
+ * Best-effort deletion of a stored object, given the value we persisted for it
+ * (a bucket path like `news/<id>/<uuid>.jpg` or `<id>/avatar?v=…`). This is what
+ * stops Storage objects leaking when the row that referenced them is deleted or
+ * its image is replaced.
+ *
+ * Only a bare path is removable: a legacy `http(s):`/`blob:`/`data:` value has no
+ * object key we can target, so it is skipped (the M-2b migration already rewrote
+ * the public-URL rows to paths, and a `blob:` preview was never uploaded). The
+ * `?v=` cache-bust marker is stripped to recover the real key. Errors are logged
+ * and swallowed on purpose — a missing or already-gone object must never block
+ * the delete/replace it trails; a leaked file is recoverable, a blocked user
+ * action is not.
+ */
+export async function removeStoredObject(bucket, value) {
+  if (!value || isDirectUrl(value)) return;
+  const path = value.split("?")[0];
+  const { error } = await supabase.storage.from(bucket).remove([path]);
+  if (error) {
+    console.error(`Storage cleanup failed for ${bucket}/${path}:`, error);
+  }
+}
+
 // Signed URLs are worth reusing within a session: the same member's avatar shows
 // up in several lists at once, and a remounted card should not re-sign. Keyed on
 // the full stored value (including any `?v=` cache-bust marker) so a replaced

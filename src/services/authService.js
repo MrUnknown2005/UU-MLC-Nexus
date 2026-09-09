@@ -88,11 +88,13 @@ export async function changePassword({ currentPassword, newPassword }) {
  * not someone who found an unlocked device.
  *
  * The erasure itself happens server-side in the `delete_own_account` RPC
- * (SECURITY DEFINER): it sends the farewell email via Resend, removes the
- * member's owned rows, records the deletion in the audit log, then deletes the
- * auth user. We finally sign the now-deleted session out so the app returns to
- * the logged-out screen — a signOut failure is ignored, the account is gone
- * either way.
+ * (SECURITY DEFINER): it removes the member's owned rows, records the deletion
+ * in the audit log, then deletes the auth user. It only touches Postgres rows,
+ * though, so we first clear the member's avatar objects from Storage — otherwise
+ * the picture would linger in the private `avatars` bucket with nothing pointing
+ * at it. We finally sign the now-deleted session out so the app returns to the
+ * logged-out screen — a signOut failure is ignored, the account is gone either
+ * way.
  *
  * Returns { error } — a friendly message when the password is wrong, or
  * whatever the RPC reports. On success, { error: null }.
@@ -122,6 +124,20 @@ export async function deleteOwnAccount({ currentPassword }) {
             : verifyError.message,
       },
     };
+  }
+
+  // The RPC erases Postgres rows only; clear the member's avatar object(s) from
+  // Storage first, while this session can still authorise it, so nothing is left
+  // orphaned in the private bucket. Best-effort — a cleanup failure must not
+  // block the deletion the member asked for.
+  const { data: avatarFiles } = await supabase.storage
+    .from("avatars")
+    .list(user.id);
+
+  if (avatarFiles?.length) {
+    await supabase.storage
+      .from("avatars")
+      .remove(avatarFiles.map((f) => `${user.id}/${f.name}`));
   }
 
   const { error: rpcError } = await supabase.rpc("delete_own_account");
