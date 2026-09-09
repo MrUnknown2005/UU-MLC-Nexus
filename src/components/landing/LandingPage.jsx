@@ -65,12 +65,10 @@ function LandingPage({ onLogin, onJoin }) {
 
         <main className="grid flex-1 items-center gap-14 py-14 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:py-20">
           <section className="min-w-0">
-            <p className="nx-eyebrow inline-flex items-center gap-2 rounded-full border border-brand-line bg-brand-soft px-3 py-1.5 text-brand-text">
-              <span className="nx-dot nx-dot-live text-success" />
-              Nexus is live
-            </p>
-
-            <h1 className="nx-hero-type mt-7">
+            {/* The hero leads — no status badge above it. "Badge-above-headline"
+                is a stock template tell, and this page's whole point is that the
+                headline and the two buttons carry it. */}
+            <h1 className="nx-hero-type">
               The club,
               <br />
               <span className="nx-mark">in motion.</span>
@@ -109,7 +107,7 @@ function LandingPage({ onLogin, onJoin }) {
                     />
                   </div>
 
-                  <p className="nx-display mt-6 text-base">{item.name}</p>
+                  <h2 className="nx-display mt-6 text-base">{item.name}</h2>
                   <p className="mt-1 text-[0.75rem] leading-relaxed text-ink-subtle">
                     {item.detail}
                   </p>

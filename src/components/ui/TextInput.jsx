@@ -110,13 +110,21 @@ export function PasswordInput({
             className={cn("nx-input nx-input-with-icon pr-12", className)}
             {...rest}
           />
-          <IconButton
-            icon={visible ? "eye-off" : "eye"}
-            label={visible ? "Hide password" : "Show password"}
-            size="sm"
-            onClick={() => setVisible((v) => !v)}
-            className="absolute top-1/2 right-1.5 -translate-y-1/2"
-          />
+          {/* The toggle is wrapped rather than given `absolute` directly:
+              IconButton owns a base `relative` (it anchors optional badges),
+              and stacking `absolute` on the same element lets Tailwind's
+              source order pick the winner — `relative` wins, the button drops
+              into flow below the input, and every `top-1/2` icon then centers
+              on the taller box. A positioned wrapper keeps the button in its
+              own coordinate space. */}
+          <span className="absolute top-1/2 right-1.5 -translate-y-1/2">
+            <IconButton
+              icon={visible ? "eye-off" : "eye"}
+              label={visible ? "Hide password" : "Show password"}
+              size="sm"
+              onClick={() => setVisible((v) => !v)}
+            />
+          </span>
         </div>
       )}
     </Field>
