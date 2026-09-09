@@ -396,10 +396,13 @@ stays parked; consistent with the locked drop-Resend decision. No custom SMTP fo
 (HSTS + nosniff do exist). **INFO:** a deep path like `/foo` → 404 is harmless — the app has no client-side
 router; the only external entry points are the origin root and reset `redirectTo: window.location.origin`.
 
-**⏳ Pending USER actions (cannot be done from here):**
-1. **Supabase → Authentication → URL Configuration** — allowlist the prod origin (**Site URL** +
-   **Redirect URLs** `https://uumlcnexus.onrender.com/**`), or password-reset / email links break.
-2. **Interactive click-through** — log in, check the guest view, do one action per module on the live site.
+**⏳ USER actions:**
+1. ✅ **DONE (2026-09-09, via Management API)** — **Supabase → Authentication → URL Configuration**:
+   Site URL → `https://uumlcnexus.onrender.com`; allow list → `…onrender.com/**`, `…onrender.com`,
+   `http://localhost:3000/**`, `http://localhost:3000`. Root cause was the untouched default localhost
+   Site URL + an empty allow list, so every reset `redirectTo` fell back to `localhost:3000`
+   (dead on a phone). Verified by read-back of the live config.
+2. **⏳ Interactive click-through** (still needs you) — log in, check the guest view, do one action per module on the live site.
 
 *(This docs commit lands on `main` and triggers a Render redeploy, but changes only `PLAN.md` + `README.md` —
 neither is in the built bundle — so the deployed app output stays byte-identical to the QA'd `a5bc922` build.)*
