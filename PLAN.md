@@ -2,7 +2,7 @@
 
 > Living plan. We work top-to-bottom. Update the checkboxes and "Current position"
 > as we go so any session (or model) can resume without re-investigating.
-> Last updated: 2026-09-08
+> Last updated: 2026-09-09
 
 **Legend:** `[ ]` todo · `[~]` in progress · `[x]` done · ⚠️ caveat/gotcha · ❓ open decision
 
@@ -41,8 +41,8 @@ Phases 1–3 done. Phase 3 commits (`301a646`, `70ee2ca` on `claude/relaxed-heyr
 | **4** | **Database / Supabase / RLS audit** | ✅ done (only L-6 dashboard toggle, deferred to user) |
 | 5 | Performance & error handling | ✅ done & pushed to `main` @ `58ad5d6` (5D applied & verified live 2026-09-08) |
 | 6 | Accessibility | ✅ done & pushed to `main` @ `58ad5d6` (scope = Meds + cheap Lows) |
-| 7 | Final visual polish | todo |
-| 8 | Production QA on Render | todo |
+| 7 | Final visual polish | ✅ done & shipped to `main` @ `a5bc922` |
+| 8 | Production QA on Render | ✅ QA pass @ `a5bc922` (2 user checks pending) |
 | 9 | Release / v1.0 | todo |
 
 Phases 3–9 are intentionally light below — we scope each one properly when we reach it,
@@ -349,6 +349,60 @@ high-false-positive items (Tooltip, PointHistory) and L6/L8/L9/L10/L12/L13. Lint
 - **L5** news image `alt=""` (Overview + News cards) — was duplicating the title heading.
 - **L7** password-reveal button no longer `tabIndex={-1}` — keyboard-reachable.
 - **L11** `ErrorBoundary` moves focus to its heading (`tabIndex={-1}`) + `role="alert"` on fallback.
+
+---
+
+## Phase 7 — Final visual polish  ✅ DONE & SHIPPED to `main` @ `a5bc922`
+
+Consistency pass against `DESIGN.md` (single amber accent, solid surfaces + hairlines, dark + light, native
+system fonts — see the `avoid-ai-slop-design` project rule). Scope (user decision "+ visual nits"):
+**C1–C3 cruft removal · D1 DESIGN.md rewrite · V1/V2 landing nits · a password-field alignment bug**.
+Verified green: lint · build 149 modules · 8/8 tests · reveal toggle round-trips. NOT selected: R1 radius-token pass.
+
+- **C1** deleted `src/App.css` (dead Vite boilerplate). **C2** deleted `src/assets/react.svg` + `vite.svg`
+  (unreferenced). **C3** `npm uninstall motion` — the app is CSS-keyframe-only; framer-motion was never imported.
+- **D1** rewrote `DESIGN.md` to document the *shipped* system (tokens as source of truth, single amber accent,
+  solid surfaces, dark + light, WCAG 2.1 AA) instead of the abandoned glass / near-black / 5-accent vision.
+- **V1** removed the badge-above-headline hero tell on the landing page. **V2** module-card titles → `<h2>`.
+- **Bug fix (user-spotted mid-phase):** `IconButton` owns a base `position: relative`; `PasswordInput` stacked
+  `absolute` on the *same* element, so Tailwind's compiled source order let `relative` win — the reveal toggle
+  fell into flow, stretched the field wrapper to 76px, and every `top-1/2` icon then centered ~16–22px too low.
+  Fixed by wrapping the toggle in a positioned `<span>` (measured delta 16/22 → 0). Root cause: `cn()`
+  deliberately does no Tailwind conflict resolution, so a caller appending a *conflicting* position utility slips through.
+
+---
+
+## Phase 8 — Production QA on Render  ✅ QA PASS @ `a5bc922` (2 user checks pending)
+
+Live at **https://uumlcnexus.onrender.com**. QA'd HTTP-level via `curl` + bundle inspection — the in-app
+Browser pane can't attach to external URLs on this install, so the served shell/bundle are verified but the
+live React app wasn't driven from here. All four Phase 8 pillars pass:
+
+- **Real deploy ✓** — prod serves the actual Phase 7 build; CSS `index-BWFTvFN1.css` hash byte-identical to
+  the local build; 200 via Cloudflare.
+- **Env vars at build time ✓** — `VITE_SUPABASE_URL` + the `sb_publishable_…` key (new-format publishable,
+  public-by-design) are both inlined; the "Missing Supabase environment variables" guard was
+  dead-code-eliminated (proof both were truthy at build). *(The legacy anon-JWT prefix is absent only because
+  prod uses the publishable key while local `.env` uses the legacy JWT — same project, both valid public keys, not a defect.)*
+- **Bundle security ✓** — no `sb_secret_<key>` leak (the lone `sb_secret_` is the SDK's key-prefix classifier);
+  response headers include HSTS (`max-age=315360000; includeSubdomains; preload`) + `x-content-type-options: nosniff`.
+- **Smoke ✓** — all referenced assets return 200 with correct content-types.
+
+**SMTP — DECIDED (2026-09-09, user):** ship v1 on Supabase's built-in rate-limited sender; forgot-password
+stays parked; consistent with the locked drop-Resend decision. No custom SMTP for v1.
+
+**LOW / cosmetic (non-blocking):** `site.webmanifest` is served as `binary/octet-stream` (not
+`application/manifest+json`); no `X-Frame-Options` / CSP / `Referrer-Policy` / `Permissions-Policy` headers
+(HSTS + nosniff do exist). **INFO:** a deep path like `/foo` → 404 is harmless — the app has no client-side
+router; the only external entry points are the origin root and reset `redirectTo: window.location.origin`.
+
+**⏳ Pending USER actions (cannot be done from here):**
+1. **Supabase → Authentication → URL Configuration** — allowlist the prod origin (**Site URL** +
+   **Redirect URLs** `https://uumlcnexus.onrender.com/**`), or password-reset / email links break.
+2. **Interactive click-through** — log in, check the guest view, do one action per module on the live site.
+
+*(This docs commit lands on `main` and triggers a Render redeploy, but changes only `PLAN.md` + `README.md` —
+neither is in the built bundle — so the deployed app output stays byte-identical to the QA'd `a5bc922` build.)*
 
 ---
 

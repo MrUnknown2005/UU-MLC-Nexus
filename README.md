@@ -16,15 +16,14 @@ Membership, points, and task-management dashboard for the UU-MLC club committee.
 ## Tech stack
 
 - [React 19](https://react.dev/) + [Vite](https://vitejs.dev/)
-- [Tailwind CSS 4](https://tailwindcss.com/)
+- [Tailwind CSS 4](https://tailwindcss.com/) — token-driven theme, dark + light
 - [Supabase](https://supabase.com/) (Postgres, Auth, Storage)
-- [Motion](https://motion.dev/) for animations
 
 ## Getting started
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20.19+ (or 22.12+) — required by Vite 8; CI builds on Node 20
 - A [Supabase](https://supabase.com/) project
 
 ### Setup
@@ -75,7 +74,7 @@ src/
   constants/      # Role & permission definitions
   hooks/          # Data-fetching / dashboard state hooks
   lib/            # Supabase client, role helpers, file uploads
-  styles/         # Custom theme (glassmorphism)
+  styles/         # Design tokens + theme (single amber accent, dark + light)
 ```
 
 ## Roles & permissions
