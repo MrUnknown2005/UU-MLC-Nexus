@@ -1,4 +1,4 @@
-const EFFECTIVE_DATE = "31 August 2026";
+const EFFECTIVE_DATE = "9 September 2026";
 const CONTACT_EMAIL = "uumlc.nexus@gmail.com";
 
 function Section({ title, children }) {
@@ -234,7 +234,9 @@ export default function PrivacyContent() {
           We use reasonable technical and organizational measures to protect
           member information against unauthorized access, alteration, misuse,
           loss, or disclosure. Nexus uses role-based permissions to restrict
-          administrative functions.
+          administrative functions, and uploaded files such as profile pictures
+          are kept in non-public storage and served through temporary, signed
+          links rather than public URLs.
         </P>
         <P>
           No internet-based system can be guaranteed to be completely secure.
@@ -246,32 +248,27 @@ export default function PrivacyContent() {
 
       <Section title="11. Account deletion and data removal">
         <P>
-          Members may request that their Nexus account and associated personal
-          information be deleted.
+          You can delete your own Nexus account at any time from your profile.
+          For your security, deletion asks you to re-enter your password and to
+          confirm the action in writing; once confirmed it takes effect
+          immediately and cannot be undone.
         </P>
         <List>
           <li>
-            Requests can be made by email or through another reasonable contact
-            channel with the UU MLC Executive Committee.
+            Deleting your account removes your authentication account, your
+            profile information, and your uploaded profile picture from Nexus.
           </li>
           <li>
-            The Executive Committee may first confirm that the member
-            intentionally wants to leave the club and delete the account.
-          </li>
-          <li>
-            Once confirmed, deletion is normally processed within{" "}
-            <strong className="text-ink">1–7 days</strong>, depending on the
-            member&apos;s off-boarding circumstances.
-          </li>
-          <li>
-            After deletion is completed, the member&apos;s authentication
-            account and associated profile information are removed from the
-            active Nexus system.
+            If you would rather not delete the account yourself, you can instead
+            ask the UU MLC Executive Committee to do it, by email or another
+            reasonable contact channel. The Committee may first confirm that you
+            intend to leave the club, and such requests are normally processed
+            within <strong className="text-ink">1–7 days</strong>.
           </li>
           <li>
             UU MLC does not intentionally retain a member&apos;s active Nexus
-            profile after a completed deletion request, except where retention
-            is required by applicable law.
+            profile after a completed deletion, except where retention is
+            required by applicable law.
           </li>
         </List>
       </Section>
