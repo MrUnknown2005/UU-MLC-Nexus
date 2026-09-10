@@ -310,7 +310,9 @@ function Profile({ profile, reloadProfile, onLogAction }) {
           />
 
           <div className="min-w-0 flex-1">
-            <p className="nx-eyebrow">Member Profile</p>
+            <p className="nx-eyebrow">
+              {editMode ? "Editing your profile" : "Member Profile"}
+            </p>
 
             {/* The page's single <h1> is the TopBar title ("Your profile");
                 this hero name is the first section beneath it, so it is an
@@ -360,88 +362,10 @@ function Profile({ profile, reloadProfile, onLogAction }) {
         </div>
       </section>
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          label="Current Points"
-          value={formatNumber(profile.points ?? 0)}
-          hint="Current club points"
-          icon="trophy"
-          tone="brand"
-        />
-
-        <StatCard
-          label="Current Rank"
-          value={profileStats.rank ? ordinal(profileStats.rank) : "—"}
-          hint={`Of ${formatNumber(profileStats.totalMembers)} active members`}
-          icon="medal"
-          tone="info"
-          loading={statsLoading}
-        />
-
-        <StatCard
-          label="Point Entries"
-          value={formatNumber(profileStats.pointEntries)}
-          hint="Recorded point changes"
-          icon="history"
-          tone="violet"
-          loading={statsLoading}
-        />
-
-        <StatCard
-          label="Club Tasks Done"
-          value={formatNumber(profileStats.completedClubTasks)}
-          hint="Completed across the club"
-          icon="check-circle"
-          tone="success"
-          loading={statsLoading}
-        />
-      </section>
-
-      <Panel
-        eyebrow="Membership"
-        title="Account"
-        icon="user-check"
-        bodyClassName="grid gap-3 sm:grid-cols-2"
-      >
-        <div className="nx-well p-4">
-          <p className="nx-eyebrow">Joined</p>
-          <p className="mt-1.5 font-semibold">{joinDate}</p>
-        </div>
-
-        <div className="nx-well p-4">
-          <p className="nx-eyebrow">Status</p>
-          <p className="mt-1.5 inline-flex items-center gap-1.5 font-semibold text-success">
-            <Icon name="check-circle" size={15} />
-            Active
-          </p>
-        </div>
-      </Panel>
-
-      <PasswordPanel onLogAction={onLogAction} profileId={profile.id} />
-
-      {!editMode ? (
-        <Panel eyebrow="About" title="Bio" icon="book-open">
-          <div className="grid gap-5 md:grid-cols-[1fr_16rem]">
-            <p
-              className={
-                profile.bio
-                  ? "text-sm leading-relaxed whitespace-pre-wrap text-ink-muted"
-                  : "text-sm leading-relaxed text-ink-subtle italic"
-              }
-            >
-              {profile.bio ||
-                "Add a short introduction about yourself, your interests, or what you work on in the club."}
-            </p>
-
-            <div className="nx-well p-4">
-              <p className="nx-eyebrow">Profile picture</p>
-              <p className="mt-2 text-[0.8125rem] leading-relaxed text-ink-muted">
-                Click Edit Profile to upload a new picture.
-              </p>
-            </div>
-          </div>
-        </Panel>
-      ) : (
+      {/* In edit mode the form you came for leads, directly under your name —
+          the read-only Stats and Account panels below step aside so the
+          editable fields aren't buried under things you can't change. */}
+      {editMode && (
         <Panel eyebrow="Edit Profile" title="Your Information" icon="pencil">
           <form onSubmit={saveProfile} className="space-y-5">
             <div className="grid gap-4 md:grid-cols-2">
@@ -532,6 +456,93 @@ function Profile({ profile, reloadProfile, onLogAction }) {
               </Button>
             </div>
           </form>
+        </Panel>
+      )}
+
+      {!editMode && (
+        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard
+            label="Current Points"
+            value={formatNumber(profile.points ?? 0)}
+            hint="Current club points"
+            icon="trophy"
+            tone="brand"
+          />
+
+          <StatCard
+            label="Current Rank"
+            value={profileStats.rank ? ordinal(profileStats.rank) : "—"}
+            hint={`Of ${formatNumber(profileStats.totalMembers)} active members`}
+            icon="medal"
+            tone="info"
+            loading={statsLoading}
+          />
+
+          <StatCard
+            label="Point Entries"
+            value={formatNumber(profileStats.pointEntries)}
+            hint="Recorded point changes"
+            icon="history"
+            tone="violet"
+            loading={statsLoading}
+          />
+
+          <StatCard
+            label="Club Tasks Done"
+            value={formatNumber(profileStats.completedClubTasks)}
+            hint="Completed across the club"
+            icon="check-circle"
+            tone="success"
+            loading={statsLoading}
+          />
+        </section>
+      )}
+
+      {!editMode && (
+        <Panel
+          eyebrow="Membership"
+          title="Account"
+          icon="user-check"
+          bodyClassName="grid gap-3 sm:grid-cols-2"
+        >
+          <div className="nx-well p-4">
+            <p className="nx-eyebrow">Joined</p>
+            <p className="mt-1.5 font-semibold">{joinDate}</p>
+          </div>
+
+          <div className="nx-well p-4">
+            <p className="nx-eyebrow">Status</p>
+            <p className="mt-1.5 inline-flex items-center gap-1.5 font-semibold text-success">
+              <Icon name="check-circle" size={15} />
+              Active
+            </p>
+          </div>
+        </Panel>
+      )}
+
+      <PasswordPanel onLogAction={onLogAction} profileId={profile.id} />
+
+      {!editMode && (
+        <Panel eyebrow="About" title="Bio" icon="book-open">
+          <div className="grid gap-5 md:grid-cols-[1fr_16rem]">
+            <p
+              className={
+                profile.bio
+                  ? "text-sm leading-relaxed whitespace-pre-wrap text-ink-muted"
+                  : "text-sm leading-relaxed text-ink-subtle italic"
+              }
+            >
+              {profile.bio ||
+                "Add a short introduction about yourself, your interests, or what you work on in the club."}
+            </p>
+
+            <div className="nx-well p-4">
+              <p className="nx-eyebrow">Profile picture</p>
+              <p className="mt-2 text-[0.8125rem] leading-relaxed text-ink-muted">
+                Click Edit Profile to upload a new picture.
+              </p>
+            </div>
+          </div>
         </Panel>
       )}
 
