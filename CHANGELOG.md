@@ -5,6 +5,18 @@ All notable changes to UU-MLC Nexus are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] — 2026-09-11
+
+### Fixed
+
+- **Club-wide notification clear** — the head-admin "Clear notifications for
+  everyone" action failed with a database error ("DELETE requires a WHERE
+  clause") and cleared nothing. The `delete_all_notifications` RPC now runs a
+  qualified delete, so the club-wide wipe completes as intended. The per-member
+  "Clear all" was never affected.
+- Removed a duplicate failure toast when clearing notifications errored; a
+  single toast now carries the server's actual reason.
+
 ## [1.0.0] — 2026-09-09
 
 First public release: the internal workspace of the Uttara University Machine
@@ -61,4 +73,5 @@ Storage).
   a private bucket.
 - HSTS and `X-Content-Type-Options: nosniff` served in production.
 
+[1.0.1]: https://github.com/MrUnknown2005/UU-MLC-Nexus/releases/tag/v1.0.1
 [1.0.0]: https://github.com/MrUnknown2005/UU-MLC-Nexus/releases/tag/v1.0.0
