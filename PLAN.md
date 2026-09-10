@@ -2,7 +2,7 @@
 
 > Living plan. We work top-to-bottom. Update the checkboxes and "Current position"
 > as we go so any session (or model) can resume without re-investigating.
-> Last updated: 2026-09-09
+> Last updated: 2026-09-11
 
 **Legend:** `[ ]` todo · `[~]` in progress · `[x]` done · ⚠️ caveat/gotcha · ❓ open decision
 
@@ -42,8 +42,8 @@ Phases 1–3 done. Phase 3 commits (`301a646`, `70ee2ca` on `claude/relaxed-heyr
 | 5 | Performance & error handling | ✅ done & pushed to `main` @ `58ad5d6` (5D applied & verified live 2026-09-08) |
 | 6 | Accessibility | ✅ done & pushed to `main` @ `58ad5d6` (scope = Meds + cheap Lows) |
 | 7 | Final visual polish | ✅ done & shipped to `main` @ `a5bc922` |
-| 8 | Production QA on Render | ✅ QA pass @ `a5bc922` (2 user checks pending) |
-| 9 | Release / v1.0 | todo |
+| 8 | Production QA on Render | ✅ QA pass @ `a5bc922` (1 user check pending: interactive click-through) |
+| 9 | Release / v1.0 | ✅ released — `v1.0.0` @ `a1211a0`, patched to `v1.0.1` @ `08d77a6` (notification-wipe fix); `origin/main` @ `08d77a6` |
 
 Phases 3–9 are intentionally light below — we scope each one properly when we reach it,
 the way we scoped Phase 2. Ordering is deliberate: finish functionality → audit the data
