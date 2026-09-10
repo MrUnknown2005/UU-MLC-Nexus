@@ -10,6 +10,7 @@ import { SideNav, SideNavList } from "./SideNav.jsx";
 import { documentTitleFor, visibleNavItems } from "./navigation.js";
 import PageSkeleton from "./PageSkeleton.jsx";
 import { SkeletonRegion } from "../ui/Skeleton.jsx";
+import { ErrorBoundary } from "../ui/ErrorBoundary.jsx";
 import Overview from "../pages/Overview";
 import Profile from "../pages/Profile";
 import Directory from "../pages/Directory";
@@ -251,6 +252,11 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
           {/* Keyed so switching tabs replays the entrance animation and resets
               any per-page state instead of leaking it across sections. */}
           <div key={activeTab} className="nx-rise">
+            {/* Page-scoped so a render crash in one tab shows a contained
+                fallback while the rail and TopBar stay usable; the keyed parent
+                remounts this on tab switch, so navigating away clears a caught
+                error too. */}
+            <ErrorBoundary inline>
             <SkeletonRegion
               loading={showSkeleton}
               label="Loading dashboard"
@@ -350,6 +356,7 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
                 />
               )}
             </SkeletonRegion>
+            </ErrorBoundary>
           </div>
 
           <footer className="nx-safe-bottom nx-eyebrow mt-8 flex justify-center border-t border-line pt-5 sm:justify-end">

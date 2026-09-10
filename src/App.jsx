@@ -40,47 +40,58 @@ export default function App() {
     const token = loadToken.current + 1;
     loadToken.current = token;
 
-    const {
-      data: { session: currentSession },
-    } = await getCurrentSession();
+    try {
+      const {
+        data: { session: currentSession },
+      } = await getCurrentSession();
 
-    if (loadToken.current !== token) return;
+      if (loadToken.current !== token) return;
 
-    if (!currentSession) {
-      setSession(null);
-      setProfile(null);
+      if (!currentSession) {
+        setSession(null);
+        setProfile(null);
+        setStatus("ready");
+        return;
+      }
+
+      setSession(currentSession);
+
+      const { data, error } = await getCurrentProfile(currentSession.user.id);
+
+      if (loadToken.current !== token) return;
+
+      if (error) {
+        console.error("Profile load error:", error);
+        setProfile(null);
+        setLoadError(error.message ?? "");
+        setStatus(error.code === "PGRST116" ? "ready" : "error");
+        return;
+      }
+
+      if (data.is_active === false) {
+        // Deactivated members are signed out immediately rather than shown a
+        // half-working dashboard. The old build used alert() for this, which
+        // could be dismissed before it was read.
+        await signOut();
+
+        setSession(null);
+        setProfile(null);
+        setStatus("deactivated");
+        return;
+      }
+
+      setProfile(data);
       setStatus("ready");
-      return;
+    } catch (err) {
+      // A thrown session or profile read — a network-layer failure or an
+      // unexpected response shape — must never leave the app stuck on the boot
+      // screen forever. Fall through to the recoverable error state, which
+      // offers Try again and Sign out.
+      if (loadToken.current !== token) return;
+      console.error("Session load error:", err);
+      setLoadError(err?.message ?? "");
+      setStatus("error");
     }
-
-    setSession(currentSession);
-
-    const { data, error } = await getCurrentProfile(currentSession.user.id);
-
-    if (loadToken.current !== token) return;
-
-    if (error) {
-      console.error("Profile load error:", error);
-      setProfile(null);
-      setLoadError(error.message ?? "");
-      setStatus(error.code === "PGRST116" ? "ready" : "error");
-      return;
-    }
-
-    if (data.is_active === false) {
-      // Deactivated members are signed out immediately rather than shown a
-      // half-working dashboard. The old build used alert() for this, which
-      // could be dismissed before it was read.
-      await signOut();
-
-      setSession(null);
-      setProfile(null);
-      setStatus("deactivated");
-      return;
-    }
-
-    setProfile(data);
-    setStatus("ready");
   }, []);
 
   useEffect(() => {
@@ -117,14 +128,23 @@ export default function App() {
   }, [loadSession]);
 
   const logout = useCallback(async () => {
-    await signOut();
-
+    // Invalidate any in-flight load first, then clear local state no matter
+    // what: the user asked to leave, so a rejected signOut() (a network blip)
+    // must not strand them on a logged-in screen. The local session is dropped
+    // either way; a failed server sign-out self-heals on the next token refresh.
     loadToken.current += 1;
-    setSession(null);
-    setProfile(null);
-    setRecovering(false);
-    setStatus("ready");
-    setView("landing");
+
+    try {
+      await signOut();
+    } catch (err) {
+      console.error("Sign-out error:", err);
+    } finally {
+      setSession(null);
+      setProfile(null);
+      setRecovering(false);
+      setStatus("ready");
+      setView("landing");
+    }
   }, []);
 
   if (status === "loading") {
