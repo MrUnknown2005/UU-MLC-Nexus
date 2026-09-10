@@ -50,7 +50,13 @@ export function ConfirmProvider({ children }) {
 
   const isDanger = request?.tone === "danger";
   const gate = request?.requireText;
-  const gateSatisfied = !gate || typed.trim() === gate;
+  // Case- and whitespace-insensitive: the phrase is a deliberate speed bump,
+  // not a spelling test. An exact-case match silently disabled the confirm
+  // button for anyone on a physical keyboard who didn't type it in screaming
+  // caps (autoCapitalize only nudges the on-screen keyboard, and not at all on
+  // desktop) — the action looked completely dead.
+  const gateSatisfied =
+    !gate || typed.trim().toLowerCase() === gate.trim().toLowerCase();
 
   return (
     <ConfirmContext.Provider value={confirm}>

@@ -2,10 +2,15 @@ import { useEffect, useId, useRef } from "react";
 import { cn } from "../../lib/cn.js";
 import { useOnClickOutside } from "../../hooks/useOnClickOutside.js";
 
-const ALIGN = {
-  start: "left-0",
-  end: "right-0",
-  center: "left-1/2 -translate-x-1/2",
+// Horizontal anchor, applied only at sm+ where the panel is absolutely
+// positioned against its trigger. On mobile the panel is a fixed sheet pinned
+// to the viewport gutters instead (see the panel classes below), so these
+// don't apply there. Each alignment sets exactly one of left/right and forces
+// the other to auto, so nothing collides with the mobile `inset-x-3`.
+const ALIGN_SM = {
+  start: "sm:left-0 sm:right-auto",
+  end: "sm:right-0 sm:left-auto",
+  center: "sm:left-1/2 sm:right-auto sm:-translate-x-1/2",
 };
 
 const FOCUSABLE =
@@ -89,12 +94,22 @@ export function Popover({
           id={panelId}
           role="dialog"
           aria-label={label}
-          style={{ width, maxWidth: "calc(100vw - 1.5rem)" }}
+          style={{ "--pop-w": width }}
           className={cn(
-            "nx-rise absolute top-[calc(100%+0.5rem)] z-40",
-            "overflow-hidden rounded-panel border border-line-strong",
+            "nx-rise z-40 overflow-hidden rounded-panel border border-line-strong",
             "bg-surface shadow-pop",
-            ALIGN[align],
+            // Mobile: a fixed sheet pinned to the viewport gutters, just below
+            // the top bar. Both Popovers live in that bar, whose backdrop-blur
+            // makes it the containing block for a fixed child, so left/right
+            // resolve to viewport gutters and `top` clears the bar (plus the
+            // notch safe-area). This is what stops a wide panel anchored to an
+            // inset trigger — the bell, which is not the rightmost control —
+            // from spilling off the LEFT edge of a phone.
+            "fixed inset-x-3 w-auto top-[calc(env(safe-area-inset-top,0px)+var(--topbar-h)+0.5rem)]",
+            // sm+: revert to a panel anchored against the trigger at the
+            // requested width, clamped so it never exceeds the viewport.
+            "sm:absolute sm:top-[calc(100%+0.5rem)] sm:w-[var(--pop-w)] sm:max-w-[calc(100vw-1.5rem)]",
+            ALIGN_SM[align],
             className
           )}
         >
