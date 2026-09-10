@@ -57,8 +57,9 @@ export default function NotificationBell({
     if (!ok) return;
 
     const success = await onClearOwn();
+    // The hook (useNotifications) owns the failure toast — it carries the
+    // server's actual reason. A second generic toast here just doubles up.
     if (success) toast.success("Your notifications were cleared");
-    else toast.error("Could not clear your notifications");
   };
 
   const clearAll = async () => {
@@ -79,8 +80,8 @@ export default function NotificationBell({
     if (!ok) return;
 
     const success = await onClearAll();
+    // The hook owns the failure toast (with the server's reason); don't double.
     if (success) toast.success("All notifications were cleared");
-    else toast.error("Could not clear notifications");
   };
 
   return (

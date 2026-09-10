@@ -715,7 +715,12 @@ begin
       using errcode = '42501';
   end if;
 
-  delete from public.notifications;
+  -- The predicate is always true (id is the NOT NULL primary key), so this
+  -- still clears every row — but an explicit WHERE is required: the database
+  -- runs with the safe-update guard that rejects an unqualified DELETE
+  -- ("DELETE requires a WHERE clause"), which silently broke the club-wide
+  -- wipe while delete_own_notifications (WHERE user_id = auth.uid()) worked.
+  delete from public.notifications where id is not null;
 end;
 $function$;
 
