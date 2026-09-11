@@ -94,6 +94,36 @@ export default function App() {
     }
   }, []);
 
+  // Re-checks the signed-in profile without touching the boot/loading state, so
+  // a deactivation or role change made by an admin takes hold within the open
+  // session instead of lingering until the next manual reload. Fail-safe by
+  // design: a transient read error leaves the working session exactly as it is;
+  // only a definitive is_active=false signs the user out.
+  const revalidate = useCallback(async (currentSession) => {
+    const token = loadToken.current;
+
+    const { data, error } = await getCurrentProfile(currentSession.user.id);
+
+    // A newer load (a fresh login or an explicit logout) bumped the token while
+    // this was in flight — let that one win rather than clobber it.
+    if (loadToken.current !== token) return;
+
+    if (error) {
+      console.error("Profile revalidation error:", error);
+      return;
+    }
+
+    if (data.is_active === false) {
+      await signOut();
+      setSession(null);
+      setProfile(null);
+      setStatus("deactivated");
+      return;
+    }
+
+    setProfile(data);
+  }, []);
+
   useEffect(() => {
     const {
       data: { subscription },
@@ -117,6 +147,12 @@ export default function App() {
       }
 
       setSession(currentSession);
+
+      if (event === "TOKEN_REFRESHED") {
+        // The token just rotated (≈hourly, and on tab refocus) — a natural,
+        // cheap checkpoint to re-validate access without a visible reload.
+        revalidate(currentSession);
+      }
     });
 
     // Subscribed first, then the initial read — an auth event that arrives
@@ -125,7 +161,7 @@ export default function App() {
     Promise.resolve().then(loadSession);
 
     return () => subscription.unsubscribe();
-  }, [loadSession]);
+  }, [loadSession, revalidate]);
 
   const logout = useCallback(async () => {
     // Invalidate any in-flight load first, then clear local state no matter
