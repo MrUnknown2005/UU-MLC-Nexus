@@ -26,8 +26,11 @@ work is a short list of drift/hardening items, not a broken security model. See 
 **Still-open Phase 2 live-checks** (not code; don't lose them): forgot-password E2E ⏸️ PARKED (no email
 delivery); two-client member-join verification (two browser sessions, no email).
 
-Phases 1–3 done. Phase 3 commits (`301a646`, `70ee2ca` on `claude/relaxed-heyrovsky-7f05f1`) remain
-**unpushed/unmerged** — still awaiting user go-ahead.
+Phases 1–3 done. Phase 3's original commits (`301a646`, `70ee2ca` on `claude/relaxed-heyrovsky-7f05f1`)
+were never merged, but the app-layer **resilience hardening they contained is now on `main`** — re-ported
+in `2c96e5c` (boot try/catch, logout `finally`-clear, inline + page-scoped `ErrorBoundary`) plus the
+Phase 3→4 "instant deactivation" handoff implemented in `849fe26` (re-validate on `TOKEN_REFRESHED`),
+both shipped in **`v1.0.2`** (`b2b5b45`).
 
 ---
 
@@ -43,7 +46,7 @@ Phases 1–3 done. Phase 3 commits (`301a646`, `70ee2ca` on `claude/relaxed-heyr
 | 6 | Accessibility | ✅ done & pushed to `main` @ `58ad5d6` (scope = Meds + cheap Lows) |
 | 7 | Final visual polish | ✅ done & shipped to `main` @ `a5bc922` |
 | 8 | Production QA on Render | ✅ QA pass @ `a5bc922` (1 user check pending: interactive click-through) |
-| 9 | Release / v1.0 | ✅ released — `v1.0.0` @ `a1211a0`, patched to `v1.0.1` @ `08d77a6` (notification-wipe fix); `origin/main` @ `08d77a6` |
+| 9 | Release / v1.0 | ✅ released — `v1.0.0` @ `a1211a0` → `v1.0.1` @ `08d77a6` (notif-wipe fix) → `v1.0.2` @ `b2b5b45` (resilience hardening); `origin/main` @ `b2b5b45` |
 
 Phases 3–9 are intentionally light below — we scope each one properly when we reach it,
 the way we scoped Phase 2. Ordering is deliberate: finish functionality → audit the data
