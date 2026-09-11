@@ -5,6 +5,24 @@ All notable changes to UU-MLC Nexus are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] — 2026-09-11
+
+### Fixed
+
+- **Stuck loading screen** — a network or server error while loading your
+  session could leave the app on the boot screen indefinitely. It now falls
+  through to a recoverable screen with "Try again" and "Sign out".
+- **Sign-out reliability** — a failed sign-out request no longer strands you on
+  a logged-in screen; local session state is always cleared, and a failed
+  server sign-out self-heals on the next token refresh.
+- **Contained page crashes** — an unexpected error inside a single dashboard
+  tab now shows a self-contained recovery panel while the navigation and top
+  bar stay usable, instead of blanking the whole app.
+- **Immediate deactivation** — when an administrator deactivates an account or
+  changes a role, the change now takes effect within the open session (on the
+  next token refresh — roughly hourly, and on tab refocus) instead of lingering
+  until a manual reload.
+
 ## [1.0.1] — 2026-09-11
 
 ### Fixed
@@ -73,5 +91,6 @@ Storage).
   a private bucket.
 - HSTS and `X-Content-Type-Options: nosniff` served in production.
 
+[1.0.2]: https://github.com/MrUnknown2005/UU-MLC-Nexus/releases/tag/v1.0.2
 [1.0.1]: https://github.com/MrUnknown2005/UU-MLC-Nexus/releases/tag/v1.0.1
 [1.0.0]: https://github.com/MrUnknown2005/UU-MLC-Nexus/releases/tag/v1.0.0
