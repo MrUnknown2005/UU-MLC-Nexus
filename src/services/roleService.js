@@ -39,25 +39,55 @@ export async function updateRole({ roleKey, name, description }) {
 }
 
 export async function replaceRolePermissions(roleKey, permissionKeys) {
-  const { error: deleteError } = await supabase
+  // Apply a minimal delta, adding before removing, so a mid-operation failure
+  // leaves the role with a SUPERSET of its permissions — never zero. A bare
+  // delete-then-insert could strand a role with no permissions if the insert
+  // failed after the delete committed (there is no client-side transaction),
+  // locking members — or admins — out of features. True atomicity would need a
+  // transactional RPC; add-then-remove makes the non-atomic path fail safe.
+  const { data: existingRows, error: loadError } = await supabase
     .from("role_permissions")
-    .delete()
+    .select("permission_key")
     .eq("role_key", roleKey);
 
-  if (deleteError) {
-    return { error: deleteError };
+  if (loadError) {
+    return { error: loadError };
   }
 
-  if (!permissionKeys.length) {
-    return { error: null };
+  const current = new Set((existingRows ?? []).map((row) => row.permission_key));
+  const desired = new Set(permissionKeys);
+  const toAdd = [...desired].filter((key) => !current.has(key));
+  const toRemove = [...current].filter((key) => !desired.has(key));
+
+  // Add first: if this fails, nothing has been removed and the role is unchanged.
+  if (toAdd.length) {
+    const { error: insertError } = await supabase.from("role_permissions").insert(
+      toAdd.map((permissionKey) => ({
+        role_key: roleKey,
+        permission_key: permissionKey,
+      })),
+    );
+
+    if (insertError) {
+      return { error: insertError };
+    }
   }
 
-  return supabase.from("role_permissions").insert(
-    permissionKeys.map((permissionKey) => ({
-      role_key: roleKey,
-      permission_key: permissionKey,
-    })),
-  );
+  // Remove second: if this fails, the role keeps a superset (old ∪ new), still
+  // never zero, and the caller surfaces the error so the admin can retry.
+  if (toRemove.length) {
+    const { error: deleteError } = await supabase
+      .from("role_permissions")
+      .delete()
+      .eq("role_key", roleKey)
+      .in("permission_key", toRemove);
+
+    if (deleteError) {
+      return { error: deleteError };
+    }
+  }
+
+  return { error: null };
 }
 
 export async function countMembersWithRole(roleKey) {
