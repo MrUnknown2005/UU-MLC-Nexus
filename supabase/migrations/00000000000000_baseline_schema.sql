@@ -1170,11 +1170,17 @@ create policy "Admins can remove achievements" on public.profile_achievements
       and profiles.role = any (array['administrator'::text, 'head_admin'::text])));
 
 -- profiles -------------------------------------------------------------------
+-- The own-row SELECT branch is intentionally UNCONDITIONAL (no is_active check):
+-- a deactivated user must still be able to read their OWN row so the client can
+-- detect is_active=false and sign them out (see migration
+-- 20260913000000_harden_deactivation_enforcement.sql, M-1). Branches 2/3 remain
+-- is_active/admin-gated, so this leaks no other user's row; the UPDATE policy
+-- below still blocks a deactivated user from writing.
 drop policy if exists "Controlled profile visibility" on public.profiles;
 create policy "Controlled profile visibility" on public.profiles
   as permissive for select to authenticated
   using (
-    (((select auth.uid()) = id) and (is_active = true))
+    ((select auth.uid()) = id)
     or ((current_user_role() <> 'guest'::text) and (role <> 'guest'::text) and (is_active = true))
     or (current_user_role() = any (array['administrator'::text, 'head_admin'::text]))
   );

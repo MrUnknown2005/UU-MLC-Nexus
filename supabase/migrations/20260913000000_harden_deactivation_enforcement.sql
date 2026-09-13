@@ -11,6 +11,19 @@
 -- H-2: the head-admin wipe RPCs gated on current_user_role() <> 'head_admin'
 --      (a NEGATIVE string comparison) instead of the is_active-aware
 --      is_head_admin().
+-- M-1: the profiles SELECT policy's own-row branch required is_active = true.
+--      Once H-1 makes current_user_role() return 'guest' for a deactivated user,
+--      NO ONE — member or admin — can read their own profile row, so the client
+--      (App.jsx getCurrentProfile -> .single()) gets a PGRST116 "no rows" error
+--      instead of a row with is_active=false. The "you've been deactivated"
+--      sign-out therefore never fires (revalidate() swallows the error; a full
+--      reload shows the misleading "No profile yet" screen). Fixed below by
+--      making the own-row branch UNCONDITIONAL: a user may always read their OWN
+--      row (and only their own — the other branches are unchanged), which is
+--      exactly what the client needs to detect deactivation and sign out. This
+--      opens no cross-user read, and writes stay blocked (the UPDATE policy's
+--      own-row branch is still is_active-gated). H-1 and M-1 must be applied
+--      together — H-1 alone regresses deactivation-detection for admins.
 --
 -- Fix strategy for H-1: return a DOWNGRADED 'guest' sentinel (never NULL) for a
 -- deactivated or missing profile. Every caller is then fail-SAFE:
@@ -109,3 +122,18 @@ begin
   delete from public.admin_activity_log where true;
 end;
 $function$;
+
+-- M-1: make the profiles SELECT own-row branch unconditional so a deactivated
+-- user can still read their OWN row (and only their own) and the client can
+-- detect is_active=false. Branches 2 and 3 are unchanged, so no deactivated user
+-- can read anyone else's row; the UPDATE policy is untouched, so they still
+-- cannot write. Active users are unaffected (the dropped `is_active = true` was
+-- always true for them on the own-row branch).
+drop policy if exists "Controlled profile visibility" on public.profiles;
+create policy "Controlled profile visibility" on public.profiles
+  as permissive for select to authenticated
+  using (
+    ((select auth.uid()) = id)
+    or ((current_user_role() <> 'guest'::text) and (role <> 'guest'::text) and (is_active = true))
+    or (current_user_role() = any (array['administrator'::text, 'head_admin'::text]))
+  );
