@@ -570,4 +570,56 @@
   .nx-toast-in {
     animation: nx-toast-in var(--t-base) var(--ease) both;
   }
+
+  /* Amber "sheen" that sweeps the one focal word in the hero exactly once on
+     entrance, then settles to solid brand text. A single-accent nod to the
+     livelier club sites, without the infinite shimmer loop those tend to run.
+     The underline is drawn by ::after so it survives the text being clipped to
+     a gradient. Gated to `no-preference`: under reduced motion the word is just
+     brand-coloured with its underline — never a mid-animation transparent
+     flash. */
+  @keyframes nx-sheen {
+    from {
+      background-position: 120% 0;
+    }
+    to {
+      background-position: -20% 0;
+    }
+  }
+
+  .nx-mark-sheen {
+    position: relative;
+    color: var(--brand-text);
+    white-space: nowrap;
+  }
+
+  .nx-mark-sheen::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0.02em;
+    height: 0.16em;
+    border-radius: 2px;
+    background-color: var(--brand-line);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .nx-mark-sheen {
+      background-image: linear-gradient(
+        100deg,
+        var(--brand-text) 0%,
+        var(--brand-text) 42%,
+        #ffe6ad 50%,
+        var(--brand-text) 58%,
+        var(--brand-text) 100%
+      );
+      background-size: 220% 100%;
+      background-position: 120% 0;
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      animation: nx-sheen 1.15s var(--ease) 0.25s both;
+    }
+  }
 }

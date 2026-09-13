@@ -2,6 +2,7 @@ import { Brand, BrandMark } from "../common/Brand.jsx";
 import { Button } from "../ui/Button.jsx";
 import { Icon } from "../ui/Icon.jsx";
 import { ThemeToggle } from "../common/ThemeToggle.jsx";
+import { ConstellationField } from "./ConstellationField.jsx";
 import { usePrivacyPolicy } from "../legal/privacy-context.js";
 
 /**
@@ -67,19 +68,27 @@ function LandingPage({ onLogin, onJoin }) {
           <section className="min-w-0">
             {/* The hero leads — no status badge above it. "Badge-above-headline"
                 is a stock template tell, and this page's whole point is that the
-                headline and the two buttons carry it. */}
-            <h1 className="nx-hero-type">
+                headline and the two buttons carry it. The entrance is a single
+                staggered settle (nx-rise), not a loop — it reads as "in motion"
+                once, then gets out of the way. */}
+            <h1 className="nx-hero-type nx-rise">
               The club,
               <br />
-              <span className="nx-mark">in motion.</span>
+              <span className="nx-mark-sheen">in motion.</span>
             </h1>
 
-            <p className="mt-7 max-w-xl text-base leading-relaxed text-ink-muted sm:text-lg">
+            <p
+              className="nx-rise mt-7 max-w-xl text-base leading-relaxed text-ink-muted sm:text-lg"
+              style={{ animationDelay: "70ms" }}
+            >
               Nexus is the operating layer for UU MLC — a focused place where
               people, contribution, work and momentum meet.
             </p>
 
-            <div className="mt-9 flex flex-wrap gap-2.5">
+            <div
+              className="nx-rise mt-9 flex flex-wrap gap-2.5"
+              style={{ animationDelay: "140ms" }}
+            >
               <Button
                 variant="primary"
                 size="lg"
@@ -96,8 +105,12 @@ function LandingPage({ onLogin, onJoin }) {
             {/* Cards rather than a hairline grid of divs: the module list is
                 content, and it has to survive a theme switch. */}
             <ul className="mt-14 grid max-w-2xl gap-3 sm:grid-cols-3">
-              {MODULES.map((item) => (
-                <li key={item.code} className="nx-card nx-lift p-4">
+              {MODULES.map((item, index) => (
+                <li
+                  key={item.code}
+                  className="nx-card nx-lift nx-rise p-4"
+                  style={{ animationDelay: `${210 + index * 70}ms` }}
+                >
                   <div className="flex items-center justify-between">
                     <span className="nx-eyebrow nx-num">{item.code}</span>
                     <Icon
@@ -117,18 +130,21 @@ function LandingPage({ onLogin, onJoin }) {
           </section>
 
           {/* Decorative, and honestly so: no information lives in here, which is
-              exactly why it is allowed to vanish on a narrow screen. */}
+              exactly why it is allowed to vanish on a narrow screen — and why it
+              is the one place a flourish belongs. */}
           <section
             aria-hidden="true"
             className="relative hidden aspect-square w-full place-items-center lg:grid"
           >
+            {/* Ambient amber constellation, confined to this square and sitting
+                behind the rings and mark. Pauses off-screen, honours
+                reduced-motion, and follows the theme. It replaces three loose
+                accent dots that were the page's only single-accent slip. */}
+            <ConstellationField className="absolute inset-0 h-full w-full" />
+
             <span className="absolute h-full w-full rounded-full border border-line" />
             <span className="absolute h-[74%] w-[74%] rounded-full border border-line-strong" />
             <span className="absolute h-[48%] w-[48%] rounded-full border border-brand-line bg-brand-soft" />
-
-            <span className="absolute top-[13%] h-2 w-2 rounded-full bg-brand" />
-            <span className="absolute right-[13%] bottom-[26%] h-1.5 w-1.5 rounded-full bg-info" />
-            <span className="absolute bottom-[13%] left-[22%] h-1.5 w-1.5 rounded-full bg-violet" />
 
             <div className="relative grid place-items-center">
               <BrandMark size="xl" className="shadow-brand" />
