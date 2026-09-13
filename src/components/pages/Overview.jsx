@@ -5,6 +5,7 @@ import { EmptyState } from "../ui/EmptyState.jsx";
 import { Icon } from "../ui/Icon.jsx";
 import { Panel } from "../ui/Panel.jsx";
 import { StatCard } from "../ui/StatCard.jsx";
+import { CountUp } from "../ui/CountUp.jsx";
 import SafeImage from "../common/SafeImage";
 import { PersonalPointHistory } from "../common/PointHistory";
 import { useNow } from "../../hooks/useNow.js";
@@ -241,13 +242,13 @@ function Overview({
             <div>
               <dt className="nx-eyebrow">Members</dt>
               <dd className="nx-num mt-1 text-2xl font-semibold tabular-nums">
-                {formatNumber(activeCount)}
+                <CountUp value={activeCount} format={formatNumber} />
               </dd>
             </div>
             <div>
               <dt className="nx-eyebrow">Updates</dt>
               <dd className="nx-num mt-1 text-2xl font-semibold tabular-nums">
-                {formatNumber(news.length)}
+                <CountUp value={news.length} format={formatNumber} />
               </dd>
             </div>
           </dl>
@@ -257,8 +258,9 @@ function Overview({
       {/* ---------- Stats ---------- */}
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <StatCard
+          className="nx-rise"
           label="Your points"
-          value={formatNumber(profile.points ?? 0)}
+          value={<CountUp value={profile.points ?? 0} format={formatNumber} />}
           icon="trophy"
           tone="brand"
           delta={
@@ -272,6 +274,7 @@ function Overview({
           hint="This month"
         />
         <StatCard
+          className="nx-rise [animation-delay:60ms]"
           label="Your rank"
           value={currentRank > 0 ? ordinal(currentRank) : "—"}
           icon="trending-up"
@@ -283,15 +286,17 @@ function Overview({
           }
         />
         <StatCard
+          className="nx-rise [animation-delay:120ms]"
           label="Awards received"
-          value={formatNumber(pointHistory.length)}
+          value={<CountUp value={pointHistory.length} format={formatNumber} />}
           icon="sparkles"
           tone="info"
           hint="All time"
         />
         <StatCard
+          className="nx-rise [animation-delay:180ms]"
           label="Club members"
-          value={formatNumber(activeCount)}
+          value={<CountUp value={activeCount} format={formatNumber} />}
           icon="users"
           tone="success"
           hint="Active accounts"

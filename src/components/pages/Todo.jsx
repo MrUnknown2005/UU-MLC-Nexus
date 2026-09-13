@@ -15,6 +15,8 @@ import { SearchInput } from "../ui/SearchInput.jsx";
 import { Select } from "../ui/Select.jsx";
 import { Skeleton } from "../ui/Skeleton.jsx";
 import { StatCard } from "../ui/StatCard.jsx";
+import { CountUp } from "../ui/CountUp.jsx";
+import { Celebration } from "../common/Celebration.jsx";
 import { TextArea } from "../ui/TextArea.jsx";
 import { TextInput } from "../ui/TextInput.jsx";
 import { FileButton } from "../ui/FileButton.jsx";
@@ -711,22 +713,25 @@ function Todo({ profile, isAdmin, onLogAction }) {
       >
         <div className="grid gap-3 sm:grid-cols-3">
           <StatCard
+            className="nx-rise"
             label="Progress"
-            value={`${completionPercent}%`}
+            value={<CountUp value={completionPercent} format={(n) => `${n}%`} />}
             hint="of every club task"
             icon="trending-up"
             tone="brand"
           />
           <StatCard
+            className="nx-rise [animation-delay:60ms]"
             label="Today"
-            value={dueTodayCount}
+            value={<CountUp value={dueTodayCount} />}
             hint="due before tonight"
             icon="clock"
             tone="warn"
           />
           <StatCard
+            className="nx-rise [animation-delay:120ms]"
             label="Overdue"
-            value={overdueCount}
+            value={<CountUp value={overdueCount} />}
             hint="past their deadline"
             icon="alert-triangle"
             tone="danger"
@@ -742,7 +747,7 @@ function Todo({ profile, isAdmin, onLogAction }) {
 
         <p className="text-[0.75rem] text-ink-subtle">
           <span className="nx-num font-semibold text-ink tabular-nums">
-            {completedTodos.length}
+            <CountUp value={completedTodos.length} />
           </span>
           /{todos.length} tasks completed
         </p>
@@ -930,20 +935,12 @@ function Todo({ profile, isAdmin, onLogAction }) {
 
         {filteredActiveTodos.length === 0 ? (
           <Panel pad="lg">
-            <EmptyState
-              icon={filtering ? "search" : "check-circle"}
-              title={
-                filtering
-                  ? "No active tasks match your filters."
-                  : "Nothing left to do."
-              }
-              description={
-                filtering
-                  ? "Try a shorter search, or clear the filters to see every active task."
-                  : "Every club task is finished. New ones will show up here."
-              }
-              action={
-                filtering ? (
+            {filtering ? (
+              <EmptyState
+                icon="search"
+                title="No active tasks match your filters."
+                description="Try a shorter search, or clear the filters to see every active task."
+                action={
                   <Button
                     variant="secondary"
                     icon="close"
@@ -951,9 +948,20 @@ function Todo({ profile, isAdmin, onLogAction }) {
                   >
                     Clear Filters
                   </Button>
-                ) : undefined
-              }
-            />
+                }
+              />
+            ) : todos.length > 0 ? (
+              <Celebration
+                title="All clear."
+                description="Every task on the club list is done. New ones will show up here."
+              />
+            ) : (
+              <EmptyState
+                icon="check-circle"
+                title="No tasks yet."
+                description="When an executive adds a club task, it will show up here."
+              />
+            )}
           </Panel>
         ) : (
           <ul className="space-y-3">
