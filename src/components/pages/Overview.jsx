@@ -50,10 +50,11 @@ function LeaderRow({ member, index, isMe, leaderPoints }) {
   return (
     <li
       className={cn(
-        "relative flex items-center gap-3 px-4 py-3 sm:px-5",
+        "nx-rise relative flex items-center gap-3 px-4 py-3 sm:px-5",
         "border-b border-line last:border-b-0",
         isMe && "bg-brand-soft/40"
       )}
+      style={{ animationDelay: `${index * 70}ms` }}
     >
       {/* Rank marker: a medal for the podium, a plain figure below it. Three
           tiers is enough hierarchy — colouring every row removes the signal. */}
@@ -89,8 +90,11 @@ function LeaderRow({ member, index, isMe, leaderPoints }) {
             leaderboard is for, and it reads without arithmetic. */}
         <span className="mt-1.5 block h-1 overflow-hidden rounded-full bg-surface-3">
           <span
-            className={cn("block h-full rounded-full", style ? style.bar : "bg-line-strong")}
-            style={{ width: `${share}%` }}
+            className={cn(
+              "nx-bar-grow block h-full rounded-full",
+              style ? style.bar : "bg-line-strong"
+            )}
+            style={{ "--bar-w": `${share}%`, animationDelay: `${index * 70 + 130}ms` }}
           />
         </span>
       </div>
@@ -103,9 +107,12 @@ function LeaderRow({ member, index, isMe, leaderPoints }) {
   );
 }
 
-function NewsCard({ item, now }) {
+function NewsCard({ item, now, index = 0 }) {
   return (
-    <article className="nx-card nx-lift overflow-hidden">
+    <article
+      className="nx-card nx-lift nx-rise overflow-hidden"
+      style={{ animationDelay: `${index * 80}ms` }}
+    >
       {item.image_url && (
         <SafeImage
           src={item.image_url}
@@ -142,7 +149,10 @@ function Podium({ place, name, points, tone }) {
   };
 
   return (
-    <div className="nx-well flex items-center gap-4 p-4">
+    <div
+      className="nx-well nx-rise flex items-center gap-4 p-4"
+      style={{ animationDelay: `${(place - 1) * 90}ms` }}
+    >
       <span
         className={cn(
           "grid h-12 w-12 shrink-0 place-items-center rounded-card border",
@@ -187,12 +197,13 @@ function Overview({
     [rankedMembers]
   );
 
-  // Everything a member earned this calendar month, so the headline number has
-  // a trend beside it rather than sitting there without context.
-  const earnedThisMonth = useMemo(() => {
+  // Points move daily and reset at the start of each month, so the meaningful
+  // trend beside the headline is the last seven days — how the week is going.
+  // A month-to-date total would read "0" on the 1st of every month and only
+  // slowly rebuild; a rolling week keeps the signal honest across the reset.
+  const earnedThisWeek = useMemo(() => {
     const start = new Date(now);
-    start.setDate(1);
-    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - 7);
 
     return pointHistory.reduce((total, item) => {
       const stamp = item.created_at ? new Date(item.created_at) : null;
@@ -264,14 +275,14 @@ function Overview({
           icon="trophy"
           tone="brand"
           delta={
-            earnedThisMonth !== 0
+            earnedThisWeek !== 0
               ? {
-                  direction: earnedThisMonth > 0 ? "up" : "down",
-                  label: formatDelta(earnedThisMonth),
+                  direction: earnedThisWeek > 0 ? "up" : "down",
+                  label: formatDelta(earnedThisWeek),
                 }
               : undefined
           }
-          hint="This month"
+          hint="This week"
         />
         <StatCard
           className="nx-rise [animation-delay:60ms]"
@@ -355,8 +366,8 @@ function Overview({
               description="Announcements, event notices and results will appear here."
             />
           ) : (
-            latestNews.map((item) => (
-              <NewsCard key={item.id} item={item} now={now} />
+            latestNews.map((item, index) => (
+              <NewsCard key={item.id} item={item} now={now} index={index} />
             ))
           )}
         </Panel>

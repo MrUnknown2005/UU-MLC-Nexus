@@ -551,8 +551,32 @@
   /* Content entrance for tab switches. Motion-library-free so it
      costs nothing and degrades to a plain paint under
      prefers-reduced-motion. */
+  /* Entrance uses `backwards` (not `both`): it holds the hidden first frame
+     through any stagger delay, then hands the element back to its own styles
+     the moment it finishes — so a card that also lifts on hover (`.nx-lift`)
+     keeps its hover transform instead of being pinned flat by a lingering
+     forwards fill. The `to` frame equals the element's resting state, so the
+     handoff is seamless. */
   .nx-rise {
-    animation: nx-rise var(--t-slow) var(--ease) both;
+    animation: nx-rise var(--t-slow) var(--ease) backwards;
+  }
+
+  /* A standings/progress bar that grows from empty to its real width on
+     entrance. The width lives in the `--bar-w` custom property so the keyframe
+     lands on the true value, the resting style already sits there, and
+     reduced-motion simply starts filled. */
+  .nx-bar-grow {
+    width: var(--bar-w, 0%);
+    animation: nx-bar-grow var(--t-slow) var(--ease) backwards;
+  }
+
+  @keyframes nx-bar-grow {
+    from {
+      width: 0;
+    }
+    to {
+      width: var(--bar-w, 0%);
+    }
   }
 
   .nx-fade {
