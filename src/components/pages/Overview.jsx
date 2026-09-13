@@ -9,6 +9,7 @@ import { CountUp } from "../ui/CountUp.jsx";
 import SafeImage from "../common/SafeImage";
 import { PersonalPointHistory } from "../common/PointHistory";
 import { useNow } from "../../hooks/useNow.js";
+import { useRankFlip } from "../../hooks/useRankFlip.js";
 import { roleLabel, roleTone } from "../../lib/roles.js";
 import { cn } from "../../lib/cn.js";
 import {
@@ -42,13 +43,14 @@ const RANK_STYLES = [
   { icon: "medal", chip: "bg-info-soft text-info", bar: "bg-info" },
 ];
 
-function LeaderRow({ member, index, isMe, leaderPoints }) {
+function LeaderRow({ member, index, isMe, leaderPoints, rowRef }) {
   const style = RANK_STYLES[index];
   const points = Number(member.points ?? 0);
   const share = leaderPoints > 0 ? Math.max(4, (points / leaderPoints) * 100) : 0;
 
   return (
     <li
+      ref={rowRef}
       className={cn(
         "nx-rise relative flex items-center gap-3 px-4 py-3 sm:px-5",
         "border-b border-line last:border-b-0",
@@ -100,7 +102,7 @@ function LeaderRow({ member, index, isMe, leaderPoints }) {
       </div>
 
       <span className="nx-num shrink-0 text-sm font-semibold tabular-nums">
-        {formatNumber(points)}
+        <CountUp value={points} format={formatNumber} animateOnMount={false} />
       </span>
       <span className="sr-only">points, ranked {ordinal(index + 1)}</span>
     </li>
@@ -188,6 +190,14 @@ function Overview({
   const topFive = rankedMembers.slice(0, 5);
   const latestNews = news.slice(0, 3);
   const leaderPoints = Number(rankedMembers[0]?.points ?? 0);
+
+  // Living leaderboard: when points change and the board resorts, rows slide to
+  // their new rank (FLIP) and the changed row flashes amber. The registrar
+  // hands each row a stable ref; the ordered id/points list tells the hook what
+  // moved and what changed.
+  const registerRow = useRankFlip(
+    topFive.map((member) => ({ id: member.id, value: Number(member.points ?? 0) }))
+  );
 
   const activeCount = useMemo(
     () =>
@@ -341,6 +351,7 @@ function Overview({
                   index={index}
                   isMe={member.id === profile.id}
                   leaderPoints={leaderPoints}
+                  rowRef={registerRow(member.id)}
                 />
               ))}
             </ol>

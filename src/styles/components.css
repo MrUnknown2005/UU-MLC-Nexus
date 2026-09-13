@@ -579,6 +579,31 @@
     }
   }
 
+  /* A leaderboard row whose points just changed gets one amber wash, so the
+     eye catches which line moved as the board reorders. Drawn as an inset
+     box-shadow: it fills the row behind the text (inset shadows paint above the
+     background but below content) without swapping the row's own background,
+     and with no fill mode it clears itself the instant it finishes. Re-armed
+     from JS on each change (see useRankFlip); it must sit after `.nx-rise` so
+     its `animation` wins while both classes are on the row. Under reduced
+     motion the global guard in base.css collapses it to nothing. */
+  .nx-flash {
+    animation: nx-flash 0.6s var(--ease);
+  }
+
+  @keyframes nx-flash {
+    0% {
+      box-shadow: inset 0 0 0 999px transparent;
+    }
+    22%,
+    55% {
+      box-shadow: inset 0 0 0 999px var(--brand-soft);
+    }
+    100% {
+      box-shadow: inset 0 0 0 999px transparent;
+    }
+  }
+
   .nx-fade {
     animation: nx-fade var(--t-fast) var(--ease) both;
   }

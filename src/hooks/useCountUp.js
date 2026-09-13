@@ -10,13 +10,20 @@ import { useMediaQuery } from "./useMediaQuery.js";
  *
  * Respects reduced-motion: the display is pinned to the target with no rAF
  * loop, mirroring the CSS animations that jump to their final frame.
+ *
+ * Pass `animateOnMount: false` to start already settled on the first target and
+ * animate only later changes — for a figure that should read as calm on load
+ * and move only when something genuinely changes (e.g. a live leaderboard).
  */
-export function useCountUp(target, { duration = 850 } = {}) {
+export function useCountUp(target, { duration = 850, animateOnMount = true } = {}) {
   const reduceMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
   const safeTarget = Number.isFinite(target) ? target : 0;
 
-  const [display, setDisplay] = useState(reduceMotion ? safeTarget : 0);
-  const valueRef = useRef(reduceMotion ? safeTarget : 0);
+  // Start at the target (no count-up) when motion is off or the caller opted
+  // out of the mount animation; otherwise sweep up from zero.
+  const settleAtStart = reduceMotion || !animateOnMount;
+  const [display, setDisplay] = useState(settleAtStart ? safeTarget : 0);
+  const valueRef = useRef(settleAtStart ? safeTarget : 0);
 
   useEffect(() => {
     if (reduceMotion) {
