@@ -40,6 +40,13 @@ export default function App() {
     const token = loadToken.current + 1;
     loadToken.current = token;
 
+    // Show the boot screen while session → profile resolves. A fresh login sets
+    // the session first, and the brief window before the profile arrives would
+    // otherwise render the "No profile yet" screen — a jarring flash of a scary
+    // message on the happy path. revalidate() deliberately does NOT do this, so
+    // a background token refresh stays invisible. (M-8)
+    setStatus("loading");
+
     try {
       const {
         data: { session: currentSession },

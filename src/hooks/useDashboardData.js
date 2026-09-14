@@ -52,6 +52,15 @@ export function useDashboardData({
     flags.current = { canViewMembers, canViewHistory };
   }, [canViewMembers, canViewHistory]);
 
+  // Guards against async setState landing after unmount, and against a stale
+  // full reload — superseded by a newer one when the role changes, or by a
+  // manual reload — resolving late and clobbering fresher state. `mounted` gates
+  // every applier; `loadSeq` additionally lets only the newest loadData win.
+  // `mounted` is (re)set true in an effect below so it survives a StrictMode
+  // remount. (M-2)
+  const mounted = useRef(true);
+  const loadSeq = useRef(0);
+
   // Surface a load failure once per burst rather than one toast per query.
   const errorToast = useRef(false);
   const reportError = (label, error) => {
@@ -72,6 +81,7 @@ export function useDashboardData({
   // --- Per-group appliers: fetch one group and fold it into state ------------
   const applyMembers = async () => {
     const result = await fetchMembers({ canViewMembers: flags.current.canViewMembers });
+    if (!mounted.current) return;
     if (result.error) return reportError("Members error", result.error);
     setMembers(result.data || []);
   };
@@ -81,6 +91,7 @@ export function useDashboardData({
       profileId: profile.id,
       canViewHistory: flags.current.canViewHistory,
     });
+    if (!mounted.current) return;
     if (myHistoryResult.error) {
       reportError("Personal history error", myHistoryResult.error);
       setPointHistory([]);
@@ -97,6 +108,7 @@ export function useDashboardData({
 
   const applyNews = async () => {
     const result = await fetchNews();
+    if (!mounted.current) return;
     if (result.error) {
       reportError("News error", result.error);
       setNews([]);
@@ -109,6 +121,7 @@ export function useDashboardData({
     const result = await fetchActivityLog({
       canViewHistory: flags.current.canViewHistory,
     });
+    if (!mounted.current) return;
     if (result.error) {
       reportError("Activity log error", result.error);
       setActivityLog([]);
@@ -119,6 +132,7 @@ export function useDashboardData({
 
   // --- Full reload (initial mount + manual callers) --------------------------
   const loadData = async () => {
+    const seq = ++loadSeq.current;
     const {
       memberResult,
       myHistoryResult,
@@ -131,6 +145,11 @@ export function useDashboardData({
       canViewMembers: flags.current.canViewMembers,
       canViewHistory: flags.current.canViewHistory,
     });
+
+    // A newer full reload (a role change or a manual refresh) started while this
+    // was in flight, or the hook unmounted — let the newest win rather than
+    // clobber fresher state with this stale result. (M-2)
+    if (!mounted.current || seq !== loadSeq.current) return;
 
     if (memberResult.error) reportError("Members error", memberResult.error);
     setMembers(memberResult.data || []);
@@ -208,7 +227,9 @@ export function useDashboardData({
   }, [profile.role]);
 
   useEffect(() => {
+    mounted.current = true;
     return () => {
+      mounted.current = false;
       if (timer.current) clearTimeout(timer.current);
     };
   }, []);

@@ -35,19 +35,31 @@ export default function ResetPasswordScreen({ onDone, onCancel }) {
 
     setBusy(true);
 
-    const { error: updateError } = await updatePassword(password);
+    try {
+      const { error: updateError } = await updatePassword(password);
 
-    if (updateError) {
-      setError(updateError.message);
+      if (updateError) {
+        setError(updateError.message);
+        setBusy(false);
+        return;
+      }
+
+      toast.success("Password updated", {
+        description: "You're signed in with your new password.",
+      });
+
+      await onDone();
+      // No setBusy(false) on success: onDone() reloads the session, which
+      // unmounts this screen — the button never gets a chance to spin idle.
+    } catch (err) {
+      // A thrown update (network drop) or a rejected onDone must never leave the
+      // button stuck spinning with no way forward. Surface it and re-enable. (M-6)
+      console.error("Password reset error:", err);
+      setError(
+        err?.message ?? "Something went wrong updating your password. Try again."
+      );
       setBusy(false);
-      return;
     }
-
-    toast.success("Password updated", {
-      description: "You're signed in with your new password.",
-    });
-
-    await onDone();
   };
 
   return (

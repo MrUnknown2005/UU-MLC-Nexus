@@ -55,6 +55,13 @@ const signedUrlCache = new Map();
 // out mid-view on a long-open tab.
 const EXPIRY_BUFFER_S = 60;
 
+// Fire the re-sign this long BEFORE the cached URL is due to expire, so the
+// still-fresh cached URL keeps backing the image across the (sub-second) re-sign
+// round-trip — `cachedUrl()` never has to return null. Floored so a
+// pathologically short expiresIn can't turn re-signing into a hot loop.
+const RESIGN_LEAD_MS = 5000;
+const MIN_RESIGN_DELAY_MS = 30000;
+
 function cachedUrl(cacheKey) {
   if (!cacheKey) return null;
   const hit = signedUrlCache.get(cacheKey);
@@ -78,30 +85,55 @@ export function useSignedImageUrl(value, bucket, expiresIn = 3600) {
   const [signed, setSigned] = useState(null);
 
   useEffect(() => {
-    // Passthrough values and cache hits are handled during render; nothing to do.
-    if (!cacheKey || cachedUrl(cacheKey)) return;
+    if (!cacheKey) return undefined;
 
     // The cache-bust marker (`path?v=…`) is not part of the object key — it only
-    // exists to change `value` and re-run this effect. Strip it before signing;
-    // the fresh token is the real cache-buster.
+    // exists to change `value`. Strip it before signing; the fresh token is the
+    // real cache-buster.
     const path = value.split("?")[0];
 
     let active = true;
-    supabase.storage
-      .from(bucket)
-      .createSignedUrl(path, expiresIn)
-      .then(({ data, error }) => {
-        if (!active || error || !data?.signedUrl) return;
-        signedUrlCache.set(cacheKey, {
-          url: data.signedUrl,
-          expiresAt: Date.now() + (expiresIn - EXPIRY_BUFFER_S) * 1000,
-        });
-        setSigned({ key: cacheKey, url: data.signedUrl });
-      })
-      .catch(() => {});
+    let resignTimer;
+
+    const scheduleResign = (delayMs) => {
+      resignTimer = setTimeout(sign, Math.max(delayMs, MIN_RESIGN_DELAY_MS));
+    };
+
+    // Sign, cache the result, and schedule the NEXT signing to land just before
+    // the cached URL lapses — so an image on a long-open tab is re-signed instead
+    // of 404ing when its token silently expires. Cache hits are read at render
+    // time via cachedUrl(); setSigned here is the async state change that makes
+    // the component re-render once the first URL is ready. (M-4)
+    function sign() {
+      supabase.storage
+        .from(bucket)
+        .createSignedUrl(path, expiresIn)
+        .then(({ data, error }) => {
+          if (!active || error || !data?.signedUrl) return;
+          const freshForMs = Math.max(expiresIn - EXPIRY_BUFFER_S, 0) * 1000;
+          signedUrlCache.set(cacheKey, {
+            url: data.signedUrl,
+            expiresAt: Date.now() + freshForMs,
+          });
+          setSigned({ key: cacheKey, url: data.signedUrl });
+          scheduleResign(freshForMs - RESIGN_LEAD_MS);
+        })
+        .catch(() => {});
+    }
+
+    // A still-fresh cached URL (another card already signed this same object) is
+    // shown via cachedUrl() at render; here we only arm the re-sign so it stays
+    // fresh. Otherwise sign now.
+    const hit = signedUrlCache.get(cacheKey);
+    if (hit && hit.expiresAt > Date.now()) {
+      scheduleResign(hit.expiresAt - Date.now() - RESIGN_LEAD_MS);
+    } else {
+      sign();
+    }
 
     return () => {
       active = false;
+      if (resignTimer) clearTimeout(resignTimer);
     };
   }, [cacheKey, value, bucket, expiresIn]);
 
