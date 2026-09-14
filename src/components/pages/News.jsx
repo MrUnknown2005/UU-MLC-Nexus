@@ -242,6 +242,7 @@ function News({ news = [], profile, reload, onLogAction }) {
 
     try {
       let imageUrl = editing && !imageCleared ? (editing.image_url ?? null) : null;
+      let uploadedPath = null; // the object we just put in the bucket, if any (M-3)
 
       if (file) {
         const { url, error: uploadError } = await uploadNewsAttachment(
@@ -257,6 +258,7 @@ function News({ news = [], profile, reload, onLogAction }) {
         }
 
         imageUrl = url;
+        uploadedPath = url;
       }
 
       const payload = {
@@ -270,6 +272,11 @@ function News({ news = [], profile, reload, onLogAction }) {
         : await createNews({ ...payload, published_by: profile.id });
 
       if (error) {
+        // The row write failed but a freshly uploaded image is already in the
+        // bucket — remove it so a failed publish doesn't strand an orphan. Any
+        // pre-existing image (editing.image_url) is untouched: its row still
+        // points at it. (M-3)
+        if (uploadedPath) await removeStoredObject("attachments", uploadedPath);
         toast.error(
           editing ? "Could not save the changes" : "Could not publish the post",
           { description: error.message }

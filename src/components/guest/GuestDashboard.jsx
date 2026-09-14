@@ -80,7 +80,13 @@ function GuestDashboard({ profile, onLogout }) {
               </span>
             </span>
 
-            <Button variant="ghost" size="sm" icon="log-out" onClick={onLogout}>
+            <Button
+              variant="ghost"
+              size="sm"
+              icon="log-out"
+              onClick={onLogout}
+              aria-label="Sign out"
+            >
               <span className="hidden sm:inline">Sign out</span>
             </Button>
           </div>

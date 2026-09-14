@@ -10,9 +10,9 @@ const VARIANTS = {
   outline:
     "border border-line-strong text-ink hover:border-brand-line hover:bg-hover",
   danger:
-    "bg-danger text-white font-semibold hover:brightness-110 active:brightness-95",
+    "bg-danger-solid text-white font-semibold hover:brightness-110 active:brightness-95",
   "danger-soft":
-    "bg-danger-soft text-danger border border-danger-line hover:bg-danger hover:text-white",
+    "bg-danger-soft text-danger border border-danger-line hover:bg-danger-solid hover:text-white",
   "success-soft":
     "bg-success-soft text-success border border-success-line hover:bg-success hover:text-white",
 };

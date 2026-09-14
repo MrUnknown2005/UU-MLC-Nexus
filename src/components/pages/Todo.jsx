@@ -384,6 +384,7 @@ function Todo({ profile, isAdmin, onLogAction }) {
 
     try {
       let imageUrl = editingTodo?.image_url || null;
+      let uploadedPath = null; // the object we just put in the bucket, if any (M-3)
 
       if (imageFile) {
         const { url, error: uploadError } = await uploadAttachment(
@@ -398,6 +399,7 @@ function Todo({ profile, isAdmin, onLogAction }) {
         }
 
         imageUrl = url;
+        uploadedPath = url;
       }
 
       const taskName = title.trim();
@@ -415,6 +417,10 @@ function Todo({ profile, isAdmin, onLogAction }) {
           .eq("id", editingTodo.id);
 
         if (error) {
+          // The row write failed but a freshly uploaded image is already in the
+          // bucket — remove it so a failed save doesn't strand an orphan. Any
+          // pre-existing image is untouched: its row still points at it. (M-3)
+          if (uploadedPath) await removeStoredObject("attachments", uploadedPath);
           setFormError(error.message);
           return;
         }
@@ -445,6 +451,10 @@ function Todo({ profile, isAdmin, onLogAction }) {
         });
 
         if (error) {
+          // The row write failed but a freshly uploaded image is already in the
+          // bucket — remove it so a failed save doesn't strand an orphan. Any
+          // pre-existing image is untouched: its row still points at it. (M-3)
+          if (uploadedPath) await removeStoredObject("attachments", uploadedPath);
           setFormError(error.message);
           return;
         }
