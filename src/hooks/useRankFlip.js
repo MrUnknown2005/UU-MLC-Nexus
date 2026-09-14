@@ -48,9 +48,16 @@ export function useRankFlip(order) {
   useLayoutEffect(() => {
     if (reduceMotion) return;
 
-    // First/Last: where does every row sit now that React has committed?
+    // First/Last: where does every row sit now that React has committed? Clear
+    // any transform still in flight from a previous, unfinished slide first —
+    // otherwise a rapid re-sort measures the mid-animation position instead of
+    // the true committed one, and the next delta comes out wrong. The Invert
+    // pass below re-applies transforms for the rows that actually moved, all
+    // synchronously within this layout effect, so there's no visible flash. (LOW #7)
     const newTops = new Map();
     nodes.current.forEach((el, id) => {
+      el.style.transition = "none";
+      el.style.transform = "";
       newTops.set(id, el.getBoundingClientRect().top);
     });
 

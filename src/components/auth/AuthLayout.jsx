@@ -43,9 +43,12 @@ export default function AuthLayout({
         <div className="relative max-w-md">
           <p className="nx-eyebrow">Uttara University Machine Learning Club</p>
 
-          <h2 className="nx-display mt-3 text-[2.5rem] leading-[1.05] xl:text-[3rem]">
+          {/* Not a heading: the form pane owns the page's single <h1>, and this
+              decorative aside must not jump the heading order. `nx-display` is
+              tag-agnostic, so a <p> keeps the exact type treatment. (LOW #11) */}
+          <p className="nx-display mt-3 text-[2.5rem] leading-[1.05] xl:text-[3rem]">
             The club, <span className="text-brand-text">organised.</span>
-          </h2>
+          </p>
 
           <ul className="mt-9 space-y-6">
             {HIGHLIGHTS.map((item) => (

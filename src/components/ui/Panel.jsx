@@ -93,9 +93,4 @@ export function Panel({
   );
 }
 
-/** Full-bleed divider inside a Panel body that uses `pad="none"`. */
-export function PanelDivider({ className }) {
-  return <div className={cn("h-px w-full bg-line", className)} />;
-}
-
 export default Panel;

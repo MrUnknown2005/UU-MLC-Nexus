@@ -51,6 +51,13 @@ export async function removeStoredObject(bucket, value) {
 // picture — which changes that value — misses the cache and signs afresh.
 const signedUrlCache = new Map();
 
+// Bounded so a long session that scrolls past many distinct images can't grow
+// the map without limit. A Map preserves insertion order, so the oldest entry
+// is the first key — and because a live entry is re-inserted (delete-then-set)
+// on every re-sign, anything still on screen keeps moving to the newest end and
+// only genuinely idle keys age out. (LOW #1)
+const MAX_CACHE_ENTRIES = 200;
+
 // Re-sign a minute before the token actually lapses, so an image never blinks
 // out mid-view on a long-open tab.
 const EXPIRY_BUFFER_S = 60;
@@ -61,6 +68,20 @@ const EXPIRY_BUFFER_S = 60;
 // pathologically short expiresIn can't turn re-signing into a hot loop.
 const RESIGN_LEAD_MS = 5000;
 const MIN_RESIGN_DELAY_MS = 30000;
+
+// Write through the cap: prune anything already expired, re-insert this key at
+// the newest end (delete-then-set), then evict the oldest if still over budget.
+function cacheSet(cacheKey, entry) {
+  const now = Date.now();
+  for (const [key, value] of signedUrlCache) {
+    if (value.expiresAt <= now) signedUrlCache.delete(key);
+  }
+  signedUrlCache.delete(cacheKey);
+  signedUrlCache.set(cacheKey, entry);
+  if (signedUrlCache.size > MAX_CACHE_ENTRIES) {
+    signedUrlCache.delete(signedUrlCache.keys().next().value);
+  }
+}
 
 function cachedUrl(cacheKey) {
   if (!cacheKey) return null;
@@ -111,7 +132,7 @@ export function useSignedImageUrl(value, bucket, expiresIn = 3600) {
         .then(({ data, error }) => {
           if (!active || error || !data?.signedUrl) return;
           const freshForMs = Math.max(expiresIn - EXPIRY_BUFFER_S, 0) * 1000;
-          signedUrlCache.set(cacheKey, {
+          cacheSet(cacheKey, {
             url: data.signedUrl,
             expiresAt: Date.now() + freshForMs,
           });

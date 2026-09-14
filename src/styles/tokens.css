@@ -39,7 +39,7 @@
   /* Type */
   --fg: #f5f1e8;
   --fg-muted: #a8a296;
-  --fg-subtle: #736e63;
+  --fg-subtle: #918b7d;
 
   /* Hairlines */
   --line: rgb(245 241 232 / 9%);
@@ -107,7 +107,7 @@
 
     --fg: #1a1815;
     --fg-muted: #5d584e;
-    --fg-subtle: #8a8478;
+    --fg-subtle: #6c6759;
 
     --line: rgb(26 21 9 / 11%);
     --line-strong: rgb(26 21 9 / 21%);
@@ -218,7 +218,7 @@
 
   --fg: #f5f1e8;
   --fg-muted: #a8a296;
-  --fg-subtle: #736e63;
+  --fg-subtle: #918b7d;
 
   --line: rgb(245 241 232 / 9%);
   --line-strong: rgb(245 241 232 / 17%);

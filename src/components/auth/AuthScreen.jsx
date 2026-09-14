@@ -69,26 +69,34 @@ function SignIn({ email, setEmail, setMode, onBack, onSignIn }) {
 
     setBusy(true);
 
-    const { error: signInError } = await signInWithPassword(
-      email.trim(),
-      password
-    );
-
-    if (signInError) {
-      // Supabase returns this for both a wrong password and an unknown email,
-      // and it stays vague on purpose — telling an attacker which one it was
-      // confirms whether an address has an account here.
-      setError(
-        signInError.message === "Invalid login credentials"
-          ? "That email and password don't match an account."
-          : signInError.message
+    try {
+      const { error: signInError } = await signInWithPassword(
+        email.trim(),
+        password
       );
-      setBusy(false);
-      return;
-    }
 
-    await onSignIn();
-    setBusy(false);
+      if (signInError) {
+        // Supabase returns this for both a wrong password and an unknown email,
+        // and it stays vague on purpose — telling an attacker which one it was
+        // confirms whether an address has an account here.
+        setError(
+          signInError.message === "Invalid login credentials"
+            ? "That email and password don't match an account."
+            : signInError.message
+        );
+        return;
+      }
+
+      await onSignIn();
+    } catch (err) {
+      // A thrown signInWithPassword (network) or a rejected onSignIn would
+      // otherwise strand the spinner with no explanation. (LOW #14)
+      setError(
+        err?.message || "Something went wrong signing in. Please try again."
+      );
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -195,29 +203,37 @@ function SignUp({ email, setEmail, setMode, onBack, onSignup }) {
 
     setBusy(true);
 
-    const { data, error: signUpError } = await signUp({
-      email: email.trim(),
-      password,
-      fullName: fullName.trim(),
-      nickname: nickname.trim(),
-    });
-
-    if (signUpError) {
-      setError(signUpError.message);
-      setBusy(false);
-      return;
-    }
-
-    if (data.session) {
-      toast.success("Account created", {
-        description: "An administrator will approve your membership shortly.",
+    try {
+      const { data, error: signUpError } = await signUp({
+        email: email.trim(),
+        password,
+        fullName: fullName.trim(),
+        nickname: nickname.trim(),
       });
-      await onSignup();
-    } else {
-      setSent(true);
-    }
 
-    setBusy(false);
+      if (signUpError) {
+        setError(signUpError.message);
+        return;
+      }
+
+      if (data.session) {
+        toast.success("Account created", {
+          description: "An administrator will approve your membership shortly.",
+        });
+        await onSignup();
+      } else {
+        setSent(true);
+      }
+    } catch (err) {
+      // Match SignIn: a thrown signUp/onSignup must re-enable the button and say
+      // something rather than leave it spinning. (LOW #14)
+      setError(
+        err?.message ||
+          "Something went wrong creating your account. Please try again."
+      );
+    } finally {
+      setBusy(false);
+    }
   };
 
   if (sent) {

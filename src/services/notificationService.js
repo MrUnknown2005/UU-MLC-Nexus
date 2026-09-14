@@ -6,7 +6,10 @@ export async function fetchNotifications(userId) {
     .select("*")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
-    .limit(50);
+    // Bounded so the bell query stays cheap, but high enough that the unread
+    // count derived from this array (useNotifications) isn't silently capped:
+    // 200 is far more than a member accrues between reads in normal use. (LOW #8)
+    .limit(200);
 }
 
 export async function markNotificationRead(notificationId) {

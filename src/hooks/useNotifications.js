@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useToast } from "../components/ui/toast-context.js";
 import {
   deleteAllNotifications,
@@ -16,9 +16,14 @@ export function useNotifications({ profile, setTab, logAdminAction }) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const { toast } = useToast();
+  // This hook's loader doubles as the realtime callback, so a late fetch (or a
+  // StrictMode remount) must not setState on an unmounted hook. Re-armed to true
+  // in the effect below so a remount reactivates it. (LOW #6)
+  const mountedRef = useRef(true);
 
   const loadNotifications = async () => {
     const { data, error } = await fetchNotifications(profile.id);
+    if (!mountedRef.current) return;
 
     if (error) {
       // Console-only by design: the bell is an ambient secondary feature that
@@ -34,13 +39,17 @@ export function useNotifications({ profile, setTab, logAdminAction }) {
   };
 
   useEffect(() => {
+    mountedRef.current = true;
     // Intentional fetch-on-mount, paired with a realtime subscription below.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadNotifications();
 
     const unsubscribe = subscribeToNotifications(profile.id, loadNotifications);
 
-    return unsubscribe;
+    return () => {
+      mountedRef.current = false;
+      unsubscribe();
+    };
     // loadNotifications is intentionally omitted: it's redefined each render,
     // and including it would tear down/recreate the realtime subscription unnecessarily.
     // eslint-disable-next-line react-hooks/exhaustive-deps

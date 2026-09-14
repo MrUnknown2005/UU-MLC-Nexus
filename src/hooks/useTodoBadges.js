@@ -13,14 +13,20 @@ export function useTodoBadges(profile) {
   const [todosForBadge, setTodosForBadge] = useState([]);
 
   useEffect(() => {
+    // The loader doubles as the realtime callback; `active` gates its setState so
+    // a late fetch (or a StrictMode remount) can't touch an unmounted hook. (LOW #6)
+    let active = true;
     const loadTodoBadges = async () => {
       const { data, error } = await fetchIncompleteTodosForBadge();
-      if (!error) setTodosForBadge(data || []);
+      if (active && !error) setTodosForBadge(data || []);
     };
 
     loadTodoBadges();
     const unsubscribe = subscribeToTodoChanges(loadTodoBadges);
-    return unsubscribe;
+    return () => {
+      active = false;
+      unsubscribe();
+    };
   }, [profile.id]);
 
   const overdueTodoCount = todosForBadge.filter(

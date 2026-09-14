@@ -36,19 +36,3 @@ export function roleTone(roleKey) {
       return "neutral";
   }
 }
-
-/** Icon for a role, matching `roleTone`'s hierarchy. */
-export function roleIcon(roleKey) {
-  switch (roleKey) {
-    case "head_admin":
-      return "crown";
-    case "administrator":
-      return "shield-check";
-    case "executive":
-      return "star";
-    case "guest":
-      return "clock";
-    default:
-      return "user";
-  }
-}

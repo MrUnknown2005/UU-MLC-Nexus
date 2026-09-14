@@ -357,6 +357,11 @@ function Members({
             const canModify =
               canEdit && !isCurrentUser && canModifyTarget(member);
             const status = statusOf(member);
+            // One source of truth for the flag: null/undefined means "never set"
+            // → active, matching statusOf and the status badge. Without this the
+            // badge read "Active" while the button offered "Reactivate" and the
+            // role selector vanished for the same null member. (LOW #15)
+            const isActive = member.is_active !== false;
             const meta = STATUS_META[status];
             const name = displayName(member);
             const busy = busyId === member.id;
@@ -367,7 +372,7 @@ function Members({
                 className={cn(
                   "nx-card nx-lift flex flex-col p-5",
                   status === "pending" && "nx-selected",
-                  member.is_active === false && "opacity-80"
+                  !isActive && "opacity-80"
                 )}
               >
                 <div className="flex items-start justify-between gap-3">
@@ -423,12 +428,10 @@ function Members({
                     <dd
                       className={cn(
                         "mt-1 font-semibold",
-                        member.is_active === false
-                          ? "text-danger"
-                          : "text-success"
+                        isActive ? "text-success" : "text-danger"
                       )}
                     >
-                      {member.is_active === false ? "Inactive" : "Active"}
+                      {isActive ? "Active" : "Inactive"}
                     </dd>
                   </div>
 
@@ -454,7 +457,7 @@ function Members({
                     </Button>
                   )}
 
-                  {canModify && member.role !== "guest" && member.is_active && (
+                  {canModify && member.role !== "guest" && isActive && (
                     <Select
                       aria-label={`Role for ${name}`}
                       value={member.role}
@@ -477,13 +480,13 @@ function Members({
 
                   {canModify && (
                     <Button
-                      variant={member.is_active ? "danger-soft" : "success-soft"}
+                      variant={isActive ? "danger-soft" : "success-soft"}
                       size="sm"
-                      icon={member.is_active ? "user-x" : "user-check"}
+                      icon={isActive ? "user-x" : "user-check"}
                       loading={busy}
-                      onClick={() => setActive(member, !member.is_active)}
+                      onClick={() => setActive(member, !isActive)}
                     >
-                      {member.is_active ? "Deactivate" : "Reactivate"}
+                      {isActive ? "Deactivate" : "Reactivate"}
                     </Button>
                   )}
 

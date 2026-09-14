@@ -49,9 +49,12 @@ export function TextArea({
           />
           {remaining !== null && (
             <span
+              aria-label={`${remaining} characters remaining`}
               className={cn(
                 "pointer-events-none absolute right-3 bottom-2 text-[0.6875rem] tabular-nums",
-                remaining < 20 ? "text-warn" : "text-ink-subtle"
+                // Weight, not colour alone, carries the "running low" cue so it
+                // survives for anyone who can't distinguish the amber (SC 1.4.1).
+                remaining < 20 ? "font-semibold text-warn" : "text-ink-subtle"
               )}
             >
               {remaining}

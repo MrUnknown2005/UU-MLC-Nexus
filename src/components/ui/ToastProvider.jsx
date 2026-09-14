@@ -129,10 +129,10 @@ export function ToastProvider({ children }) {
 
       {createPortal(
         <div
-          // `polite` and not `assertive`: a confirmation should not interrupt
-          // whatever a screen reader is already reading.
-          aria-live="polite"
-          aria-atomic="false"
+          // No aria-live on the container: each toast below carries its own role
+          // (`alert` for errors → assertive, `status` otherwise → polite), and a
+          // live region wrapping live regions makes assistive tech announce each
+          // toast twice. The per-toast role is the single announcement. (LOW #12)
           className={cn(
             "nx-safe-bottom pointer-events-none fixed z-[60] flex flex-col gap-2",
             "inset-x-3 bottom-3 sm:inset-x-auto sm:right-5 sm:bottom-5 sm:w-[22rem]"

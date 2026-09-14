@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { loadRoleAccess as loadRoleAccessService } from "../services/permissionService";
 import { LEGACY_ROLE_PERMISSIONS, SYSTEM_ROLE_DEFINITIONS } from "../constants/roles";
 
@@ -13,6 +13,9 @@ export function usePermissions(profile) {
   const [roleDefinitions, setRoleDefinitions] = useState(
     SYSTEM_ROLE_DEFINITIONS,
   );
+  // Skip the async appliers below if the hook unmounted (or StrictMode-remounted)
+  // mid-load. Re-armed to true in the effect so a remount reactivates it. (LOW #6)
+  const mountedRef = useRef(true);
 
   const isHeadAdmin = profile.role === "head_admin";
 
@@ -38,6 +41,7 @@ export function usePermissions(profile) {
 
   const loadRoleAccess = async () => {
     const [permissionResult, roleResult] = await loadRoleAccessService();
+    if (!mountedRef.current) return;
 
     if (!permissionResult.error && Array.isArray(permissionResult.data)) {
       setPermissions(permissionResult.data);
@@ -72,9 +76,13 @@ export function usePermissions(profile) {
   };
 
   useEffect(() => {
+    mountedRef.current = true;
     // Intentional fetch, re-run when the signed-in profile or its role changes.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadRoleAccess();
+    return () => {
+      mountedRef.current = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile.id, profile.role]);
 

@@ -108,8 +108,13 @@ export function useDashboardController({ profile, reloadProfile, onLogout }) {
     (member) => member.role !== "guest" && member.is_active !== false,
   );
 
-  const currentRank =
-    rankedMembers.findIndex((member) => member.id === profile.id) + 1;
+  // `null` (not 0) when the signed-in member isn't on the ranked board — an
+  // unranked "#0" must never reach the UI even if a future consumer forgets the
+  // `> 0` guard. `null > 0` is false, so the existing guards keep working. (LOW #5)
+  const rankIndex = rankedMembers.findIndex(
+    (member) => member.id === profile.id,
+  );
+  const currentRank = rankIndex >= 0 ? rankIndex + 1 : null;
 
   const pendingMemberCount = members.filter(
     (member) => member.role === "guest" && member.is_active !== false,
