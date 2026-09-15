@@ -1,16 +1,12 @@
 import { useEffect, useState } from "react";
-import { Badge } from "../ui/Badge.jsx";
-import { EmptyState } from "../ui/EmptyState.jsx";
-import { Panel } from "../ui/Panel.jsx";
-import { Skeleton } from "../ui/Skeleton.jsx";
+import { StatCard } from "../ui/StatCard.jsx";
 import { supabase } from "../../lib/supabaseClient";
 
 /**
- * Shows the groups the signed-in member belongs to.
+ * Shows the signed-in member's assigned groups as a compact dashboard stat.
  *
- * The query intentionally relies on the database RLS policy: members can only
- * read their own membership rows / groups, while administrators can read all
- * groups. This keeps the UI and the database aligned.
+ * RLS remains the source of truth: members only receive groups they belong to,
+ * while administrators can still resolve their complete membership set.
  */
 export default function ProfileGroups({ profileId }) {
   const [groups, setGroups] = useState([]);
@@ -37,6 +33,7 @@ export default function ProfileGroups({ profileId }) {
       }
 
       const groupIds = [...new Set((memberships || []).map((row) => row.group_id))];
+
       if (groupIds.length === 0) {
         if (!cancelled) {
           setGroups([]);
@@ -47,7 +44,7 @@ export default function ProfileGroups({ profileId }) {
 
       const { data, error } = await supabase
         .from("groups")
-        .select("id, name, description, color")
+        .select("id, name")
         .in("id", groupIds)
         .order("created_at", { ascending: true });
 
@@ -63,61 +60,31 @@ export default function ProfileGroups({ profileId }) {
     };
 
     load();
+
     return () => {
       cancelled = true;
     };
   }, [profileId]);
 
-  if (loading) {
-    return (
-      <Panel eyebrow="Groups" title="Your groups" icon="grid">
-        <div className="space-y-3">
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
-        </div>
-      </Panel>
-    );
-  }
+  const groupNames = groups.map((group) => group.name).join(" · ");
 
   return (
-    <Panel
-      eyebrow="Groups"
-      title="Your groups"
+    <StatCard
+      className="nx-rise [animation-delay:120ms]"
+      label="Your groups"
+      value={loading ? "" : groupNames || "None assigned"}
       icon="grid"
-      description={
-        groups.length
-          ? `You are assigned to ${groups.length} group${groups.length === 1 ? "" : "s"}.`
-          : "You are not assigned to any group yet."
+      tone="info"
+      hint={
+        loading
+          ? "Loading assignments"
+          : groups.length === 0
+            ? "No group assignment yet"
+            : groups.length === 1
+              ? "1 assigned group"
+              : `${groups.length} assigned groups`
       }
-    >
-      {groups.length === 0 ? (
-        <EmptyState
-          compact
-          icon="grid"
-          title="No groups assigned"
-          description="An administrator can add you to a group from the Groups page."
-        />
-      ) : (
-        <div className="grid gap-3 sm:grid-cols-2">
-          {groups.map((group) => (
-            <div key={group.id} className="nx-card p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="truncate font-semibold">{group.name}</p>
-                  {group.description?.trim() && (
-                    <p className="mt-1 text-[0.75rem] leading-relaxed text-ink-muted">
-                      {group.description}
-                    </p>
-                  )}
-                </div>
-                <Badge tone="brand" size="sm">
-                  Member
-                </Badge>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </Panel>
+      loading={loading}
+    />
   );
 }
