@@ -10,6 +10,7 @@ import { Panel } from "../ui/Panel.jsx";
 import { SearchInput } from "../ui/SearchInput.jsx";
 import { Select } from "../ui/Select.jsx";
 import { StatCard } from "../ui/StatCard.jsx";
+import { CountUp } from "../ui/CountUp.jsx";
 import { useConfirm } from "../ui/confirm-context.js";
 import { useToast } from "../ui/toast-context.js";
 import { roleLabel } from "../../lib/roles.js";
@@ -203,29 +204,33 @@ function Members({
       >
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
+            className="nx-rise"
             label="Pending"
-            value={formatNumber(counts.pending)}
+            value={<CountUp value={counts.pending} format={formatNumber} />}
             icon="clock"
             tone="warn"
             hint={counts.pending === 1 ? "1 request" : "requests to review"}
           />
           <StatCard
+            className="nx-rise [animation-delay:60ms]"
             label="Active"
-            value={formatNumber(counts.active)}
+            value={<CountUp value={counts.active} format={formatNumber} />}
             icon="user-check"
             tone="success"
             hint="full members"
           />
           <StatCard
+            className="nx-rise [animation-delay:120ms]"
             label="Inactive"
-            value={formatNumber(counts.inactive)}
+            value={<CountUp value={counts.inactive} format={formatNumber} />}
             icon="ban"
             tone="danger"
             hint="switched off"
           />
           <StatCard
+            className="nx-rise [animation-delay:180ms]"
             label="Total"
-            value={formatNumber(counts.all)}
+            value={<CountUp value={counts.all} format={formatNumber} />}
             icon="users"
             tone="brand"
             hint="accounts"
@@ -352,7 +357,7 @@ function Members({
         </Panel>
       ) : (
         <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {filteredMembers.map((member) => {
+          {filteredMembers.map((member, index) => {
             const isCurrentUser = member.id === currentUserId;
             const canModify =
               canEdit && !isCurrentUser && canModifyTarget(member);
@@ -370,10 +375,11 @@ function Members({
               <li
                 key={member.id}
                 className={cn(
-                  "nx-card nx-lift flex flex-col p-5",
+                  "nx-rise nx-card nx-lift flex flex-col p-5",
                   status === "pending" && "nx-selected",
                   !isActive && "opacity-80"
                 )}
+                style={{ animationDelay: `${index * 50}ms` }}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-3">
@@ -419,7 +425,11 @@ function Members({
                   <div className="nx-well p-3">
                     <dt className="nx-eyebrow">Points</dt>
                     <dd className="nx-num mt-1 font-semibold tabular-nums">
-                      {formatNumber(member.points ?? 0)}
+                      <CountUp
+                        value={member.points ?? 0}
+                        format={formatNumber}
+                        animateOnMount={false}
+                      />
                     </dd>
                   </div>
 

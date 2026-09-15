@@ -8,6 +8,7 @@ import { Icon } from "../ui/Icon.jsx";
 import { Panel } from "../ui/Panel.jsx";
 import { SearchInput } from "../ui/SearchInput.jsx";
 import { SegmentedControl } from "../ui/SegmentedControl.jsx";
+import { CountUp } from "../ui/CountUp.jsx";
 import { roleLabel, roleTone } from "../../lib/roles.js";
 import { cn } from "../../lib/cn.js";
 import {
@@ -31,15 +32,16 @@ const SORTS = [
   { value: "name", label: "Name", icon: "arrow-down" },
 ];
 
-function MemberCard({ member, rank, isMe }) {
+function MemberCard({ member, rank, isMe, index = 0 }) {
   const name = displayName(member);
 
   return (
     <li
       className={cn(
-        "nx-card nx-lift flex flex-col p-5 text-center",
+        "nx-rise nx-card nx-lift flex flex-col p-5 text-center",
         isMe && "nx-selected"
       )}
+      style={{ animationDelay: `${index * 60}ms` }}
     >
       <div className="flex justify-center">
         <Avatar size="xl" ring src={member.avatar_url} name={name} seed={member.id} />
@@ -64,7 +66,11 @@ function MemberCard({ member, rank, isMe }) {
       <div className="mt-4 flex items-center justify-center gap-5">
         <div>
           <p className="nx-num text-2xl leading-none font-semibold tabular-nums">
-            {formatNumber(member.points ?? 0)}
+            <CountUp
+              value={member.points ?? 0}
+              format={formatNumber}
+              animateOnMount={false}
+            />
           </p>
           <p className="nx-eyebrow mt-1">Points</p>
         </div>
@@ -241,12 +247,13 @@ function Directory({ members = [], currentUserId }) {
           </p>
 
           <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-            {visible.map((member) => (
+            {visible.map((member, index) => (
               <MemberCard
                 key={member.id}
                 member={member}
                 rank={rankById.get(member.id) ?? 0}
                 isMe={member.id === currentUserId}
+                index={index}
               />
             ))}
           </ul>

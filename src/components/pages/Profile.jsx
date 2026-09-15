@@ -7,6 +7,7 @@ import { FileButton } from "../ui/FileButton.jsx";
 import { Icon } from "../ui/Icon.jsx";
 import { Panel } from "../ui/Panel.jsx";
 import { StatCard } from "../ui/StatCard.jsx";
+import { CountUp } from "../ui/CountUp.jsx";
 import { TextArea } from "../ui/TextArea.jsx";
 import { TextInput, PasswordInput } from "../ui/TextInput.jsx";
 import { useToast } from "../ui/toast-context.js";
@@ -298,7 +299,7 @@ function Profile({ profile, reloadProfile, onLogAction }) {
 
   return (
     <div className="space-y-5">
-      <section className="nx-panel p-6 md:p-8">
+      <section className="nx-rise nx-panel p-6 md:p-8">
         <div className="flex flex-col gap-6 md:flex-row md:items-center">
           <Avatar
             size="2xl"
@@ -462,16 +463,24 @@ function Profile({ profile, reloadProfile, onLogAction }) {
       {!editMode && (
         <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
+            className="nx-rise"
             label="Current Points"
-            value={formatNumber(profile.points ?? 0)}
+            value={<CountUp value={profile.points ?? 0} format={formatNumber} />}
             hint="Current club points"
             icon="trophy"
             tone="brand"
           />
 
           <StatCard
+            className="nx-rise [animation-delay:60ms]"
             label="Current Rank"
-            value={profileStats.rank ? ordinal(profileStats.rank) : "—"}
+            value={
+              profileStats.rank ? (
+                <CountUp value={profileStats.rank} format={ordinal} />
+              ) : (
+                "—"
+              )
+            }
             hint={`Of ${formatNumber(profileStats.totalMembers)} active members`}
             icon="medal"
             tone="info"
@@ -479,8 +488,11 @@ function Profile({ profile, reloadProfile, onLogAction }) {
           />
 
           <StatCard
+            className="nx-rise [animation-delay:120ms]"
             label="Point Entries"
-            value={formatNumber(profileStats.pointEntries)}
+            value={
+              <CountUp value={profileStats.pointEntries} format={formatNumber} />
+            }
             hint="Recorded point changes"
             icon="history"
             tone="violet"
@@ -488,8 +500,14 @@ function Profile({ profile, reloadProfile, onLogAction }) {
           />
 
           <StatCard
+            className="nx-rise [animation-delay:180ms]"
             label="Club Tasks Done"
-            value={formatNumber(profileStats.completedClubTasks)}
+            value={
+              <CountUp
+                value={profileStats.completedClubTasks}
+                format={formatNumber}
+              />
+            }
             hint="Completed across the club"
             icon="check-circle"
             tone="success"
