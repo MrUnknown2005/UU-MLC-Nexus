@@ -35,6 +35,13 @@ export const PERMISSION_CATALOG = [
     category: "Members",
   },
   {
+    key: "manage_groups",
+    name: "Manage Groups",
+    description:
+      "Create groups, assign members, and set the point value of tasks.",
+    category: "Members",
+  },
+  {
     key: "view_todo",
     name: "View To-Do",
     description: "Access club tasks and to-do views.",
@@ -143,6 +150,7 @@ export const LEGACY_ROLE_PERMISSIONS = {
     "view_directory",
     "view_members",
     "manage_members",
+    "manage_groups",
     "view_todo",
     "manage_todos",
     "view_points",

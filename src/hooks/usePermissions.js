@@ -22,6 +22,7 @@ export function usePermissions(profile) {
   const hasPermission = (permissionKey) => permissions.includes(permissionKey);
 
   const canManageMembers = hasPermission("manage_members");
+  const canManageGroups = hasPermission("manage_groups");
   const canManageTodos = hasPermission("manage_todos");
   const canViewMembers = hasPermission("view_members") || canManageMembers;
   const canAwardPoints = hasPermission("award_points");
@@ -91,6 +92,7 @@ export function usePermissions(profile) {
     roleDefinitions,
     hasPermission,
     canManageMembers,
+    canManageGroups,
     canManageTodos,
     canViewMembers,
     canAwardPoints,

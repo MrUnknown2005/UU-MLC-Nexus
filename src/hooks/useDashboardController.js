@@ -38,6 +38,7 @@ export function useDashboardController({ profile, reloadProfile, onLogout }) {
     roleDefinitions,
     hasPermission,
     canManageMembers,
+    canManageGroups,
     canManageTodos,
     canViewMembers,
     canAwardPoints,
@@ -181,6 +182,7 @@ export function useDashboardController({ profile, reloadProfile, onLogout }) {
     logAdminAction,
     loadRoleAccess,
     canManageTodos,
+    canManageGroups,
   };
 }
 

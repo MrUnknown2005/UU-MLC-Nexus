@@ -171,6 +171,7 @@ create table if not exists public.todos (
   image_url    text,
   assigned_to  uuid,
   completed_by uuid,
+  points       integer     not null default 0,
   constraint todos_pkey primary key (id),
   constraint todos_assigned_to_fkey foreign key (assigned_to)
     references public.profiles(id) on delete set null,
@@ -179,7 +180,8 @@ create table if not exists public.todos (
   constraint todos_created_by_fkey foreign key (created_by)
     references public.profiles(id) on delete set null,
   constraint todos_title_len check (char_length(title) <= 300),
-  constraint todos_desc_len  check (description is null or char_length(description) <= 5000)
+  constraint todos_desc_len  check (description is null or char_length(description) <= 5000),
+  constraint todos_points_nonneg check (points >= 0)
 );
 
 create table if not exists public.todo_activity_log (
@@ -194,6 +196,34 @@ create table if not exists public.todo_activity_log (
     references public.profiles(id) on delete cascade,
   constraint todo_activity_log_todo_id_fkey foreign key (todo_id)
     references public.todos(id) on delete cascade
+);
+
+create table if not exists public.groups (
+  id          uuid        not null default gen_random_uuid(),
+  name        text        not null,
+  description text        default ''::text,
+  color       text,
+  created_by  uuid,
+  created_at  timestamptz not null default now(),
+  constraint groups_pkey primary key (id),
+  constraint groups_created_by_fkey foreign key (created_by)
+    references public.profiles(id) on delete set null,
+  constraint groups_name_len check (char_length(name) <= 120),
+  constraint groups_desc_len check (description is null or char_length(description) <= 2000)
+);
+
+create table if not exists public.group_members (
+  group_id  uuid        not null,
+  member_id uuid        not null,
+  added_by  uuid,
+  added_at  timestamptz not null default now(),
+  constraint group_members_pkey primary key (group_id, member_id),
+  constraint group_members_group_id_fkey foreign key (group_id)
+    references public.groups(id) on delete cascade,
+  constraint group_members_member_id_fkey foreign key (member_id)
+    references public.profiles(id) on delete cascade,
+  constraint group_members_added_by_fkey foreign key (added_by)
+    references public.profiles(id) on delete set null
 );
 
 create table if not exists public.notifications (
@@ -297,6 +327,10 @@ create index if not exists idx_todos_completed_by
   on public.todos using btree (completed_by);
 create index if not exists idx_todos_created_by
   on public.todos using btree (created_by);
+create index if not exists idx_groups_created_by
+  on public.groups using btree (created_by);
+create index if not exists idx_group_members_member_id
+  on public.group_members using btree (member_id);
 
 -- ----------------------------------------------------------------------------
 -- 3 · FUNCTIONS  (verbatim from pg_get_functiondef; helpers first so plpgsql
@@ -613,7 +647,8 @@ begin
      or new.deadline is distinct from old.deadline
      or new.created_by is distinct from old.created_by
      or new.image_url is distinct from old.image_url
-     or new.assigned_to is distinct from old.assigned_to then
+     or new.assigned_to is distinct from old.assigned_to
+     or new.points is distinct from old.points then
     raise exception 'Members can only update task completion status.';
   end if;
 
@@ -1052,6 +1087,8 @@ alter table public.role_definitions     enable row level security;
 alter table public.role_permissions     enable row level security;
 alter table public.todo_activity_log    enable row level security;
 alter table public.todos                enable row level security;
+alter table public.groups               enable row level security;
+alter table public.group_members        enable row level security;
 
 -- achievements ---------------------------------------------------------------
 drop policy if exists "Everyone can view achievements" on public.achievements;
@@ -1291,6 +1328,72 @@ create policy "Admins can delete todos" on public.todos
     where profiles.id = (select auth.uid())
       and profiles.role = any (array['administrator'::text, 'head_admin'::text])));
 
+-- groups ---------------------------------------------------------------------
+drop policy if exists "Everyone can view groups" on public.groups;
+create policy "Everyone can view groups" on public.groups
+  as permissive for select to authenticated using (true);
+
+drop policy if exists "Admins can create groups" on public.groups;
+create policy "Admins can create groups" on public.groups
+  as permissive for insert to authenticated
+  with check (exists (
+    select 1 from profiles
+    where profiles.id = (select auth.uid())
+      and profiles.role = any (array['administrator'::text, 'head_admin'::text])));
+
+drop policy if exists "Admins can edit groups" on public.groups;
+create policy "Admins can edit groups" on public.groups
+  as permissive for update to authenticated
+  using (exists (
+    select 1 from profiles
+    where profiles.id = (select auth.uid())
+      and profiles.role = any (array['administrator'::text, 'head_admin'::text])))
+  with check (exists (
+    select 1 from profiles
+    where profiles.id = (select auth.uid())
+      and profiles.role = any (array['administrator'::text, 'head_admin'::text])));
+
+drop policy if exists "Admins can delete groups" on public.groups;
+create policy "Admins can delete groups" on public.groups
+  as permissive for delete to authenticated
+  using (exists (
+    select 1 from profiles
+    where profiles.id = (select auth.uid())
+      and profiles.role = any (array['administrator'::text, 'head_admin'::text])));
+
+-- group_members --------------------------------------------------------------
+drop policy if exists "Everyone can view group members" on public.group_members;
+create policy "Everyone can view group members" on public.group_members
+  as permissive for select to authenticated using (true);
+
+drop policy if exists "Admins can add group members" on public.group_members;
+create policy "Admins can add group members" on public.group_members
+  as permissive for insert to authenticated
+  with check (exists (
+    select 1 from profiles
+    where profiles.id = (select auth.uid())
+      and profiles.role = any (array['administrator'::text, 'head_admin'::text])));
+
+drop policy if exists "Admins can edit group members" on public.group_members;
+create policy "Admins can edit group members" on public.group_members
+  as permissive for update to authenticated
+  using (exists (
+    select 1 from profiles
+    where profiles.id = (select auth.uid())
+      and profiles.role = any (array['administrator'::text, 'head_admin'::text])))
+  with check (exists (
+    select 1 from profiles
+    where profiles.id = (select auth.uid())
+      and profiles.role = any (array['administrator'::text, 'head_admin'::text])));
+
+drop policy if exists "Admins can remove group members" on public.group_members;
+create policy "Admins can remove group members" on public.group_members
+  as permissive for delete to authenticated
+  using (exists (
+    select 1 from profiles
+    where profiles.id = (select auth.uid())
+      and profiles.role = any (array['administrator'::text, 'head_admin'::text])));
+
 -- ----------------------------------------------------------------------------
 -- 6 · PRIVILEGES
 --     Supabase's default model: broad table privileges to anon/authenticated/
@@ -1410,7 +1513,7 @@ declare
   t text;
   wanted text[] := array[
     'admin_activity_log', 'news', 'notifications', 'point_history',
-    'profile_achievements', 'profiles', 'todos'
+    'profile_achievements', 'profiles', 'todos', 'groups', 'group_members'
   ];
 begin
   foreach t in array wanted loop

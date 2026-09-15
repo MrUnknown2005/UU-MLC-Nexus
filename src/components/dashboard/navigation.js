@@ -40,6 +40,13 @@ export const NAV_ITEMS = [
     keywords: "todo task board deadline assign due work",
   },
   {
+    id: "groups",
+    label: "Groups",
+    icon: "grid",
+    title: "Groups",
+    keywords: "team squad group assign track standings roster",
+  },
+  {
     id: "members",
     label: "Members",
     icon: "user-check",

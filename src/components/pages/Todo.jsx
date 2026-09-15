@@ -170,6 +170,12 @@ function TodoCard({ todo, isAdmin, now, busy, onToggle, onEdit, onDelete }) {
                 Completed
               </Badge>
             )}
+
+            {todo.points > 0 && (
+              <Badge tone="brand" size="sm" icon="trophy">
+                {todo.points} pts
+              </Badge>
+            )}
           </div>
 
           {todo.description && (
@@ -252,6 +258,7 @@ function Todo({ profile, isAdmin, onLogAction }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [deadline, setDeadline] = useState("");
+  const [points, setPoints] = useState("0");
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState("");
 
@@ -343,6 +350,7 @@ function Todo({ profile, isAdmin, onLogAction }) {
     setTitle("");
     setDescription("");
     setDeadline("");
+    setPoints("0");
     setImageFile(null);
     setPreview("");
     setEditingTodo(null);
@@ -411,6 +419,7 @@ function Todo({ profile, isAdmin, onLogAction }) {
             title: taskName,
             description: description.trim(),
             deadline: deadline || null,
+            points: Number(points) || 0,
             image_url: imageUrl,
             updated_at: new Date().toISOString(),
           })
@@ -446,6 +455,7 @@ function Todo({ profile, isAdmin, onLogAction }) {
           title: taskName,
           description: description.trim(),
           deadline: deadline || null,
+          points: Number(points) || 0,
           image_url: imageUrl,
           created_by: profile.id,
         });
@@ -483,6 +493,7 @@ function Todo({ profile, isAdmin, onLogAction }) {
     setTitle(todo.title || "");
     setDescription(todo.description || "");
     setDeadline(toDateInputValue(todo.deadline));
+    setPoints(String(todo.points ?? 0));
     setImageFile(null);
     setPreview(todo.image_url || "");
     setShowForm(true);
@@ -549,6 +560,7 @@ function Todo({ profile, isAdmin, onLogAction }) {
       .update({
         completed,
         completed_at: completed ? new Date().toISOString() : null,
+        completed_by: completed ? profile.id : null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", todo.id);
@@ -806,6 +818,21 @@ function Todo({ profile, isAdmin, onLogAction }) {
               type="date"
               value={deadline}
               onChange={(event) => setDeadline(event.target.value)}
+              disabled={saving}
+              fieldClassName="max-w-56"
+            />
+
+            <TextInput
+              label="Task points"
+              optional
+              hint="Awarded to whoever completes it — and to their groups."
+              type="number"
+              min={0}
+              step={1}
+              inputMode="numeric"
+              suffix="pts"
+              value={points}
+              onChange={(event) => setPoints(event.target.value)}
               disabled={saving}
               fieldClassName="max-w-56"
             />

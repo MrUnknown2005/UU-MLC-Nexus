@@ -15,6 +15,7 @@ import Overview from "../pages/Overview";
 import Profile from "../pages/Profile";
 import Directory from "../pages/Directory";
 import Todo from "../pages/Todo";
+import Groups from "../pages/Groups";
 import Members from "../pages/Members";
 import Points from "../pages/Points";
 import PointReset from "../pages/PointReset";
@@ -53,7 +54,7 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
     toggleMemberActive, adjustPoints, canAwardPoints, isHeadAdmin, allPointHistory,
     deleteAllPointData, deleteMonthlyLeaderboard, hasPermission, resetAllPoints,
     resetMemberPoints, activityLog, deleteAdminActivityLog, loadData, logAdminAction,
-    loadRoleAccess, canManageTodos, dataLoading,
+    loadRoleAccess, canManageTodos, canManageGroups, dataLoading,
   } = useDashboardController({ profile, reloadProfile, onLogout });
 
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -289,6 +290,15 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
                 <Todo
                   profile={profile}
                   isAdmin={isAdmin || canManageTodos}
+                  onLogAction={logAdminAction}
+                />
+              )}
+
+              {activeTab === "groups" && (
+                <Groups
+                  members={rankedMembers}
+                  currentUserId={profile.id}
+                  canManage={canManageGroups}
                   onLogAction={logAdminAction}
                 />
               )}
