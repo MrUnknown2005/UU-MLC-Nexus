@@ -666,6 +666,7 @@ function Groups({ members = [], currentUserId, canManage = false, onLogAction })
               const { group } = row;
               const tone = toneOf(group.color);
               const expanded = expandedId === group.id;
+              const isCurrentUserInGroup = row.memberIds.includes(currentUserId);
               const share =
                 maxPoints > 0 ? Math.max(4, (row.taskPoints / maxPoints) * 100) : 0;
 
@@ -734,6 +735,11 @@ function Groups({ members = [], currentUserId, canManage = false, onLogAction })
                           <span className="truncate text-[0.9375rem] font-semibold">
                             {group.name}
                           </span>
+                          {isCurrentUserInGroup && (
+                            <Badge tone="brand" size="sm">
+                              Your group
+                            </Badge>
+                          )}
                           <Icon
                             name="chevron-down"
                             size={15}
