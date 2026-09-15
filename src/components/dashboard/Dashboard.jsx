@@ -13,7 +13,6 @@ import { SkeletonRegion } from "../ui/Skeleton.jsx";
 import { ErrorBoundary } from "../ui/ErrorBoundary.jsx";
 import Overview from "../pages/Overview";
 import Profile from "../pages/Profile";
-import ProfileGroups from "../pages/ProfileGroups";
 import Directory from "../pages/Directory";
 import Todo from "../pages/Todo";
 import Groups from "../pages/Groups";
@@ -241,14 +240,11 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
               )}
 
               {activeTab === "profile" && (
-                <div className="space-y-5">
-                  <Profile
-                    profile={profile}
-                    reloadProfile={reloadProfile}
-                    onLogAction={logAdminAction}
-                  />
-                  <ProfileGroups profileId={profile.id} />
-                </div>
+                <Profile
+                  profile={profile}
+                  reloadProfile={reloadProfile}
+                  onLogAction={logAdminAction}
+                />
               )}
 
               {activeTab === "directory" && (
