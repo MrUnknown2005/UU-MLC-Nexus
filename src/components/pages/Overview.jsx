@@ -6,6 +6,7 @@ import { Icon } from "../ui/Icon.jsx";
 import { Panel } from "../ui/Panel.jsx";
 import { StatCard } from "../ui/StatCard.jsx";
 import { CountUp } from "../ui/CountUp.jsx";
+import ProfileGroups from "./ProfileGroups.jsx";
 import SafeImage from "../common/SafeImage";
 import { PersonalPointHistory } from "../common/PointHistory";
 import { useNow } from "../../hooks/useNow.js";
@@ -23,13 +24,6 @@ import {
   truncate,
 } from "../../lib/format.js";
 
-/**
- * The landing screen inside the app.
- *
- * Ordered by what a member actually opens the app to find out: where do I
- * stand, what changed, what is coming up. The old version led with a decorative
- * hero and four glowing tiles that repeated the same number twice.
- */
 function greeting(hour) {
   if (hour < 5) return "Still up";
   if (hour < 12) return "Good morning";
@@ -58,8 +52,6 @@ function LeaderRow({ member, index, isMe, leaderPoints, rowRef }) {
       )}
       style={{ animationDelay: `${index * 70}ms` }}
     >
-      {/* Rank marker: a medal for the podium, a plain figure below it. Three
-          tiers is enough hierarchy — colouring every row removes the signal. */}
       <span
         className={cn(
           "grid h-8 w-8 shrink-0 place-items-center rounded-[9px] text-xs font-semibold tabular-nums",
@@ -88,8 +80,6 @@ function LeaderRow({ member, index, isMe, leaderPoints, rowRef }) {
           )}
         </p>
 
-        {/* A bar rather than a second number: relative standing is the thing a
-            leaderboard is for, and it reads without arithmetic. */}
         <span className="mt-1.5 block h-1 overflow-hidden rounded-full bg-surface-3">
           <span
             className={cn(
@@ -191,10 +181,6 @@ function Overview({
   const latestNews = news.slice(0, 3);
   const leaderPoints = Number(rankedMembers[0]?.points ?? 0);
 
-  // Living leaderboard: when points change and the board resorts, rows slide to
-  // their new rank (FLIP) and the changed row flashes amber. The registrar
-  // hands each row a stable ref; the ordered id/points list tells the hook what
-  // moved and what changed.
   const registerRow = useRankFlip(
     topFive.map((member) => ({ id: member.id, value: Number(member.points ?? 0) }))
   );
@@ -207,10 +193,6 @@ function Overview({
     [rankedMembers]
   );
 
-  // Points move daily and reset at the start of each month, so the meaningful
-  // trend beside the headline is the last seven days — how the week is going.
-  // A month-to-date total would read "0" on the 1st of every month and only
-  // slowly rebuild; a rolling week keeps the signal honest across the reset.
   const earnedThisWeek = useMemo(() => {
     const start = new Date(now);
     start.setDate(start.getDate() - 7);
@@ -226,7 +208,6 @@ function Overview({
 
   return (
     <div className="space-y-5">
-      {/* ---------- Greeting ---------- */}
       <Panel pad="lg" className="overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-5">
           <div className="flex min-w-0 items-center gap-4">
@@ -257,8 +238,6 @@ function Overview({
             </div>
           </div>
 
-          {/* The club's pulse in one line — it makes the header carry
-              information rather than just a name and a photograph. */}
           <dl className="flex gap-6">
             <div>
               <dt className="nx-eyebrow">Members</dt>
@@ -276,7 +255,6 @@ function Overview({
         </div>
       </Panel>
 
-      {/* ---------- Stats ---------- */}
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <StatCard
           className="nx-rise"
@@ -294,6 +272,7 @@ function Overview({
           }
           hint="This week"
         />
+
         <StatCard
           className="nx-rise [animation-delay:60ms]"
           label="Your rank"
@@ -306,14 +285,9 @@ function Overview({
               : "Earn points to be ranked"
           }
         />
-        <StatCard
-          className="nx-rise [animation-delay:120ms]"
-          label="Awards received"
-          value={<CountUp value={pointHistory.length} format={formatNumber} />}
-          icon="sparkles"
-          tone="info"
-          hint="All time"
-        />
+
+        <ProfileGroups profileId={profile.id} />
+
         <StatCard
           className="nx-rise [animation-delay:180ms]"
           label="Club members"
@@ -324,7 +298,6 @@ function Overview({
         />
       </div>
 
-      {/* ---------- Leaderboard + news ---------- */}
       <div className="grid items-start gap-5 xl:grid-cols-[1.1fr_0.9fr]">
         <Panel
           pad="none"
@@ -384,7 +357,6 @@ function Overview({
         </Panel>
       </div>
 
-      {/* ---------- Previous month ---------- */}
       <Panel
         icon="medal"
         eyebrow={
@@ -420,7 +392,6 @@ function Overview({
         )}
       </Panel>
 
-      {/* ---------- Personal ledger ---------- */}
       <Panel
         icon="history"
         eyebrow="Your activity"
