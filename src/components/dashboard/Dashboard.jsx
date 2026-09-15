@@ -13,6 +13,7 @@ import { SkeletonRegion } from "../ui/Skeleton.jsx";
 import { ErrorBoundary } from "../ui/ErrorBoundary.jsx";
 import Overview from "../pages/Overview";
 import Profile from "../pages/Profile";
+import ProfileGroups from "../pages/ProfileGroups";
 import Directory from "../pages/Directory";
 import Todo from "../pages/Todo";
 import Groups from "../pages/Groups";
@@ -23,9 +24,6 @@ import AdminActivity from "../pages/AdminActivity";
 import RoleManager from "../pages/RoleManager";
 import News from "../pages/News";
 
-// Tabs whose content comes from the shared dashboard load (useDashboardData).
-// Only these show the initial-load skeleton; Profile, Todo and Roles fetch
-// their own data and manage their own loading state.
 const DATA_DRIVEN_TABS = new Set([
   "overview",
   "directory",
@@ -35,14 +33,6 @@ const DATA_DRIVEN_TABS = new Set([
   "news",
 ]);
 
-/**
- * The application shell.
- *
- * All state lives in `useDashboardController`; this file owns layout, the
- * command palette's contents, and which page is mounted. The previous version
- * also carried an injected `<style>` block of mobile patches — those are now
- * element defaults in `styles/base.css`, where they belong.
- */
 export default function Dashboard({ profile, onLogout, reloadProfile }) {
   const {
     tab, setTab, sidebarOpen, setSidebarOpen, notificationsOpen, setNotificationsOpen,
@@ -58,10 +48,7 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
   } = useDashboardController({ profile, reloadProfile, onLogout });
 
   const [paletteOpen, setPaletteOpen] = useState(false);
-
-  // Ties the mobile hamburger's aria-controls to the nav Sheet's panel.
   const navSheetId = useId();
-
   const { openPrivacy } = usePrivacyPolicy();
 
   const canOpenMembers = canViewMembers || canManageMembers;
@@ -90,19 +77,10 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
     news: recentNewsCount,
   };
 
-  // Derived rather than corrected: if a permission is revoked while a member is
-  // sitting on the tab it gated, the fallback happens in this render, not in an
-  // effect one frame later.
   const activeItem = navItems.find((item) => item.id === tab) ?? navItems[0];
   const activeTab = activeItem?.id ?? "overview";
-
-  // Show the skeleton only during the first data load of a data-driven tab, so
-  // pages don't flash their empty states ("No members ranked yet") before the
-  // shared queries land.
   const showSkeleton = dataLoading && DATA_DRIVEN_TABS.has(activeTab);
 
-  // The tab is the closest thing this app has to a URL, so it belongs in the
-  // title — it is what a member sees in a crowded row of browser tabs.
   useEffect(() => {
     document.title = documentTitleFor(activeTab);
   }, [activeTab]);
@@ -111,8 +89,6 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
     allowInInput: true,
   });
 
-  // `roleDefinitions` rows are `{ role_key, name, description, is_system }`, so
-  // a custom role shows its real name rather than a snake_case key.
   const roleLabel = useMemo(() => {
     const match = roleDefinitions?.find((role) => role.role_key === profile.role);
     return match?.name ?? humanizeToken(profile.role);
@@ -194,10 +170,6 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
         Skip to content
       </a>
 
-      {/* Desktop rail — fixed so long pages never scroll the navigation away.
-          A plain <div>, not <aside>: the real landmark is the <nav> inside
-          SideNav, and wrapping it in a complementary region would demote the
-          app's primary navigation. */}
       <div className="fixed inset-y-0 left-0 z-30 hidden w-[var(--rail-w)] border-r border-line bg-surface lg:block">
         <SideNav
           items={navItems}
@@ -250,13 +222,7 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
           id="nexus-main"
           className="nx-backdrop mx-auto min-h-[calc(100dvh-var(--topbar-h))] w-full max-w-[var(--shell-max)] px-3 py-5 sm:px-5 sm:py-7"
         >
-          {/* Keyed so switching tabs replays the entrance animation and resets
-              any per-page state instead of leaking it across sections. */}
           <div key={activeTab} className="nx-rise">
-            {/* Page-scoped so a render crash in one tab shows a contained
-                fallback while the rail and TopBar stay usable; the keyed parent
-                remounts this on tab switch, so navigating away clears a caught
-                error too. */}
             <ErrorBoundary inline>
             <SkeletonRegion
               loading={showSkeleton}
@@ -275,11 +241,14 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
               )}
 
               {activeTab === "profile" && (
-                <Profile
-                  profile={profile}
-                  reloadProfile={reloadProfile}
-                  onLogAction={logAdminAction}
-                />
+                <div className="space-y-5">
+                  <Profile
+                    profile={profile}
+                    reloadProfile={reloadProfile}
+                    onLogAction={logAdminAction}
+                  />
+                  <ProfileGroups profileId={profile.id} />
+                </div>
               )}
 
               {activeTab === "directory" && (
@@ -373,7 +342,7 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
             <button
               type="button"
               onClick={openPrivacy}
-              className="underline decoration-line-strong underline-offset-2 transition-colors hover:text-ink"
+              className="underline decoration-line-strong underline-offset-2 hover:text-ink"
             >
               Privacy Policy
             </button>
