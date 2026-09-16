@@ -128,7 +128,7 @@ function PointReset({ members = [], onResetAll, onResetMember }) {
       eyebrow="Leaderboard cycle"
       title="Reset points"
       description="Totals go back to zero; the history of how they were earned is kept."
-      className="border-warn-line"
+      className="nx-rise border-warn-line"
       bodyClassName="grid gap-3 lg:grid-cols-2"
     >
       {/* ---------- One member ---------- */}

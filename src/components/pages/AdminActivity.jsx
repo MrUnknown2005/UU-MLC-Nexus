@@ -294,6 +294,7 @@ function AdminActivity({ activityLog = [], members = [], isHeadAdmin, onWipe }) 
   return (
     <div className="space-y-5">
       <Panel
+        className="nx-rise"
         icon="shield-check"
         eyebrow="Accountability"
         title="Admin activity"

@@ -72,7 +72,13 @@ export default function ProfileGroups({ profileId }) {
     <StatCard
       className="nx-rise [animation-delay:120ms]"
       label="Your groups"
-      value={loading ? "" : groupNames || "None assigned"}
+      value={
+        loading ? (
+          ""
+        ) : (
+          <span className="nx-rise">{groupNames || "None assigned"}</span>
+        )
+      }
       icon="grid"
       tone="info"
       hint={

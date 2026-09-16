@@ -167,6 +167,7 @@ function RoleManager({ currentUser, roleDefinitions, onRolesChanged }) {
       <div className="grid items-start gap-5 lg:grid-cols-[19rem_minmax(0,1fr)]">
         {/* ---------- Role list ---------- */}
         <Panel
+          className="nx-rise"
           pad="none"
           icon="shield"
           eyebrow="Library"
@@ -249,7 +250,7 @@ function RoleManager({ currentUser, roleDefinitions, onRolesChanged }) {
         )}
       </div>
 
-      <Panel pad="sm" bare className="border border-line bg-surface-2">
+      <Panel pad="sm" bare className="nx-rise [animation-delay:160ms] border border-line bg-surface-2">
         <p className="flex items-start gap-2.5 text-[0.8125rem] text-ink-muted">
           <Icon
             name="lock"
@@ -292,6 +293,7 @@ function SystemRoleSummary({ role, grouped }) {
 
   return (
     <Panel
+      className="nx-rise [animation-delay:80ms]"
       icon="lock"
       eyebrow="Protected built-in role"
       title={role.name}
@@ -478,6 +480,7 @@ function RoleEditor({
       as="form"
       onSubmit={submit}
       noValidate
+      className="nx-rise [animation-delay:80ms]"
       icon={editing ? "pencil" : "plus"}
       eyebrow={editing ? "Custom role" : "New role"}
       title={editing ? role.name : "Create a custom role"}

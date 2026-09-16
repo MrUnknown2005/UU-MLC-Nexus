@@ -141,6 +141,7 @@ function Points({
       >
         {canAwardPoints && (
           <Panel
+            className="nx-rise"
             icon="sparkles"
             eyebrow="Adjustment"
             title="Award or deduct"
@@ -239,6 +240,7 @@ function Points({
         )}
 
         <Panel
+          className="nx-rise [animation-delay:60ms]"
           pad="md"
           icon="history"
           eyebrow="Your activity"
@@ -253,6 +255,7 @@ function Points({
 
       {canSeeAllPointHistory && (
         <Panel
+          className="nx-rise [animation-delay:120ms]"
           pad="md"
           icon="shield-check"
           eyebrow="Audit trail"
@@ -289,7 +292,7 @@ function Points({
           eyebrow="Head admin only"
           title="Permanent deletion"
           description="These remove history rather than reset it. There is no undo and no backup."
-          className="border-danger-line"
+          className="nx-rise [animation-delay:180ms] border-danger-line"
           bodyClassName="grid gap-3 md:grid-cols-2"
         >
           <div className="nx-well flex flex-col gap-3 p-4">
