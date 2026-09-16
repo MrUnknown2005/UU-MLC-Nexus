@@ -40,6 +40,15 @@ export const NAV_ITEMS = [
     keywords: "todo task board deadline assign due work",
   },
   {
+    id: "messages",
+    label: "Messages",
+    icon: "send",
+    title: "Messages",
+    gate: "messaging",
+    badge: "unread",
+    keywords: "chat dm message inbox conversation talk direct group",
+  },
+  {
     id: "groups",
     label: "Groups",
     icon: "grid",
@@ -93,8 +102,8 @@ export const NAV_ITEMS = [
 /**
  * Filters NAV_ITEMS down to what this member may open.
  *
- * `gates` is `{ members: bool, points: bool, activity: bool, news: bool,
- * roles: bool }` — the same booleans the dashboard already computes.
+ * `gates` is `{ members: bool, messaging: bool, points: bool, activity: bool,
+ * news: bool, roles: bool }` — the same booleans the dashboard already computes.
  */
 export function visibleNavItems(gates) {
   return NAV_ITEMS.filter((item) => !item.gate || gates[item.gate]);

@@ -3,6 +3,7 @@ import { usePermissions } from "./usePermissions";
 import { useAdminAudit } from "./useAdminAudit";
 import { useDashboardData } from "./useDashboardData";
 import { useTodoBadges } from "./useTodoBadges";
+import { useUnreadMessages } from "./useUnreadMessages";
 import { useNotifications } from "./useNotifications";
 import { useMemberActions } from "./useMemberActions";
 
@@ -46,6 +47,7 @@ export function useDashboardController({ profile, reloadProfile, onLogout }) {
     canViewHistory,
     canManageNews,
     canManageRoles,
+    canUseMessaging,
     isAdmin,
     isHeadAdmin,
     loadRoleAccess,
@@ -65,6 +67,8 @@ export function useDashboardController({ profile, reloadProfile, onLogout }) {
   } = useDashboardData({ profile, canViewMembers, canViewHistory, isAdmin });
 
   const { overdueTodoCount } = useTodoBadges(profile);
+
+  const { unreadCount } = useUnreadMessages(profile);
 
   const {
     notifications,
@@ -183,6 +187,8 @@ export function useDashboardController({ profile, reloadProfile, onLogout }) {
     loadRoleAccess,
     canManageTodos,
     canManageGroups,
+    canUseMessaging,
+    unreadCount,
   };
 }
 

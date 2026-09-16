@@ -16,6 +16,7 @@ import Profile from "../pages/Profile";
 import Directory from "../pages/Directory";
 import Todo from "../pages/Todo";
 import Groups from "../pages/Groups";
+import Messages from "../pages/Messages";
 import Members from "../pages/Members";
 import Points from "../pages/Points";
 import PointReset from "../pages/PointReset";
@@ -43,7 +44,7 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
     toggleMemberActive, adjustPoints, canAwardPoints, isHeadAdmin, allPointHistory,
     deleteAllPointData, deleteMonthlyLeaderboard, hasPermission, resetAllPoints,
     resetMemberPoints, activityLog, deleteAdminActivityLog, loadData, logAdminAction,
-    loadRoleAccess, canManageTodos, canManageGroups, dataLoading,
+    loadRoleAccess, canManageTodos, canManageGroups, canUseMessaging, unreadCount, dataLoading,
   } = useDashboardController({ profile, reloadProfile, onLogout });
 
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -56,6 +57,7 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
     () =>
       visibleNavItems({
         members: canOpenMembers,
+        messaging: canUseMessaging,
         points: canViewPoints,
         activity: canViewHistory,
         news: canManageNews,
@@ -63,6 +65,7 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
       }),
     [
       canOpenMembers,
+      canUseMessaging,
       canViewPoints,
       canViewHistory,
       canManageNews,
@@ -72,6 +75,7 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
 
   const badges = {
     overdue: overdueTodoCount,
+    unread: unreadCount,
     pending: canManageMembers ? pendingMemberCount : 0,
     news: recentNewsCount,
   };
@@ -256,6 +260,14 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
                   profile={profile}
                   isAdmin={isAdmin || canManageTodos}
                   onLogAction={logAdminAction}
+                />
+              )}
+
+              {activeTab === "messages" && canUseMessaging && (
+                <Messages
+                  members={rankedMembers}
+                  currentUserId={profile.id}
+                  profile={profile}
                 />
               )}
 

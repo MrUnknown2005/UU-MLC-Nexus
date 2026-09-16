@@ -31,6 +31,7 @@ export function usePermissions(profile) {
   const canViewAnalytics = hasPermission("view_analytics");
   const canManageNews = hasPermission("manage_news");
   const canManageRoles = hasPermission("manage_roles");
+  const canUseMessaging = hasPermission("use_messaging");
 
   const isAdmin =
     hasPermission("view_admin") ||
@@ -101,6 +102,7 @@ export function usePermissions(profile) {
     canViewAnalytics,
     canManageNews,
     canManageRoles,
+    canUseMessaging,
     isAdmin,
     isHeadAdmin,
     loadRoleAccess,

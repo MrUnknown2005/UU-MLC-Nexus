@@ -15,6 +15,12 @@ export const PERMISSION_CATALOG = [
     category: "Workspace",
   },
   {
+    key: "use_messaging",
+    name: "Use Messaging",
+    description: "Send direct and group messages to other members.",
+    category: "Workspace",
+  },
+  {
     key: "view_directory",
     name: "View Directory",
     description: "Browse active club members in the directory.",
@@ -135,7 +141,7 @@ export const SYSTEM_ROLE_DEFINITIONS = [
 
 export const LEGACY_ROLE_PERMISSIONS = {
   guest: [],
-  member: ["view_directory", "view_todo", "view_points"],
+  member: ["view_directory", "view_todo", "view_points", "use_messaging"],
   executive: [
     "view_admin",
     "view_directory",
@@ -144,6 +150,7 @@ export const LEGACY_ROLE_PERMISSIONS = {
     "manage_todos",
     "view_points",
     "award_points",
+    "use_messaging",
   ],
   administrator: [
     "view_admin",
@@ -159,6 +166,7 @@ export const LEGACY_ROLE_PERMISSIONS = {
     "view_history",
     "view_analytics",
     "manage_news",
+    "use_messaging",
   ],
   head_admin: PERMISSION_KEYS,
 };
