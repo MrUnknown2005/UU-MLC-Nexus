@@ -147,6 +147,67 @@ export async function unreadMessageCount() {
   return supabase.rpc("unread_message_count");
 }
 
+// ---- Safety & break-glass (Phase B) ----------------------------------------
+//
+// Every privileged action below runs through a SECURITY DEFINER RPC that logs
+// to admin_activity_log; the client never writes these tables directly. See
+// 20260916100000_messaging_breakglass.sql.
+
+/** A participant reports a conversation — their report is their consent. */
+export async function reportConversation(conversationId, reason) {
+  return supabase.rpc("report_conversation", {
+    p_conversation_id: conversationId,
+    p_reason: reason,
+  });
+}
+
+/** Open reports the caller can see (their own, or all if head admin). */
+export async function fetchConversationReports() {
+  return supabase
+    .from("conversation_reports")
+    .select("id, conversation_id, reporter_id, reason, kind, status, created_at")
+    .eq("status", "open")
+    .order("created_at", { ascending: false });
+}
+
+/**
+ * Head admin opens a break-glass request against a known conversation:
+ * 'reported' escalates an open report, 'suspected' acts without one. Needs
+ * >= 3 head admins and records the opener's own approving vote.
+ */
+export async function openBreakglass(conversationId, reason, kind) {
+  return supabase.rpc("open_breakglass", {
+    p_conversation_id: conversationId,
+    p_reason: reason,
+    p_kind: kind,
+  });
+}
+
+/**
+ * The suspected path when the admin has no conversation id — resolve the direct
+ * thread between two members, then open a suspected request against it.
+ */
+export async function openSuspectedBreakglass(memberA, memberB, reason) {
+  return supabase.rpc("open_suspected_breakglass", {
+    p_member_a: memberA,
+    p_member_b: memberB,
+    p_reason: reason,
+  });
+}
+
+/** Cast a head-admin vote; returns the grant's resulting status string. */
+export async function voteBreakglass(grantId, vote) {
+  return supabase.rpc("vote_breakglass", {
+    p_grant_id: grantId,
+    p_vote: vote,
+  });
+}
+
+/** The live break-glass queue with tallies and the caller's own vote. */
+export async function fetchPendingGrants() {
+  return supabase.rpc("breakglass_queue");
+}
+
 // ---- Realtime --------------------------------------------------------------
 
 /**
@@ -218,6 +279,12 @@ export default {
   openGroupConversation,
   markConversationRead,
   unreadMessageCount,
+  reportConversation,
+  fetchConversationReports,
+  openBreakglass,
+  openSuspectedBreakglass,
+  voteBreakglass,
+  fetchPendingGrants,
   subscribeToInbox,
   subscribeToConversation,
 };

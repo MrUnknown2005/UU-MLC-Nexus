@@ -10,6 +10,7 @@ import { Modal } from "../ui/Modal.jsx";
 import { Panel } from "../ui/Panel.jsx";
 import { Popover } from "../ui/Popover.jsx";
 import { SearchInput } from "../ui/SearchInput.jsx";
+import { Select } from "../ui/Select.jsx";
 import { SegmentedControl } from "../ui/SegmentedControl.jsx";
 import { Skeleton } from "../ui/Skeleton.jsx";
 import { TextInput } from "../ui/TextInput.jsx";
@@ -21,20 +22,26 @@ import {
   createGroupConversation,
   deleteMessage,
   fetchBlocks,
+  fetchConversationReports,
   fetchConversations,
   fetchMessages,
   fetchParticipants,
+  fetchPendingGrants,
   fetchRecentMessages,
   isSchemaMissingError,
   leaveConversation,
   markConversationRead,
+  openBreakglass,
   openGroupConversation,
+  openSuspectedBreakglass,
+  reportConversation,
   sendMessage,
   setDmPrivacy,
   startDirectConversation,
   subscribeToConversation,
   subscribeToInbox,
   unblockMember,
+  voteBreakglass,
 } from "../../services/messagingService.js";
 import { cn } from "../../lib/cn.js";
 import {
@@ -62,6 +69,13 @@ const PRIVACY_HELP = {
 const MENU_ITEM =
   "flex w-full items-center gap-2.5 rounded-[8px] px-2.5 py-2 text-left text-[0.8125rem] font-medium transition-colors";
 
+/* Whole hours from now until an ISO timestamp, floored at 0. Kept at module
+   scope (like formatRelative) so the impure clock read stays out of render. */
+function hoursUntil(iso) {
+  if (!iso) return 0;
+  return Math.max(0, Math.round((new Date(iso) - Date.now()) / 3600000));
+}
+
 /**
  * Members-only in-app chat: direct messages, ad-hoc groups, and one auto-room
  * per admin-assigned Group. Loads its own data (mountedRef + refetch-on-event,
@@ -71,7 +85,12 @@ const MENU_ITEM =
  * Identity is shown as displayName + Avatar only. The profiles table holds no
  * contact fields, so the member list here cannot leak any — there is none.
  */
-export default function Messages({ members = [], currentUserId, profile }) {
+export default function Messages({
+  members = [],
+  currentUserId,
+  profile,
+  isHeadAdmin = false,
+}) {
   const confirm = useConfirm();
   const { toast } = useToast();
 
@@ -103,6 +122,22 @@ export default function Messages({ members = [], currentUserId, profile }) {
 
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const [privacy, setPrivacy] = useState(profile?.dm_privacy || "everyone");
+
+  // Safety: a participant can report a conversation; head admins review the
+  // break-glass queue and can open the suspected path. All writes are RPCs.
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [reporting, setReporting] = useState(false);
+
+  const [safetyOpen, setSafetyOpen] = useState(false);
+  const [safetyLoading, setSafetyLoading] = useState(false);
+  const [safetyBusy, setSafetyBusy] = useState(null);
+  const [reports, setReports] = useState([]);
+  const [grants, setGrants] = useState([]);
+  const [suspectA, setSuspectA] = useState("");
+  const [suspectB, setSuspectB] = useState("");
+  const [suspectReason, setSuspectReason] = useState("");
+  const [suspecting, setSuspecting] = useState(false);
 
   const mountedRef = useRef(true);
   const autoRoomsRef = useRef(false);
@@ -146,6 +181,26 @@ export default function Messages({ members = [], currentUserId, profile }) {
     setRecentMessages(msgRes.data || []);
     setBlockedIds(new Set((blockRes.data || []).map((row) => row.blocked_id)));
     setLoading(false);
+  }, []);
+
+  // Head-admin only: the open reports and the live break-glass queue. Loaded
+  // on demand when the Safety review modal opens and after each action — not a
+  // realtime subscription, since it's a rare, deliberate flow.
+  const loadSafety = useCallback(async () => {
+    const [reportRes, grantRes] = await Promise.all([
+      fetchConversationReports(),
+      fetchPendingGrants(),
+    ]);
+    if (!mountedRef.current) return;
+    if (reportRes.error && !isSchemaMissingError(reportRes.error)) {
+      console.error("Safety reports load error:", reportRes.error);
+    }
+    if (grantRes.error && !isSchemaMissingError(grantRes.error)) {
+      console.error("Break-glass queue load error:", grantRes.error);
+    }
+    setReports(reportRes.error ? [] : reportRes.data || []);
+    setGrants(grantRes.error ? [] : grantRes.data || []);
+    setSafetyLoading(false);
   }, []);
 
   useEffect(() => {
@@ -366,6 +421,28 @@ export default function Messages({ members = [], currentUserId, profile }) {
     );
   }, [members, currentUserId, groupSearch]);
 
+  // A conversation with a live grant is already in review — don't offer to open
+  // a second one for it (the RPC guards this too; this just keeps the UI honest).
+  const liveGrantConvIds = useMemo(
+    () => new Set(grants.map((grant) => grant.conversation_id)),
+    [grants],
+  );
+
+  const actionableReports = useMemo(
+    () => reports.filter((report) => !liveGrantConvIds.has(report.conversation_id)),
+    [reports, liveGrantConvIds],
+  );
+
+  // Any member who could be in a direct conversation, for the suspected picker.
+  const memberOptions = useMemo(
+    () =>
+      members
+        .filter((member) => member.role !== "guest" && member.is_active !== false)
+        .map((member) => ({ value: member.id, label: displayName(member) }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    [members],
+  );
+
   // ---- Actions -------------------------------------------------------------
 
   const send = async () => {
@@ -511,6 +588,104 @@ export default function Messages({ members = [], currentUserId, profile }) {
     toast.success("Privacy updated");
   };
 
+  // ---- Safety actions ------------------------------------------------------
+
+  const submitReport = async () => {
+    if (!activeConv) return;
+    const reason = reportReason.trim();
+    if (!reason) return;
+    setReporting(true);
+    const { error } = await reportConversation(activeConv.id, reason);
+    if (!mountedRef.current) return;
+    setReporting(false);
+    if (error) {
+      toast.error("Couldn't submit the report", { description: error.message });
+      return;
+    }
+    setReportOpen(false);
+    setReportReason("");
+    toast.success("Report submitted", {
+      description:
+        "Head admins can review this only by unanimous vote. You'll be notified if access is granted.",
+    });
+  };
+
+  const openSafety = () => {
+    setSafetyOpen(true);
+    setSafetyLoading(true);
+    setReports([]);
+    setGrants([]);
+    loadSafety();
+  };
+
+  const escalateReport = async (report) => {
+    setSafetyBusy(report.id);
+    const { error } = await openBreakglass(
+      report.conversation_id,
+      report.reason,
+      "reported",
+    );
+    if (!mountedRef.current) return;
+    setSafetyBusy(null);
+    if (error) {
+      toast.error("Couldn't open break-glass", { description: error.message });
+      return;
+    }
+    toast.success("Break-glass opened", {
+      description: "It now needs a unanimous vote of every head admin.",
+    });
+    loadSafety();
+  };
+
+  const castVote = async (grant, vote) => {
+    setSafetyBusy(grant.grant_id);
+    const { data, error } = await voteBreakglass(grant.grant_id, vote);
+    if (!mountedRef.current) return;
+    setSafetyBusy(null);
+    if (error) {
+      toast.error("Couldn't record your vote", { description: error.message });
+      return;
+    }
+    if (data === "active") {
+      toast.success("Access granted", {
+        description: "Participants have been notified. Access auto-expires.",
+      });
+      loadInbox();
+    } else if (data === "denied") {
+      toast.success("Request denied");
+    } else {
+      toast.success("Your vote was recorded");
+    }
+    loadSafety();
+  };
+
+  const initiateSuspected = async () => {
+    if (!suspectA || !suspectB || suspectA === suspectB) {
+      toast.error("Pick two different members");
+      return;
+    }
+    const reason = suspectReason.trim();
+    if (!reason) {
+      toast.error("Add a reason for this request");
+      return;
+    }
+    setSuspecting(true);
+    const { error } = await openSuspectedBreakglass(suspectA, suspectB, reason);
+    if (!mountedRef.current) return;
+    setSuspecting(false);
+    if (error) {
+      toast.error("Couldn't open the request", { description: error.message });
+      return;
+    }
+    setSuspectA("");
+    setSuspectB("");
+    setSuspectReason("");
+    toast.success("Suspected-conversation request opened", {
+      description: "It now needs a unanimous vote of every head admin.",
+    });
+    loadSafety();
+  };
+
   // ---- Render states -------------------------------------------------------
 
   if (loading) {
@@ -587,6 +762,14 @@ export default function Messages({ members = [], currentUserId, profile }) {
             size="sm"
             onClick={() => setGroupOpen(true)}
           />
+          {isHeadAdmin && (
+            <IconButton
+              icon="shield"
+              label="Safety review"
+              size="sm"
+              onClick={openSafety}
+            />
+          )}
         </div>
 
         <div className="border-b border-line p-2.5">
@@ -763,6 +946,18 @@ export default function Messages({ members = [], currentUserId, profile }) {
                       {otherBlocked ? "Unblock member" : "Block member"}
                     </button>
                   )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setReportReason("");
+                      setReportOpen(true);
+                    }}
+                    className={cn(MENU_ITEM, "text-ink hover:bg-hover")}
+                  >
+                    <Icon name="alert-triangle" size={16} />
+                    Report conversation
+                  </button>
                   <button
                     type="button"
                     onClick={leave}
@@ -1058,6 +1253,260 @@ export default function Messages({ members = [], currentUserId, profile }) {
           <p className="text-[0.75rem] text-ink-muted">{PRIVACY_HELP[privacy]}</p>
         </div>
       </Modal>
+
+      {/* Report a conversation (any participant) */}
+      <Modal
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        title="Report this conversation"
+        description="Reporting is your consent for head admins to review this conversation. Access is granted only by a unanimous vote of every head admin, is time-limited, fully logged, and you'll be notified if it's granted."
+        size="sm"
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setReportOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              loading={reporting}
+              disabled={!reportReason.trim()}
+              onClick={submitReport}
+            >
+              Submit report
+            </Button>
+          </div>
+        }
+      >
+        <label className="block space-y-1.5">
+          <span className="text-[0.75rem] font-medium text-ink-muted">
+            What's the safety concern?
+          </span>
+          <textarea
+            value={reportReason}
+            onChange={(event) => setReportReason(event.target.value)}
+            rows={4}
+            maxLength={1000}
+            placeholder="Briefly describe what's happening."
+            aria-label="Report reason"
+            className="nx-textarea w-full resize-none"
+          />
+        </label>
+      </Modal>
+
+      {/* Safety review (head admins only) */}
+      {isHeadAdmin && (
+        <Modal
+          open={safetyOpen}
+          onClose={() => setSafetyOpen(false)}
+          title="Safety review"
+          description="Break-glass gives head admins temporary, logged, read-only access to a private conversation. It needs a unanimous vote of every head admin and auto-expires; participants are notified when access begins."
+          size="lg"
+        >
+          {safetyLoading ? (
+            <div className="space-y-2">
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-24 w-full" />
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Live break-glass queue */}
+              <section className="space-y-2.5">
+                <h3 className="text-[0.8125rem] font-semibold text-ink">
+                  Break-glass requests
+                </h3>
+                {grants.length === 0 ? (
+                  <p className="text-[0.8125rem] text-ink-muted">
+                    No open requests.
+                  </p>
+                ) : (
+                  <ul className="space-y-2">
+                    {grants.map((grant) => {
+                      const active = grant.status === "active";
+                      const busy = safetyBusy === grant.grant_id;
+                      const requester = grant.requested_by
+                        ? displayName(resolveMember(grant.requested_by))
+                        : "A head admin";
+                      const hoursLeft = active ? hoursUntil(grant.expires_at) : null;
+                      return (
+                        <li
+                          key={grant.grant_id}
+                          className="nx-card space-y-2 rounded-control p-3"
+                        >
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <Badge
+                              tone={grant.kind === "suspected" ? "warn" : "info"}
+                              size="sm"
+                            >
+                              {grant.kind === "suspected"
+                                ? "Suspected"
+                                : "Reported"}
+                            </Badge>
+                            <Badge tone={active ? "success" : "neutral"} size="sm">
+                              {active ? "Access active" : "Awaiting votes"}
+                            </Badge>
+                          </div>
+                          <p className="text-[0.8125rem] break-words text-ink">
+                            {grant.reason || "No reason given."}
+                          </p>
+                          <p className="text-[0.72rem] text-ink-muted">
+                            Opened by {requester} · conversation #
+                            {String(grant.conversation_id).slice(0, 8)}
+                          </p>
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[0.72rem] text-ink-muted">
+                              {grant.yes_count}/{grant.head_admins} approved
+                              {grant.no_count > 0
+                                ? ` · ${grant.no_count} against`
+                                : ""}
+                            </span>
+                            {active ? (
+                              <span className="flex items-center gap-1 text-[0.72rem] font-medium text-success">
+                                <Icon name="clock" size={13} />
+                                {hoursLeft === 0
+                                  ? "Expiring"
+                                  : `Expires in ~${hoursLeft}h`}
+                              </span>
+                            ) : (
+                              <div className="flex items-center gap-1.5">
+                                <Button
+                                  size="sm"
+                                  variant="danger-soft"
+                                  loading={busy}
+                                  disabled={busy}
+                                  onClick={() => castVote(grant, false)}
+                                >
+                                  Deny
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="primary"
+                                  loading={busy}
+                                  disabled={busy}
+                                  onClick={() => castVote(grant, true)}
+                                >
+                                  {grant.my_vote === true ? "Approved" : "Approve"}
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                          {grant.my_vote != null && !active && (
+                            <p className="text-[0.6875rem] text-ink-subtle">
+                              You voted {grant.my_vote ? "to approve" : "to deny"}.
+                            </p>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </section>
+
+              {/* Open reports awaiting escalation */}
+              <section className="space-y-2.5">
+                <h3 className="text-[0.8125rem] font-semibold text-ink">
+                  Reported conversations
+                </h3>
+                {actionableReports.length === 0 ? (
+                  <p className="text-[0.8125rem] text-ink-muted">
+                    No open reports.
+                  </p>
+                ) : (
+                  <ul className="space-y-2">
+                    {actionableReports.map((report) => {
+                      const busy = safetyBusy === report.id;
+                      const reporter = report.reporter_id
+                        ? displayName(resolveMember(report.reporter_id))
+                        : "A member";
+                      return (
+                        <li
+                          key={report.id}
+                          className="nx-card space-y-2 rounded-control p-3"
+                        >
+                          <p className="text-[0.8125rem] break-words text-ink">
+                            {report.reason || "No reason given."}
+                          </p>
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[0.72rem] text-ink-muted">
+                              Reported by {reporter} · #
+                              {String(report.conversation_id).slice(0, 8)}
+                            </span>
+                            <Button
+                              size="sm"
+                              variant="primary"
+                              loading={busy}
+                              disabled={busy}
+                              onClick={() => escalateReport(report)}
+                            >
+                              Open break-glass
+                            </Button>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </section>
+
+              {/* Suspected path — head-admin initiated, no participant report */}
+              <section className="space-y-2.5">
+                <h3 className="text-[0.8125rem] font-semibold text-ink">
+                  Suspected conversation
+                </h3>
+                <p className="text-[0.75rem] text-ink-muted">
+                  Open a request against the direct conversation between two
+                  members without a report. This still needs a unanimous vote and
+                  is logged.
+                </p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <Select
+                    label="Member"
+                    value={suspectA}
+                    onChange={(event) => setSuspectA(event.target.value)}
+                    options={memberOptions}
+                    placeholder="Select a member"
+                  />
+                  <Select
+                    label="Other member"
+                    value={suspectB}
+                    onChange={(event) => setSuspectB(event.target.value)}
+                    options={memberOptions}
+                    placeholder="Select a member"
+                  />
+                </div>
+                <label className="block space-y-1.5">
+                  <span className="text-[0.75rem] font-medium text-ink-muted">
+                    Reason
+                  </span>
+                  <textarea
+                    value={suspectReason}
+                    onChange={(event) => setSuspectReason(event.target.value)}
+                    rows={3}
+                    maxLength={1000}
+                    placeholder="Why does this conversation need review?"
+                    aria-label="Suspected request reason"
+                    className="nx-textarea w-full resize-none"
+                  />
+                </label>
+                <div className="flex justify-end">
+                  <Button
+                    variant="danger"
+                    loading={suspecting}
+                    disabled={
+                      !suspectA ||
+                      !suspectB ||
+                      suspectA === suspectB ||
+                      !suspectReason.trim()
+                    }
+                    onClick={initiateSuspected}
+                  >
+                    Open request
+                  </Button>
+                </div>
+              </section>
+            </div>
+          )}
+        </Modal>
+      )}
     </div>
   );
 }

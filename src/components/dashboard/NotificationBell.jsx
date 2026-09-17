@@ -11,6 +11,7 @@ const TYPE_ICON = {
   todo: "check-circle",
   points: "trophy",
   member: "users",
+  message: "send",
 };
 
 const TYPE_TONE = {
@@ -18,6 +19,7 @@ const TYPE_TONE = {
   todo: "bg-success-soft text-success",
   points: "bg-brand-soft text-brand-text",
   member: "bg-violet-soft text-violet",
+  message: "bg-info-soft text-info",
 };
 
 /**

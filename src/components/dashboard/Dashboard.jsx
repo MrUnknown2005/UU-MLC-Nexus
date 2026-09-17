@@ -268,6 +268,7 @@ export default function Dashboard({ profile, onLogout, reloadProfile }) {
                   members={rankedMembers}
                   currentUserId={profile.id}
                   profile={profile}
+                  isHeadAdmin={isHeadAdmin}
                 />
               )}
 
