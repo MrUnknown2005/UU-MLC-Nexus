@@ -211,13 +211,32 @@ export async function fetchPendingGrants() {
 // ---- Realtime --------------------------------------------------------------
 
 /**
+ * Per-subscription channel-topic suffix.
+ *
+ * `@supabase/realtime-js` returns an EXISTING channel when a topic is reused,
+ * and adding `postgres_changes` bindings to an already-subscribed channel
+ * throws ("cannot add postgres_changes callbacks ... after subscribe()"). The
+ * sidebar badge (useUnreadMessages) and the open Messages page both subscribe
+ * to the inbox for the same user at the same time, so a shared static topic
+ * collides and crashes the tab. A monotonic per-call suffix guarantees every
+ * subscription gets its own fresh channel — do not fold these back to a static
+ * topic. (The Todo feature avoids the same trap by using distinct topics for
+ * its badge and its page.)
+ */
+let channelSeq = 0;
+function nextChannelTopic(base) {
+  channelSeq += 1;
+  return `${base}-${channelSeq}`;
+}
+
+/**
  * One channel covering everything the inbox depends on: new/updated
  * conversations, participant changes (added to a thread, read cursor), and
  * messages. Returns an unsubscribe, same shape as groupService.
  */
 export function subscribeToInbox(onChange) {
   const channel = supabase
-    .channel("messaging-inbox")
+    .channel(nextChannelTopic("messaging-inbox"))
     .on(
       "postgres_changes",
       { event: "*", schema: "public", table: "conversations" },
@@ -245,7 +264,7 @@ export function subscribeToInbox(onChange) {
  */
 export function subscribeToConversation(conversationId, onChange) {
   const channel = supabase
-    .channel(`messaging-conversation-${conversationId}`)
+    .channel(nextChannelTopic(`messaging-conversation-${conversationId}`))
     .on(
       "postgres_changes",
       {
