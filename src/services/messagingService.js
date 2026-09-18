@@ -103,6 +103,15 @@ export async function leaveConversation(conversationId, memberId) {
     .eq("member_id", memberId);
 }
 
+/**
+ * Delete a whole conversation (RLS: creators only — `created_by = auth.uid()`).
+ * The `on delete cascade` on participants and messages means it disappears for
+ * everyone: the "delete for all" counterpart to leaveConversation's remove-me.
+ */
+export async function deleteConversation(conversationId) {
+  return supabase.from("conversations").delete().eq("id", conversationId);
+}
+
 export async function blockMember(blockerId, blockedId) {
   return supabase
     .from("messaging_blocks")
@@ -290,6 +299,7 @@ export default {
   sendMessage,
   deleteMessage,
   leaveConversation,
+  deleteConversation,
   blockMember,
   unblockMember,
   setDmPrivacy,

@@ -20,6 +20,7 @@ import { fetchGroupMembers } from "../../services/groupService.js";
 import {
   blockMember,
   createGroupConversation,
+  deleteConversation,
   deleteMessage,
   fetchBlocks,
   fetchConversationReports,
@@ -109,6 +110,7 @@ export default function Messages({
 
   const [inboxSearch, setInboxSearch] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [membersOpen, setMembersOpen] = useState(false);
 
   const [dmOpen, setDmOpen] = useState(false);
   const [dmSearch, setDmSearch] = useState("");
@@ -391,12 +393,44 @@ export default function Messages({
     () => (activeConv ? describeConversation(activeConv) : null),
     [activeConv, describeConversation],
   );
-  const activeParticipants = activeDesc?.parts || [];
   const otherBlocked =
     activeDesc && !activeDesc.isGroup && activeDesc.otherId
       ? blockedIds.has(activeDesc.otherId)
       : false;
   const threadReady = thread.id === activeId;
+
+  // I can delete a conversation outright (for everyone) only if I created it and
+  // it isn't an auto-room: an auto-room mirrors its Group roster, so deleting it
+  // just re-syncs back on the next visit — leaving is the only sensible action
+  // there. Ad-hoc groups and DMs I started are mine to delete.
+  const iCreatedActive = Boolean(
+    activeConv && activeConv.created_by === currentUserId,
+  );
+  const canDeleteActive =
+    iCreatedActive && Boolean(activeDesc?.isGroup) && !activeConv?.group_id;
+
+  // The group's roster for the header: me first (shown as "You"), then everyone
+  // else by name. Resolved from the members list the dashboard already holds —
+  // never a profiles join. Empty for DMs.
+  const activeGroupMembers = useMemo(() => {
+    if (!activeDesc?.isGroup) return [];
+    const others = activeDesc.others
+      .map((part) => resolveMember(part.member_id))
+      .sort((a, b) => displayName(a).localeCompare(displayName(b)));
+    const iAmIn = (activeDesc.parts || []).some(
+      (part) => part.member_id === currentUserId,
+    );
+    return iAmIn ? [resolveMember(currentUserId), ...others] : others;
+  }, [activeDesc, resolveMember, currentUserId]);
+
+  // A short, glanceable roster line under a group's title ("You, Ana, Ben +2").
+  const groupMemberPreview = useMemo(() => {
+    const names = activeGroupMembers.map((member) =>
+      member.id === currentUserId ? "You" : displayName(member),
+    );
+    if (names.length <= 3) return names.join(", ");
+    return `${names.slice(0, 3).join(", ")} +${names.length - 3}`;
+  }, [activeGroupMembers, currentUserId]);
 
   const dmCandidates = useMemo(() => {
     const needle = dmSearch.trim().toLowerCase();
@@ -538,25 +572,69 @@ export default function Messages({
     loadInbox();
   };
 
-  const leave = async () => {
+  // Optimistically drop a conversation from every local list so it disappears
+  // the instant you act. The realtime refetch that follows agrees — the row is
+  // really gone server-side (your participant row, or the whole conversation) —
+  // so it never flickers back.
+  const dropConversationLocally = (conversationId) => {
+    setConversations((prev) => prev.filter((conv) => conv.id !== conversationId));
+    setParticipants((prev) =>
+      prev.filter((part) => part.conversation_id !== conversationId),
+    );
+    setRecentMessages((prev) =>
+      prev.filter((message) => message.conversation_id !== conversationId),
+    );
+    setActiveId((prev) => (prev === conversationId ? null : prev));
+  };
+
+  // Remove yourself — deletes your own participant row. For a group you stop
+  // receiving it (others keep the room); for a DM it's gone from your side.
+  const removeSelf = async () => {
+    if (!activeConv) return;
+    const isGroup = activeDesc?.isGroup;
+    setMenuOpen(false);
+    const confirmed = await confirm({
+      title: isGroup ? "Leave this group?" : "Delete this conversation?",
+      description: isGroup
+        ? "You'll stop receiving its messages. Someone can add you back later."
+        : "It's removed from your list. You can start a new one anytime.",
+      tone: "danger",
+      confirmLabel: isGroup ? "Leave" : "Delete",
+    });
+    if (!confirmed) return;
+    const conversationId = activeConv.id;
+    const { error } = await leaveConversation(conversationId, currentUserId);
+    if (error) {
+      toast.error(isGroup ? "Couldn't leave" : "Couldn't delete", {
+        description: error.message,
+      });
+      return;
+    }
+    dropConversationLocally(conversationId);
+    toast.success(isGroup ? "You left the group" : "Conversation deleted");
+  };
+
+  // Creator-only: delete the whole conversation for everyone (cascade removes
+  // its participants and messages).
+  const deleteConv = async () => {
     if (!activeConv) return;
     setMenuOpen(false);
     const confirmed = await confirm({
-      title: "Leave this conversation?",
+      title: "Delete this group for everyone?",
       description:
-        "You'll stop receiving its messages. Someone can add you back later.",
+        "Every message is permanently removed for all members. This can't be undone.",
       tone: "danger",
-      confirmLabel: "Leave",
+      confirmLabel: "Delete group",
     });
     if (!confirmed) return;
-    const { error } = await leaveConversation(activeConv.id, currentUserId);
+    const conversationId = activeConv.id;
+    const { error } = await deleteConversation(conversationId);
     if (error) {
-      toast.error("Couldn't leave", { description: error.message });
+      toast.error("Couldn't delete the group", { description: error.message });
       return;
     }
-    setActiveId(null);
-    await loadInbox();
-    toast.success("You left the conversation");
+    dropConversationLocally(conversationId);
+    toast.success("Group deleted");
   };
 
   const removeMessage = async (message) => {
@@ -909,11 +987,68 @@ export default function Messages({
                     <Icon name="ban" size={13} className="shrink-0 text-danger" />
                   )}
                 </p>
-                <p className="truncate text-[0.72rem] text-ink-muted">
-                  {activeDesc.isGroup
-                    ? countLabel(activeParticipants.length, "member")
-                    : "Direct message"}
-                </p>
+                {activeDesc.isGroup ? (
+                  <Popover
+                    open={membersOpen}
+                    onOpenChange={setMembersOpen}
+                    label="Group members"
+                    width="15rem"
+                    renderTrigger={(triggerProps) => (
+                      <button
+                        type="button"
+                        className="flex max-w-full items-center gap-1 truncate text-[0.72rem] text-ink-muted transition-colors hover:text-ink"
+                        {...triggerProps}
+                      >
+                        <span className="truncate">{groupMemberPreview}</span>
+                        <Icon
+                          name="chevron-down"
+                          size={12}
+                          className="shrink-0"
+                        />
+                      </button>
+                    )}
+                  >
+                    <div className="p-1">
+                      <p className="px-1.5 pt-0.5 pb-1.5 text-[0.6875rem] font-semibold tracking-wide text-ink-subtle uppercase">
+                        {countLabel(activeGroupMembers.length, "member")}
+                      </p>
+                      <div className="nx-scroll-y flex max-h-64 flex-col gap-0.5">
+                        {activeGroupMembers.map((member) => (
+                          <div
+                            key={member.id}
+                            className="flex items-center gap-2.5 rounded-[8px] px-1.5 py-1.5"
+                          >
+                            <Avatar
+                              src={member.avatar_url}
+                              name={displayName(member)}
+                              seed={member.id}
+                              size="xs"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-[0.8125rem] font-medium text-ink">
+                                {displayName(member)}
+                                {member.id === currentUserId && (
+                                  <span className="font-normal text-ink-subtle">
+                                    {" · You"}
+                                  </span>
+                                )}
+                              </p>
+                              {member.role && (
+                                <p className="truncate text-[0.6875rem] text-ink-muted">
+                                  {humanizeToken(member.role)}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </Popover>
+                ) : (
+                  <p className="truncate text-[0.72rem] text-ink-muted">
+                    Direct message
+                  </p>
+                )}
               </div>
 
               <Popover
@@ -960,12 +1095,30 @@ export default function Messages({
                   </button>
                   <button
                     type="button"
-                    onClick={leave}
+                    onClick={removeSelf}
                     className={cn(MENU_ITEM, "text-danger hover:bg-danger-soft")}
                   >
-                    <Icon name="log-out" size={16} />
-                    Leave conversation
+                    <Icon
+                      name={activeDesc.isGroup ? "log-out" : "trash"}
+                      size={16}
+                    />
+                    {activeDesc.isGroup
+                      ? "Leave conversation"
+                      : "Delete conversation"}
                   </button>
+                  {canDeleteActive && (
+                    <button
+                      type="button"
+                      onClick={deleteConv}
+                      className={cn(
+                        MENU_ITEM,
+                        "text-danger hover:bg-danger-soft",
+                      )}
+                    >
+                      <Icon name="trash" size={16} />
+                      Delete group for everyone
+                    </button>
+                  )}
                 </div>
               </Popover>
             </div>
