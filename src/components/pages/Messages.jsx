@@ -594,24 +594,24 @@ export default function Messages({
     const isGroup = activeDesc?.isGroup;
     setMenuOpen(false);
     const confirmed = await confirm({
-      title: isGroup ? "Leave this group?" : "Delete this conversation?",
+      title: isGroup ? "Leave this group?" : "Remove this conversation?",
       description: isGroup
         ? "You'll stop receiving its messages. Someone can add you back later."
-        : "It's removed from your list. You can start a new one anytime.",
+        : "It's removed from your list. If you message them again, your past chat reappears.",
       tone: "danger",
-      confirmLabel: isGroup ? "Leave" : "Delete",
+      confirmLabel: isGroup ? "Leave" : "Remove",
     });
     if (!confirmed) return;
     const conversationId = activeConv.id;
     const { error } = await leaveConversation(conversationId, currentUserId);
     if (error) {
-      toast.error(isGroup ? "Couldn't leave" : "Couldn't delete", {
+      toast.error(isGroup ? "Couldn't leave" : "Couldn't remove", {
         description: error.message,
       });
       return;
     }
     dropConversationLocally(conversationId);
-    toast.success(isGroup ? "You left the group" : "Conversation deleted");
+    toast.success(isGroup ? "You left the group" : "Conversation removed");
   };
 
   // Creator-only: delete the whole conversation for everyone (cascade removes
@@ -1104,7 +1104,7 @@ export default function Messages({
                     />
                     {activeDesc.isGroup
                       ? "Leave conversation"
-                      : "Delete conversation"}
+                      : "Remove conversation"}
                   </button>
                   {canDeleteActive && (
                     <button

@@ -283,6 +283,7 @@ create table if not exists public.conversations (
   created_by      uuid,
   created_at      timestamptz not null default now(),
   last_message_at timestamptz not null default now(),
+  direct_key      text,
   constraint conversations_pkey primary key (id),
   constraint conversations_group_id_fkey foreign key (group_id)
     references public.groups(id) on delete set null,
@@ -449,11 +450,15 @@ create index if not exists idx_groups_created_by
 create index if not exists idx_group_members_member_id
   on public.group_members using btree (member_id);
 
--- Messaging: one group room per Group (partial unique), recency sort, and the
+-- Messaging: one group room per Group (partial unique), one direct thread per
+-- pair (partial unique on the canonical pair key), recency sort, and the
 -- per-conversation / per-member lookups the inbox and thread views hit.
 create unique index if not exists idx_conversations_group_unique
   on public.conversations (group_id)
   where kind = 'group' and group_id is not null;
+create unique index if not exists idx_conversations_direct_unique
+  on public.conversations (direct_key)
+  where kind = 'direct' and direct_key is not null;
 create index if not exists idx_conversations_last_message_at
   on public.conversations using btree (last_message_at desc);
 create index if not exists idx_conversation_participants_member
@@ -1197,6 +1202,7 @@ declare
   target_privacy text;
   target_active  boolean;
   target_role    text;
+  pair_key       text;
   existing_id    uuid;
   new_id         uuid;
 begin
@@ -1244,27 +1250,41 @@ begin
     end if;
   end if;
 
-  -- Existing direct thread for this exact pair, if any.
+  -- Canonical, order-independent key for this pair. It finds the one existing
+  -- thread even if either side had left it (their participant row was deleted).
+  pair_key := least(caller, target)::text || ':' || greatest(caller, target)::text;
+
   select c.id into existing_id
   from public.conversations c
-  where c.kind = 'direct'
-    and exists (select 1 from public.conversation_participants p
-                where p.conversation_id = c.id and p.member_id = caller)
-    and exists (select 1 from public.conversation_participants p
-                where p.conversation_id = c.id and p.member_id = target)
+  where c.kind = 'direct' and c.direct_key = pair_key
   limit 1;
 
   if existing_id is not null then
+    -- Reopen: put BOTH parties back so the old history reappears for whoever had
+    -- left. Blocks / privacy were already cleared above; re-adding the target is
+    -- exactly what opening a DM does in the first place.
+    insert into public.conversation_participants (conversation_id, member_id, added_by)
+    values (existing_id, caller, caller), (existing_id, target, caller)
+    on conflict (conversation_id, member_id) do nothing;
     return existing_id;
   end if;
 
-  insert into public.conversations (kind, created_by)
-  values ('direct', caller)
-  returning id into new_id;
+  -- The pair has never had a thread: create the canonical one.
+  begin
+    insert into public.conversations (kind, created_by, direct_key)
+    values ('direct', caller, pair_key)
+    returning id into new_id;
+  exception when unique_violation then
+    -- A concurrent caller created it a moment ago; use that one.
+    select c.id into new_id
+    from public.conversations c
+    where c.kind = 'direct' and c.direct_key = pair_key
+    limit 1;
+  end;
 
   insert into public.conversation_participants (conversation_id, member_id, added_by)
   values (new_id, caller, caller), (new_id, target, caller)
-  on conflict do nothing;
+  on conflict (conversation_id, member_id) do nothing;
 
   return new_id;
 end;
