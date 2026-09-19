@@ -1188,7 +1188,10 @@ as $$
     from public.conversation_participants p
     where p.conversation_id = target_conversation_id
       and p.member_id = auth.uid()
-  );
+  )
+  -- Hardening (20260919000000): a participant with use_messaging revoked
+  -- (deactivated / guest / custom role without the grant) loses every read too.
+  and public.has_permission('use_messaging');
 $$;
 
 create or replace function public.start_direct_conversation(target uuid)
@@ -1430,6 +1433,102 @@ begin
   set last_message_at = new.created_at
   where id = new.conversation_id;
   return new;
+end;
+$$;
+
+-- 3e-bis · Messaging RLS hardening trigger functions (20260919000000).
+--   messaging_require_use_permission — H2: reject any end-user write to the
+--     messaging tables from an account without use_messaging. Fires in the RLS
+--     insert path AND inside the SECURITY DEFINER RPCs (auth.uid() there is still
+--     the caller), so deactivated / guest / unpermitted callers cannot create
+--     threads or send. auth.uid() IS NULL (migrations / service_role) is skipped.
+--   conversations_freeze_identity — H3: freeze created_by / kind / group_id /
+--     direct_key against end-user UPDATEs so a non-creator can never seize the
+--     conversation and trigger the creators-only cascade delete. title and
+--     last_message_at stay writable (rename + the touch trigger keep working).
+--   messages_enforce_block — M2: enforce a block on every send in a direct
+--     thread, not only when the DM was first opened.
+--   sync_group_member_removal — M3: when a member is removed from a Group, drop
+--     their row from that Group's auto-room. The exists(groups) guard skips a
+--     whole-group deletion (parent already gone; conversations.group_id is being
+--     SET NULL by its own FK), matching the pre-existing behavior.
+create or replace function public.messaging_require_use_permission()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if auth.uid() is not null and not public.has_permission('use_messaging') then
+    raise exception 'Your account is not allowed to use messaging';
+  end if;
+  return new;
+end;
+$$;
+
+create or replace function public.conversations_freeze_identity()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if auth.uid() is not null then
+    if new.created_by is distinct from old.created_by
+       or new.kind is distinct from old.kind
+       or new.group_id is distinct from old.group_id then
+      raise exception 'This conversation field cannot be changed';
+    end if;
+    if to_jsonb(new) ? 'direct_key'
+       and (to_jsonb(new) ->> 'direct_key') is distinct from (to_jsonb(old) ->> 'direct_key') then
+      raise exception 'This conversation field cannot be changed';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+create or replace function public.messages_enforce_block()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if exists (
+    select 1 from public.conversations c
+    where c.id = new.conversation_id and c.kind = 'direct'
+  ) and exists (
+    select 1
+    from public.conversation_participants p
+    join public.messaging_blocks b
+      on (b.blocker_id = new.sender_id and b.blocked_id = p.member_id)
+      or (b.blocker_id = p.member_id and b.blocked_id = new.sender_id)
+    where p.conversation_id = new.conversation_id
+      and p.member_id <> new.sender_id
+  ) then
+    raise exception 'Messaging is blocked between these members';
+  end if;
+  return new;
+end;
+$$;
+
+create or replace function public.sync_group_member_removal()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if exists (select 1 from public.groups g where g.id = old.group_id) then
+    delete from public.conversation_participants cp
+    using public.conversations c
+    where c.kind = 'group'
+      and c.group_id = old.group_id
+      and cp.conversation_id = c.id
+      and cp.member_id = old.member_id;
+  end if;
+  return old;
 end;
 $$;
 
@@ -1709,7 +1808,8 @@ begin
     return 'denied';
   end if;
 
-  if yes_count >= admins then
+  -- Hardening (20260919000000): unanimous AND never below the 3-head-admin floor.
+  if yes_count >= admins and admins >= 3 then
     update public.breakglass_grants
     set status = 'active', expires_at = now() + interval '72 hours'
     where id = p_grant_id;
@@ -1845,6 +1945,37 @@ drop trigger if exists trg_touch_conversation_last_message on public.messages;
 create trigger trg_touch_conversation_last_message
   after insert on public.messages
   for each row execute function public.touch_conversation_last_message();
+
+-- Messaging RLS hardening triggers (20260919000000).
+drop trigger if exists trg_conversations_require_use on public.conversations;
+create trigger trg_conversations_require_use
+  before insert on public.conversations
+  for each row execute function public.messaging_require_use_permission();
+
+drop trigger if exists trg_participants_require_use on public.conversation_participants;
+create trigger trg_participants_require_use
+  before insert on public.conversation_participants
+  for each row execute function public.messaging_require_use_permission();
+
+drop trigger if exists trg_messages_require_use on public.messages;
+create trigger trg_messages_require_use
+  before insert on public.messages
+  for each row execute function public.messaging_require_use_permission();
+
+drop trigger if exists trg_conversations_freeze_identity on public.conversations;
+create trigger trg_conversations_freeze_identity
+  before update on public.conversations
+  for each row execute function public.conversations_freeze_identity();
+
+drop trigger if exists trg_messages_enforce_block on public.messages;
+create trigger trg_messages_enforce_block
+  before insert on public.messages
+  for each row execute function public.messages_enforce_block();
+
+drop trigger if exists trg_sync_group_member_removal on public.group_members;
+create trigger trg_sync_group_member_removal
+  after delete on public.group_members
+  for each row execute function public.sync_group_member_removal();
 
 -- ----------------------------------------------------------------------------
 -- 5 · ROW LEVEL SECURITY  (enable on every table, then (re)create policies)
@@ -2214,11 +2345,11 @@ create policy "Participants can view participants" on public.conversation_partic
     or public.can_admin_read_conversation(conversation_id)
   );
 
+-- Hardening (20260919000000): no participant UPDATE policy. Relocating one's own
+-- row to another conversation_id (the PK's other half) would have granted reads
+-- of any thread; the read cursor is advanced only by the mark_conversation_read
+-- SECURITY DEFINER RPC, so no end-user UPDATE of this table is legitimate.
 drop policy if exists "Members can update own participation" on public.conversation_participants;
-create policy "Members can update own participation" on public.conversation_participants
-  as permissive for update to authenticated
-  using (member_id = (select auth.uid()))
-  with check (member_id = (select auth.uid()));
 
 drop policy if exists "Members can leave conversations" on public.conversation_participants;
 create policy "Members can leave conversations" on public.conversation_participants
@@ -2309,6 +2440,10 @@ revoke execute on function public.protect_profile_role_changes()    from authent
 revoke execute on function public.protect_profile_self_updates()    from authenticated;
 revoke execute on function public.protect_todo_member_updates()     from authenticated;
 revoke execute on function public.touch_conversation_last_message() from authenticated;
+revoke execute on function public.messaging_require_use_permission() from authenticated;
+revoke execute on function public.conversations_freeze_identity()    from authenticated;
+revoke execute on function public.messages_enforce_block()           from authenticated;
+revoke execute on function public.sync_group_member_removal()        from authenticated;
 revoke execute on function public.create_notification(uuid, text, text, text, text, text) from authenticated;
 revoke execute on function public.create_notification(uuid, text, text, text, text, uuid) from authenticated;
 
