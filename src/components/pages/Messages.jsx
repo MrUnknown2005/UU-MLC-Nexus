@@ -142,6 +142,7 @@ export default function Messages({
   const [suspecting, setSuspecting] = useState(false);
 
   const mountedRef = useRef(true);
+  const activeIdRef = useRef(null);
   const autoRoomsRef = useRef(false);
   const scrollRef = useRef(null);
   const composerRef = useRef(null);
@@ -222,10 +223,19 @@ export default function Messages({
     };
   }, [loadInbox]);
 
+  // Mirror the open conversation into a ref so a message fetch that resolves
+  // after the user has switched away can recognise itself as stale.
+  useEffect(() => {
+    activeIdRef.current = activeId;
+  }, [activeId]);
+
   const refreshThread = useCallback(async (conversationId) => {
     if (!conversationId) return;
     const { data, error } = await fetchMessages(conversationId);
-    if (!mountedRef.current) return;
+    // Drop a stale response: if the active conversation changed while this was
+    // in flight, applying it would pin thread.id to the old id and strand the
+    // now-open thread on its loading skeleton (threadReady never matches again).
+    if (!mountedRef.current || activeIdRef.current !== conversationId) return;
     if (error && !isSchemaMissingError(error)) {
       console.error("Thread load error:", error);
     }
@@ -501,6 +511,10 @@ export default function Messages({
   };
 
   const onComposerKeyDown = (event) => {
+    // While an IME composition is in flight (CJK and others), Enter commits the
+    // in-progress candidate — it is not a send. isComposing / keyCode 229 is the
+    // universal "composition in progress" signal.
+    if (event.nativeEvent.isComposing || event.keyCode === 229) return;
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       send();

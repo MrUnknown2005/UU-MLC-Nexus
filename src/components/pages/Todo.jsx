@@ -411,6 +411,10 @@ function Todo({ profile, isAdmin, onLogAction }) {
       }
 
       const taskName = title.trim();
+      // Persist a clean non-negative integer whatever reached the numeric field
+      // (the column is integer + CHECK points >= 0; this stops the client ever
+      // posting a fractional or negative value).
+      const pointsValue = Math.max(0, Math.round(Number(points) || 0));
 
       if (editingTodo) {
         const { error } = await supabase
@@ -419,7 +423,7 @@ function Todo({ profile, isAdmin, onLogAction }) {
             title: taskName,
             description: description.trim(),
             deadline: deadline || null,
-            points: Number(points) || 0,
+            points: pointsValue,
             image_url: imageUrl,
             updated_at: new Date().toISOString(),
           })
@@ -455,7 +459,7 @@ function Todo({ profile, isAdmin, onLogAction }) {
           title: taskName,
           description: description.trim(),
           deadline: deadline || null,
-          points: Number(points) || 0,
+          points: pointsValue,
           image_url: imageUrl,
           created_by: profile.id,
         });
