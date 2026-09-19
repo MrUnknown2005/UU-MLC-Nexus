@@ -486,13 +486,22 @@ create index if not exists idx_breakglass_grants_conversation
 create or replace function public.current_user_role()
   returns text
   language sql
-  security definer
+  stable security definer
   set search_path to 'public'
 as $function$
-  select role
-  from public.profiles
-  where id = auth.uid()
-  limit 1;
+  -- Hardening (20260913000000): stable; only ACTIVE members resolve to their
+  -- role, and a missing/deactivated caller coalesces to the 'guest' sentinel
+  -- (never null) so every negative role guard fails safe.
+  select coalesce(
+    (
+      select role
+      from public.profiles
+      where id = auth.uid()
+        and is_active = true
+      limit 1
+    ),
+    'guest'
+  );
 $function$;
 
 create or replace function public.has_permission(p_permission_key text)
@@ -759,11 +768,18 @@ as $function$
 begin
   if new.id = auth.uid() then
     if new.role is distinct from old.role
-       or new.points is distinct from old.points
        or new.is_active is distinct from old.is_active
        or new.created_at is distinct from old.created_at then
       raise exception 'You cannot change your role, points, account status, or creation date.';
     end if;
+
+    -- A self points change is allowed ONLY inside a trusted point RPC, which
+    -- sets the transaction-local app.admin_point_operation flag first.
+    if new.points is distinct from old.points
+       and coalesce(current_setting('app.admin_point_operation', true), '') <> 'true' then
+      raise exception 'You cannot change your role, points, account status, or creation date.';
+    end if;
+
     return new;
   end if;
 
@@ -923,7 +939,9 @@ begin
     raise exception 'You do not have permission to adjust points.';
   end if;
 
-  if p_member_id = auth.uid() then
+  -- Only administrators and head admins may adjust their own points.
+  if p_member_id = auth.uid()
+     and caller_role not in ('administrator', 'head_admin') then
     raise exception 'You cannot adjust your own points.';
   end if;
 
@@ -961,6 +979,12 @@ begin
   insert into public.point_history (member_id, points, reason, awarded_by)
   values (p_member_id, p_points, p_reason, auth.uid());
 
+  -- A self-adjust (admins only, per the guard above) must pass the guarded
+  -- self-points block in protect_profile_self_updates.
+  if p_member_id = auth.uid() then
+    perform set_config('app.admin_point_operation', 'true', true);
+  end if;
+
   update public.profiles
      set points = new_points
    where id = p_member_id;
@@ -978,10 +1002,6 @@ begin
     raise exception 'You do not have permission to reset points.';
   end if;
 
-  if p_member_id = auth.uid() then
-    raise exception 'You cannot reset your own points.';
-  end if;
-
   if not exists (select 1 from public.profiles where id = p_member_id) then
     raise exception 'Member was not found.';
   end if;
@@ -990,6 +1010,12 @@ begin
     select 1 from public.profiles where id = p_member_id and role = 'guest'
   ) then
     raise exception 'Guests do not have points to reset.';
+  end if;
+
+  -- Resetting one's own points is allowed for admins; clear the self-points
+  -- block for this transaction.
+  if p_member_id = auth.uid() then
+    perform set_config('app.admin_point_operation', 'true', true);
   end if;
 
   update public.profiles
@@ -1005,36 +1031,45 @@ create or replace function public.reset_all_points()
   set search_path to 'public'
 as $function$
 declare
+  caller_role text;
   previous_month date;
   top_one record;
   top_two record;
 begin
   -- Only Admin and Head Admin can reset.
-  if public.current_user_role() not in ('administrator', 'head_admin') then
+  caller_role := public.current_user_role();
+
+  if caller_role not in ('administrator', 'head_admin') then
     raise exception 'You do not have permission to reset points.';
   end if;
+
+  -- A reset zeroes the caller's own points too; clear the self-points block in
+  -- protect_profile_self_updates for this transaction.
+  perform set_config('app.admin_point_operation', 'true', true);
 
   -- The month being closed is the previous calendar month.
   previous_month := date_trunc('month', current_date - interval '1 month')::date;
 
   -- Get first and second place from the current standings.
   select id, coalesce(nickname, full_name, 'Unknown') as display_name, points
-  into top_one
-  from public.profiles
-  where role <> 'guest' and is_active = true
-  order by points desc, id
-  limit 1;
+    into top_one
+    from public.profiles
+   where role <> 'guest' and is_active = true
+   order by points desc, id
+   limit 1;
 
   select id, coalesce(nickname, full_name, 'Unknown') as display_name, points
-  into top_two
-  from public.profiles
-  where role <> 'guest'
-    and is_active = true
-    and (top_one.id is null or id <> top_one.id)
-  order by points desc, id
-  limit 1;
+    into top_two
+    from public.profiles
+   where role <> 'guest'
+     and is_active = true
+     and (top_one.id is null or id <> top_one.id)
+   order by points desc, id
+   limit 1;
 
-  -- Save the previous month's Top 2.
+  -- Save the previous month's Top 2. Plain insert (mirrors live): month_start is
+  -- unique, so a second reset in the same month would raise — there is no
+  -- on-conflict idempotency guard in production.
   if top_one.id is not null and top_two.id is not null then
     insert into public.monthly_leaderboard (
       month_start, first_place_id, first_place_name, first_place_points,
@@ -1044,23 +1079,17 @@ begin
       previous_month,
       top_one.id, top_one.display_name, top_one.points,
       top_two.id, top_two.display_name, top_two.points
-    )
-    on conflict (month_start) do update set
-      first_place_id = excluded.first_place_id,
-      first_place_name = excluded.first_place_name,
-      first_place_points = excluded.first_place_points,
-      second_place_id = excluded.second_place_id,
-      second_place_name = excluded.second_place_name,
-      second_place_points = excluded.second_place_points;
+    );
   end if;
 
   -- Keep the existing reset audit record.
-  insert into public.point_reset_history (reset_by) values (auth.uid());
+  insert into public.point_reset_history (reset_by)
+  values (auth.uid());
 
   -- Reset current scores only. point_history is NOT deleted.
   update public.profiles
-  set points = 0
-  where role <> 'guest';
+     set points = 0
+   where role <> 'guest';
 end;
 $function$;
 
@@ -1076,6 +1105,9 @@ begin
   if public.current_user_role() <> 'head_admin' then
     raise exception 'Only the Head Admin can wipe point data.';
   end if;
+
+  -- The wipe zeroes the caller's own points too; clear the self-points block.
+  perform set_config('app.admin_point_operation', 'true', true);
 
   delete from public.point_history where true;
 
@@ -1167,6 +1199,25 @@ begin
     raise exception 'Account deletion failed: user was not found.';
   end if;
 end;
+$function$;
+
+-- Groups (20260915123500_fix_group_member_visibility_rls_recursion.sql) ------
+-- is_current_user_group_member runs as owner so the group_members SELECT policy
+-- can test the caller's membership WITHOUT recursively invoking that same policy
+-- (the 42P17 trap). Grants live in section 6.
+
+create or replace function public.is_current_user_group_member(target_group_id uuid)
+returns boolean
+language sql
+stable security definer
+set search_path to 'public'
+as $function$
+  select exists (
+    select 1
+    from public.group_members gm
+    where gm.group_id = target_group_id
+      and gm.member_id = auth.uid()
+  );
 $function$;
 
 -- Messaging (20260916000000_messaging.sql) ----------------------------------
@@ -2244,9 +2295,21 @@ create policy "Admins can delete todos" on public.todos
       and profiles.role = any (array['administrator'::text, 'head_admin'::text])));
 
 -- groups ---------------------------------------------------------------------
+-- Visibility restricted (20260915122000): admins see all groups; everyone else
+-- sees only the groups they belong to. (Baseline previously shipped using(true).)
 drop policy if exists "Everyone can view groups" on public.groups;
-create policy "Everyone can view groups" on public.groups
-  as permissive for select to authenticated using (true);
+drop policy if exists "Members can view their groups" on public.groups;
+create policy "Members can view their groups" on public.groups
+  as permissive for select to authenticated
+  using (
+    exists (
+      select 1 from profiles p
+      where p.id = (select auth.uid())
+        and p.role = any (array['administrator'::text, 'head_admin'::text]))
+    or exists (
+      select 1 from group_members gm
+      where gm.group_id = groups.id
+        and gm.member_id = (select auth.uid())));
 
 drop policy if exists "Admins can create groups" on public.groups;
 create policy "Admins can create groups" on public.groups
@@ -2277,9 +2340,19 @@ create policy "Admins can delete groups" on public.groups
       and profiles.role = any (array['administrator'::text, 'head_admin'::text])));
 
 -- group_members --------------------------------------------------------------
+-- Visibility restricted (20260915123500): admins see all rows; everyone else
+-- sees rosters only for groups they belong to, via the SECURITY DEFINER helper
+-- above (inline self-subquery here would recurse — 42P17). Was using(true).
 drop policy if exists "Everyone can view group members" on public.group_members;
-create policy "Everyone can view group members" on public.group_members
-  as permissive for select to authenticated using (true);
+drop policy if exists "Members can view membership for their groups" on public.group_members;
+create policy "Members can view membership for their groups" on public.group_members
+  as permissive for select to authenticated
+  using (
+    exists (
+      select 1 from profiles p
+      where p.id = (select auth.uid())
+        and p.role = any (array['administrator'::text, 'head_admin'::text]))
+    or public.is_current_user_group_member(group_members.group_id));
 
 drop policy if exists "Admins can add group members" on public.group_members;
 create policy "Admins can add group members" on public.group_members
