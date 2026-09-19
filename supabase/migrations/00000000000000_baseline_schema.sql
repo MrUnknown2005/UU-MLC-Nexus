@@ -2086,7 +2086,9 @@ create policy "Admins can view activity log" on public.admin_activity_log
 drop policy if exists "Admins can create activity log" on public.admin_activity_log;
 create policy "Admins can create activity log" on public.admin_activity_log
   as permissive for insert to authenticated
-  with check (current_user_role() = any (array['administrator'::text, 'head_admin'::text]));
+  with check (
+    current_user_role() = any (array['administrator'::text, 'head_admin'::text])
+    and admin_id = (select auth.uid()));
 
 -- monthly_leaderboard --------------------------------------------------------
 drop policy if exists "Authenticated users can read monthly leaderboard" on public.monthly_leaderboard;
