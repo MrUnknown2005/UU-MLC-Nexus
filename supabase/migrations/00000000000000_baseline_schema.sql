@@ -1525,11 +1525,24 @@ set search_path = public
 as $$
 begin
   if auth.uid() is not null then
+    -- created_by: block re-pointing to another member; allow the caller nulling
+    -- their own creator rows (the delete_own_account SET NULL cascade).
     if new.created_by is distinct from old.created_by
-       or new.kind is distinct from old.kind
-       or new.group_id is distinct from old.group_id then
+       and not (new.created_by is null
+                and old.created_by is not distinct from auth.uid()) then
       raise exception 'This conversation field cannot be changed';
     end if;
+    -- kind is NOT NULL, so this only ever blocks a genuine direct<->group reflip.
+    if new.kind is distinct from old.kind then
+      raise exception 'This conversation field cannot be changed';
+    end if;
+    -- group_id: block re-pointing to a DIFFERENT group; allow the SET NULL
+    -- cascade fired by deleting the linked group.
+    if new.group_id is distinct from old.group_id
+       and new.group_id is not null then
+      raise exception 'This conversation field cannot be changed';
+    end if;
+    -- direct_key kept fully frozen (never nulled by a cascade), preserving DM dedupe.
     if to_jsonb(new) ? 'direct_key'
        and (to_jsonb(new) ->> 'direct_key') is distinct from (to_jsonb(old) ->> 'direct_key') then
       raise exception 'This conversation field cannot be changed';
