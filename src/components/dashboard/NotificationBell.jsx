@@ -12,6 +12,9 @@ const TYPE_ICON = {
   points: "trophy",
   member: "users",
   message: "send",
+  role: "shield-check",
+  group: "users",
+  account: "user-check",
 };
 
 const TYPE_TONE = {
@@ -20,6 +23,9 @@ const TYPE_TONE = {
   points: "bg-brand-soft text-brand-text",
   member: "bg-violet-soft text-violet",
   message: "bg-info-soft text-info",
+  role: "bg-violet-soft text-violet",
+  group: "bg-info-soft text-info",
+  account: "bg-success-soft text-success",
 };
 
 /**
