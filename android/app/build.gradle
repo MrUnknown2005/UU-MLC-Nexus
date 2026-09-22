@@ -1,5 +1,16 @@
 apply plugin: 'com.android.application'
 
+// Release signing is driven by a key.properties file that is never committed
+// (see android/.gitignore). It is absent on dev machines and in the fast PR CI,
+// so release stays unsigned there and debug builds are unaffected. The signed
+// release-APK workflow (.github/workflows/android-release.yml) writes it, and
+// the keystore, from GitHub secrets just before assembleRelease.
+def keystorePropertiesFile = rootProject.file("key.properties")
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace = "com.uumlcnexus.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -16,8 +27,26 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            // Populated only when key.properties exists (in CI, or a local
+            // release build after you create it). The guard keeps Gradle sync
+            // and debug builds working on machines with no signing material.
+            if (keystorePropertiesFile.exists()) {
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
+        }
+    }
     buildTypes {
         release {
+            // Sign with the release key when one is configured; without it this
+            // is a plain unsigned release build (assembleRelease → -unsigned.apk).
+            if (keystorePropertiesFile.exists()) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
