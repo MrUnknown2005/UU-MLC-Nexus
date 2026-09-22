@@ -18,21 +18,35 @@ export function signUp({ email, password, fullName, nickname }) {
 }
 
 /**
- * Sends the "reset my password" email.
+ * Emails a one-time password-reset code (Supabase's `{{ .Token }}`).
  *
- * `redirectTo` points back at this deployment's origin, so the link works in
- * local development and in production without a build-time constant. Supabase
- * still requires the origin to be listed under Authentication → URL
- * Configuration; an unlisted origin silently falls back to the site URL.
+ * No `redirectTo`: the reset is finished in-app by entering the code, not by
+ * following a link. A magic link is a dead end inside the packaged Android app
+ * — an email link opens the phone's external browser, not this WebView, so the
+ * recovery session never reaches the app. The code flow is the one path that
+ * works identically on web and native.
+ *
+ * Enumeration-safe: Supabase returns success whether or not the address has an
+ * account, so callers must keep the "if an account exists…" wording.
  */
 export function requestPasswordReset(email) {
-  return supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: window.location.origin,
-  });
+  return supabase.auth.resetPasswordForEmail(email);
 }
 
 /**
- * Sets a new password for the member the recovery link signed in.
+ * Verifies a password-reset code from requestPasswordReset().
+ *
+ * On success Supabase establishes a recovery session (fires SIGNED_IN), after
+ * which updatePassword() can set the new password. The code is single-use, so
+ * callers should verify once and, on a later failure, retry only the password
+ * update — not the verification.
+ */
+export function verifyPasswordResetCode({ email, token }) {
+  return supabase.auth.verifyOtp({ email, token, type: "recovery" });
+}
+
+/**
+ * Sets a new password for the member a recovery code (or link) signed in.
  */
 export function updatePassword(password) {
   return supabase.auth.updateUser({ password });
@@ -155,6 +169,7 @@ export default {
   signInWithPassword,
   signUp,
   requestPasswordReset,
+  verifyPasswordResetCode,
   updatePassword,
   changePassword,
   deleteOwnAccount,

@@ -6,26 +6,29 @@ import { Icon } from "../ui/Icon.jsx";
 import { TextInput, PasswordInput } from "../ui/TextInput.jsx";
 import { useToast } from "../ui/toast-context.js";
 import { usePrivacyPolicy } from "../legal/privacy-context.js";
-import {
-  requestPasswordReset,
-  signInWithPassword,
-  signUp,
-} from "../../services/authService";
+import { signInWithPassword, signUp } from "../../services/authService";
 
 /**
- * Sign in / sign up / forgot password.
+ * Sign in / sign up.
  *
- * All three are one component tree so switching between them keeps the email
- * a member has already typed — the old build threw it away on every switch.
+ * Both are one component tree so switching between them keeps the email a
+ * member has already typed — the old build threw it away on every switch.
+ * "Forgot your password?" hands off to the app-level reset flow (via
+ * onForgotPassword) rather than living here, because verifying a reset code
+ * signs the member in and that has to happen above App's session routing.
  */
-export default function AuthScreen({ initialMode = "login", onAuth, onBack }) {
+export default function AuthScreen({
+  initialMode = "login",
+  onAuth,
+  onBack,
+  onForgotPassword,
+}) {
   const [mode, setMode] = useState(initialMode);
   const [email, setEmail] = useState("");
 
-  const shared = { email, setEmail, onBack, setMode };
+  const shared = { email, setEmail, onBack, setMode, onForgotPassword };
 
   if (mode === "signup") return <SignUp {...shared} onSignup={onAuth} />;
-  if (mode === "forgot") return <ForgotPassword {...shared} />;
   return <SignIn {...shared} onSignIn={onAuth} />;
 }
 
@@ -53,7 +56,7 @@ function Notice({ tone = "danger", children }) {
   );
 }
 
-function SignIn({ email, setEmail, setMode, onBack, onSignIn }) {
+function SignIn({ email, setEmail, setMode, onBack, onSignIn, onForgotPassword }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -140,7 +143,7 @@ function SignIn({ email, setEmail, setMode, onBack, onSignIn }) {
         <div className="flex justify-end">
           <button
             type="button"
-            onClick={() => setMode("forgot")}
+            onClick={() => onForgotPassword(email)}
             className="text-[0.8125rem] text-ink-muted underline decoration-line-strong underline-offset-2 hover:text-ink"
           >
             Forgot your password?
@@ -379,81 +382,6 @@ function SignUp({ email, setEmail, setMode, onBack, onSignup }) {
           iconRight="arrow-right"
         >
           Create account
-        </Button>
-      </form>
-    </AuthLayout>
-  );
-}
-
-function ForgotPassword({ email, setEmail, setMode }) {
-  const [error, setError] = useState("");
-  const [sent, setSent] = useState(false);
-  const [busy, setBusy] = useState(false);
-
-  const submit = async (event) => {
-    event.preventDefault();
-    setError("");
-
-    if (!email.trim()) {
-      setError("Enter the email you signed up with.");
-      return;
-    }
-
-    setBusy(true);
-
-    const { error: resetError } = await requestPasswordReset(email.trim());
-
-    if (resetError) {
-      setError(resetError.message);
-      setBusy(false);
-      return;
-    }
-
-    setSent(true);
-    setBusy(false);
-  };
-
-  return (
-    <AuthLayout
-      onBack={() => setMode("login")}
-      title="Reset your password"
-      subtitle="We'll email you a link that signs you in once so you can set a new one."
-    >
-      <form onSubmit={submit} className="space-y-4" noValidate>
-        <TextInput
-          label="Email"
-          type="email"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          placeholder="you@example.com"
-          autoComplete="email"
-          icon="mail"
-          disabled={sent}
-          required
-        />
-
-        <Notice>{error}</Notice>
-
-        {sent ? (
-          <Notice tone="success">
-            If an account exists for that address, the link is on its way. It
-            expires in one hour.
-          </Notice>
-        ) : (
-          <Button
-            type="submit"
-            variant="primary"
-            size="lg"
-            fullWidth
-            loading={busy}
-            icon="send"
-          >
-            Send reset link
-          </Button>
-        )}
-
-        <Button variant="ghost" fullWidth onClick={() => setMode("login")}>
-          Back to sign in
         </Button>
       </form>
     </AuthLayout>

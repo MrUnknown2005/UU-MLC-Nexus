@@ -7,7 +7,7 @@ import {
 } from "./services/authSessionService";
 import LandingPage from "./components/landing/LandingPage";
 import AuthScreen from "./components/auth/AuthScreen";
-import ResetPasswordScreen from "./components/auth/ResetPasswordScreen";
+import PasswordResetFlow from "./components/auth/PasswordResetFlow";
 import GuestDashboard from "./components/guest/GuestDashboard";
 import Dashboard from "./components/dashboard/Dashboard";
 import BootScreen from "./components/common/BootScreen";
@@ -25,7 +25,12 @@ import { useBackButton } from "./hooks/useBackButton";
 export default function App() {
   const [view, setView] = useState("landing"); // landing | auth
   const [authMode, setAuthMode] = useState("login");
-  const [recovering, setRecovering] = useState(false);
+  // Password reset lives above the session routing below, because verifying an
+  // OTP (or following a web recovery link) creates a real session mid-flow.
+  // null = not resetting; "otp" = code flow started from "forgot password";
+  // "link" = a web recovery link signed this tab in (PASSWORD_RECOVERY).
+  const [resetEntry, setResetEntry] = useState(null);
+  const [resetEmail, setResetEmail] = useState(""); // seeds the "otp" flow
 
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -137,9 +142,11 @@ export default function App() {
       data: { subscription },
     } = subscribeToAuthState((event, currentSession) => {
       if (event === "PASSWORD_RECOVERY") {
-        // Supabase has signed this tab in with a short-lived recovery session.
-        // Show the "choose a new password" screen instead of the dashboard.
-        setRecovering(true);
+        // A web recovery link signed this tab in with a short-lived recovery
+        // session. Jump straight to "choose a new password" instead of the
+        // dashboard. (Native app users never hit this — email links can't
+        // re-enter the WebView — so they use the in-app OTP flow instead.)
+        setResetEntry("link");
         setSession(currentSession);
         setStatus("ready");
         return;
@@ -185,9 +192,31 @@ export default function App() {
     } finally {
       setSession(null);
       setProfile(null);
-      setRecovering(false);
+      setResetEntry(null);
       setStatus("ready");
       setView("landing");
+    }
+  }, []);
+
+  // Leaving the password-reset flow (cancel, or the Android back button). Drops
+  // any recovery session Supabase created — the web link flow, or a verified
+  // OTP — and returns to the sign-in screen the member came from. Mirrors
+  // logout()'s fail-safe teardown but lands on the auth form, not the landing
+  // page, since resetting is part of signing in.
+  const exitReset = useCallback(async () => {
+    loadToken.current += 1;
+
+    try {
+      await signOut();
+    } catch (err) {
+      console.error("Sign-out error:", err);
+    } finally {
+      setSession(null);
+      setProfile(null);
+      setResetEntry(null);
+      setStatus("ready");
+      setAuthMode("login");
+      setView("auth");
     }
   }, []);
 
@@ -196,8 +225,8 @@ export default function App() {
   // leave the reset-password flow, or step the auth screen back to the landing
   // page. Returning false anywhere else lets the dispatcher exit the app.
   useBackButton(() => {
-    if (recovering) {
-      logout();
+    if (resetEntry) {
+      exitReset();
       return true;
     }
     if (!session && view === "auth") {
@@ -207,21 +236,27 @@ export default function App() {
     return false;
   }, 0);
 
-  if (status === "loading") {
-    return <BootScreen />;
-  }
-
-  if (recovering) {
+  // Password reset is checked before everything else: verifying an OTP creates
+  // a live session, and without this gate the routing below would immediately
+  // whisk the member off to the dashboard (or "no profile yet") before they
+  // ever set a new password.
+  if (resetEntry) {
     return (
-      <ResetPasswordScreen
-        onDone={async () => {
-          setRecovering(false);
+      <PasswordResetFlow
+        entry={resetEntry}
+        initialEmail={resetEmail}
+        onComplete={async () => {
+          setResetEntry(null);
           setStatus("loading");
           await loadSession();
         }}
-        onCancel={logout}
+        onExit={exitReset}
       />
     );
+  }
+
+  if (status === "loading") {
+    return <BootScreen />;
   }
 
   if (status === "deactivated") {
@@ -285,6 +320,10 @@ export default function App() {
         initialMode={authMode}
         onAuth={loadSession}
         onBack={() => setView("landing")}
+        onForgotPassword={(prefillEmail) => {
+          setResetEmail(prefillEmail ?? "");
+          setResetEntry("otp");
+        }}
       />
     );
   }
