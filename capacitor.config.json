@@ -1,0 +1,11 @@
+{
+  "appId": "com.uumlcnexus.app",
+  "appName": "UU MLC Nexus",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "backgroundColor": "#0c0b09"
+  }
+}

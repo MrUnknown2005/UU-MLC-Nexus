@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  App colours. colorPrimary/PrimaryDark/Accent are referenced by AppTheme in
+  styles.xml (the Capacitor scaffold left these undefined). splashBackground is
+  the cold-start splash colour and matches capacitor.config.json's
+  android.backgroundColor.
+-->
+<resources>
+    <color name="colorPrimary">#F2A81C</color>
+    <color name="colorPrimaryDark">#0C0B09</color>
+    <color name="colorAccent">#F2A81C</color>
+    <color name="splashBackground">#0C0B09</color>
+</resources>

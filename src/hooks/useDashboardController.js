@@ -6,6 +6,7 @@ import { useTodoBadges } from "./useTodoBadges";
 import { useUnreadMessages } from "./useUnreadMessages";
 import { useNotifications } from "./useNotifications";
 import { useMemberActions } from "./useMemberActions";
+import { useBackButton } from "./useBackButton";
 
 /**
  * Composes the dashboard's feature hooks into the single API the Dashboard
@@ -102,6 +103,26 @@ export function useDashboardController({ profile, reloadProfile, onLogout }) {
     loadData,
     reloadProfile,
   });
+
+  // Android back button: unwind the dashboard's own UI layers before the app is
+  // allowed to exit. Higher priority than App's root handler, so while the
+  // dashboard is mounted these run first. Returning false at the overview with
+  // nothing open falls through to the root handler (which exits the app).
+  useBackButton(() => {
+    if (sidebarOpen) {
+      setSidebarOpen(false);
+      return true;
+    }
+    if (notificationsOpen) {
+      setNotificationsOpen(false);
+      return true;
+    }
+    if (tab !== "overview") {
+      setTab("overview");
+      return true;
+    }
+    return false;
+  }, 10);
 
   /*
   =========================================================

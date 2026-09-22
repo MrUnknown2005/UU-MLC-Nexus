@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  UU MLC Nexus logo mark, a faithful vector copy of public/favicon.svg:
+  an amber rounded square with the black "M L" monogram. Used on the cold-start
+  splash. No rasteriser needed — renders crisp at any density.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="32"
+    android:viewportHeight="32">
+    <path
+        android:fillColor="#F2A81C"
+        android:pathData="M7,0 L25,0 A7,7 0 0 1 32,7 L32,25 A7,7 0 0 1 25,32 L7,32 A7,7 0 0 1 0,25 L0,7 A7,7 0 0 1 7,0 Z" />
+    <path
+        android:pathData="M6,23 L6,9 L11,15 L16,9 L16,23"
+        android:strokeColor="#12100B"
+        android:strokeWidth="3.1"
+        android:strokeLineCap="square"
+        android:strokeLineJoin="miter" />
+    <path
+        android:pathData="M21,9 L21,23 L26,23"
+        android:strokeColor="#12100B"
+        android:strokeWidth="3.1"
+        android:strokeLineCap="square"
+        android:strokeLineJoin="miter" />
+</vector>

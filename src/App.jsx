@@ -12,6 +12,7 @@ import GuestDashboard from "./components/guest/GuestDashboard";
 import Dashboard from "./components/dashboard/Dashboard";
 import BootScreen from "./components/common/BootScreen";
 import MessageScreen from "./components/common/MessageScreen";
+import { useBackButton } from "./hooks/useBackButton";
 
 /**
  * Root router.
@@ -189,6 +190,22 @@ export default function App() {
       setView("landing");
     }
   }, []);
+
+  // Android hardware/gesture back button (no-op on web). At the app root there
+  // is no history to pop, so we translate back into the app's own navigation:
+  // leave the reset-password flow, or step the auth screen back to the landing
+  // page. Returning false anywhere else lets the dispatcher exit the app.
+  useBackButton(() => {
+    if (recovering) {
+      logout();
+      return true;
+    }
+    if (!session && view === "auth") {
+      setView("landing");
+      return true;
+    }
+    return false;
+  }, 0);
 
   if (status === "loading") {
     return <BootScreen />;

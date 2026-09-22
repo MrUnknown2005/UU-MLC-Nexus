@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  UU MLC Nexus launcher foreground: the "M L" monogram from public/favicon.svg,
+  scaled into the adaptive-icon safe zone (centre ~66dp of the 108dp canvas) so
+  no stroke is clipped by any launcher mask. Pairs with the amber
+  @color/ic_launcher_background. Stroke weight matches the favicon (0.155 of the
+  monogram width).
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M24,75 L24,33 L39,51 L54,33 L54,75"
+        android:strokeColor="#12100B"
+        android:strokeWidth="9.3"
+        android:strokeLineCap="square"
+        android:strokeLineJoin="miter" />
+    <path
+        android:pathData="M69,33 L69,75 L84,75"
+        android:strokeColor="#12100B"
+        android:strokeWidth="9.3"
+        android:strokeLineCap="square"
+        android:strokeLineJoin="miter" />
+</vector>
